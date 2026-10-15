@@ -9,6 +9,16 @@ PR previews and production both come from Cloudflare Pages' Git integration; the
 3. Build settings: project name `hermitage-3d` · production branch `main` · build command `pnpm build` · output directory `dist`. The `packageManager` field in `package.json` makes the Pages build image use pnpm 9 through corepack. (Vite preset supplies the same values.)
 4. Every pull request automatically gets a unique preview URL — that is what "every phase ends at a URL" runs on. Note: a Git-integrated Pages project cannot later be switched to Direct Upload; irrelevant for this repo, which is deployed from git on purpose.
 
+## Known issue: `*.pages.dev` is blocked by some Russian ISPs
+
+Confirmed 2026-10-15: Rostelecom intercepts TLS to `*.pages.dev` (self-signed certificate in place of Cloudflare's); the site opens only through a VPN. DNS and TCP reach Cloudflare fine — the block is domain-targeted (DPI).
+
+Implications and plan:
+
+- Development and CI are unaffected; the owner checks deploys via VPN until the mitigation is in.
+- Mitigation before the v1 announcement (Phase 3): attach a **custom domain** to this same Pages project (free plan supports up to 100). With a custom domain the connection's SNI is the custom domain, not `pages.dev`, so this specific block does not apply. Cheap, no hosting change.
+- The custom domain also protects against future single-provider subdomain blocks, which is the real point: a portfolio piece must be reachable from a mainstream connection.
+
 ## Notes
 
 - **No wrangler commands are needed locally.** `npx wrangler deploy` / `preview` is the alternative Direct Upload path we deliberately do not use: deploys happen automatically from git (push to `main` → production, PR → preview). If the dashboard flow offers "Direct Upload" or asks to install wrangler, stop and go back via **Pages → Connect to Git**.
