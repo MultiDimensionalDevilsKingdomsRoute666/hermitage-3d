@@ -110,7 +110,7 @@ const bands = [
 ];
 
 const groundMaterial = new THREE.MeshLambertMaterial({
-  color: 0x8b8b8b,
+  color: 0x3f3f3f, // dark square asphalt — AgX pulls diffuse whites down; the ground must not compete
   transparent: true,
   opacity: 0,
 });
