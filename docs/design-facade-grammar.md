@@ -282,6 +282,6 @@ material groups, and measured gzip.
    (artistic-license).
 4. **Relief, not openings** — window recesses are relief panels on opaque
    massing, not traversable openings (artistic-license entry added).
-5. **Junction count 20** — derivation from bends (14) is under-specified in
-   the round-5 reply; the count is pinned by the implementation tests above
-   and must be re-derived there.
+5. **Junction count 20** — resolved in round 6: 8 upper band bends + 6 lower
+   band bends + 6 parapet bends; the two outer risalit-top corners carry no
+   parapet junction block (the sourced open-corner rule). Pinned by tests.
