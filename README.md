@@ -1,4 +1,4 @@
-# the Winter Palace in the browser
+# Winter Palace in the browser
 
 A stylized 3D recreation of the Winter Palace (the Hermitage, Saint Petersburg) for the web. You walk into a 215-metre Baroque facade and the palace is lit by the real Saint Petersburg sky at the moment the page opens - white nights in June, a six-hour day in December.
 
@@ -31,7 +31,3 @@ Four principles every decision serves:
 ## Stack
 
 vanilla three.js (WebGL2) · TypeScript strict · Vite · pnpm · Blender (scripted, headless) → glTF / Meshopt / KTX2 · Vitest · Playwright · Biome · GitHub Actions → Cloudflare Pages
-
-## The name
-
-Petersburgers call it Зимний.
