@@ -82,3 +82,38 @@ body {
   clip: rect(0 0 0 0);
   white-space: nowrap;
 }
+/* Debug HUD — ?hud=1 or the H key. Client-only; re-bound at most every 500 ms. */
+#hud {
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  padding: 8px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.55);
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 12px;
+  line-height: 1.5;
+  font-variant-numeric: tabular-nums;
+  user-select: none;
+  pointer-events: none;
+}
+#hud[hidden] {
+  display: none;
+}
+/* Quiet in-app route to the facade-spec viewer (DEC-004's in-app engineering signal). */
+#notes-link {
+  position: fixed;
+  left: 24px;
+  bottom: 40px;
+  color: rgba(255, 255, 255, 0.55);
+  text-decoration: none;
+  font-size: 12px;
+}
+#notes-link:hover,
+#notes-link:focus-visible {
+  color: #fff;
+}
+#notes-link[hidden] {
+  display: none;
+}

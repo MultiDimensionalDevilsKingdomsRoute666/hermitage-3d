@@ -30,6 +30,14 @@ import {
   scrubEpoch,
   type TimeState,
 } from './sky/time';
+import {
+  buildHudAttrs,
+  buildHudLines,
+  type HudState,
+  parseHudParam,
+  pushFrameInterval,
+  rollingMedianFrameMs,
+} from './ui/hud';
 
 const SUN_DISTANCE = 1000;
 const TIER_STORAGE_KEY = 'zimny:tier';
@@ -44,6 +52,10 @@ const clockDate = document.querySelector('#clock-date');
 if (!(clockDate instanceof HTMLElement)) throw new Error('#clock-date missing');
 const scrub = document.querySelector('#scrub');
 if (!(scrub instanceof HTMLInputElement)) throw new Error('#scrub missing');
+const hud = document.querySelector('#hud');
+if (!(hud instanceof HTMLElement)) throw new Error('#hud missing');
+const notesLink = document.querySelector('#notes-link');
+if (!(notesLink instanceof HTMLAnchorElement)) throw new Error('#notes-link missing');
 
 const isDeterministic = (state: TimeState): boolean =>
   state.mode === 'fixed' ? state.deterministic : false;
@@ -183,6 +195,34 @@ sun.shadow.normalBias = 0.25;
 scene.add(sun);
 const hemi = new THREE.HemisphereLight(0xffffff, 0x000000, 1); // colours driven by the sample
 scene.add(hemi);
+
+// Debug HUD — ?hud=1 shares the hash query with time/tier (parseHudParam never persists;
+// H toggles at runtime). Re-bound at most every 500 ms from the whole-frame aggregates.
+let hudOpen = false;
+let hudIntervals: readonly number[] = [];
+let hudBoundAtMs = -1;
+let hudLastLines = '';
+const hudParams = parseHudParam(new URLSearchParams(queryOf(location.hash)));
+for (const issue of hudParams.issues) console.warn(`zimny: hud issue — ${issue}`);
+const applyHudBinding = (): void => {
+  hud.hidden = !hudOpen;
+  if (!hudOpen) return;
+  hud.textContent = ''; // stale lines from a previous open are not diagnostics
+  hudLastLines = '';
+  hudBoundAtMs = -1;
+};
+const toggleHud = (value: boolean): void => {
+  if (hudOpen === value) return;
+  hudOpen = value;
+  applyHudBinding();
+};
+toggleHud(hudParams.enabled);
+document.addEventListener('keydown', (event) => {
+  if (event.key !== 'h' || event.metaKey || event.ctrlKey || event.altKey) return;
+  if (event.target === scrub) return; // the scrub owns its keys; no hidden toggles from inside
+  event.preventDefault();
+  toggleHud(!hudOpen);
+});
 
 const rig = createSkyRig(scene, camera);
 
@@ -335,6 +375,7 @@ const applyPresentation = (): void => {
     kitMaterial.transparent = presentation.massingOpacity < 1;
   }
   scrub.hidden = arrival.phase !== 'settled';
+  notesLink.hidden = arrival.phase !== 'settled'; // DEC-004's in-app route to /notes
   if (arrival.phase === 'settled' && resizePending) {
     resizePending = false;
     applyViewport();
@@ -456,6 +497,11 @@ window.addEventListener('hashchange', () => {
   const quality = parseQualityUpdate(new URLSearchParams(queryOf(location.hash)));
   persistTier(quality.tier);
   if (quality.tier !== 'auto') settleTier(TIERS[quality.tier]);
+  // The HUD is ephemeral URL state: a navigation that drops ?hud=1 closes it, one that
+  // carries it re-opens (data-* values re-bound on the next ≤ 500 ms tick).
+  const hudNext = parseHudParam(new URLSearchParams(queryOf(location.hash)));
+  for (const issue of hudNext.issues) console.warn(`zimny: hud issue — ${issue}`);
+  toggleHud(hudNext.enabled);
   // A probe still running when an explicit tier lands is cancelled by settleTier above;
   // an auto navigation leaves an open probe running to its own window end.
 });
@@ -511,7 +557,35 @@ const tick = (timeMs: number): void => {
   // §11 permits camera-ray uniforms per visible frame; cheap and rotation-correct.
   rig.updateCamera(camera);
   renderer.render(scene, camera);
-
+  // HUD binding: whole-frame aggregates (renderer.info) + the live tier label + the
+  // rolling median of pushed intervals. At most every 500 ms; text replaced only on change.
+  if (hudOpen) {
+    if (deltaMs > 0) hudIntervals = pushFrameInterval(hudIntervals, deltaMs);
+    if (hudBoundAtMs === -1 || timeMs - hudBoundAtMs >= 500) {
+      hudBoundAtMs = timeMs;
+      const hudState: HudState = {
+        tierLabel: tier.label,
+        frameDrawCalls: renderer.info.render.calls,
+        frameTriangles: renderer.info.render.triangles,
+        medianFrameMs: rollingMedianFrameMs(hudIntervals),
+      };
+      for (const [key, value] of Object.entries(buildHudAttrs(hudState))) {
+        hud.setAttribute(key, value); // round-11 Playwright asserts the data-* contract
+      }
+      const lines = buildHudLines(hudState);
+      const text = lines.join('\n');
+      if (text !== hudLastLines) {
+        hudLastLines = text;
+        hud.replaceChildren(
+          ...lines.map((line) => {
+            const div = document.createElement('div');
+            div.textContent = line;
+            return div;
+          }),
+        );
+      }
+    }
+  }
   if (perfLog) {
     if (!firstSkyLogged) {
       firstSkyLogged = true;

@@ -34,6 +34,10 @@
       >Arrow keys step a minute; PageUp and PageDown step an hour; Home and End pick the window
       bounds; Escape cancels; N returns to now.</span
     >
+    <!-- Debug HUD (?hud=1 or the H key): client-only overlay per architecture.md delivery
+         rules. aria-hidden: a developer tool, repeated state already announced elsewhere. -->
+    <aside id="hud" hidden aria-hidden="true"></aside>
+    <a id="notes-link" href="/notes.html" hidden>How it’s built →</a>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>
