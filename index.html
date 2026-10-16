@@ -11,6 +11,29 @@
   </head>
   <body>
     <canvas id="scene"></canvas>
+    <!-- Overlay, design-sky-time.md §9/§10: title on beat 2, hairline scrub only after settling. -->
+    <header id="title" hidden>
+      <h1 id="wordmark">Zimny</h1>
+      <p id="timeline">
+        <time id="clock">--:--</time>
+        <span id="clock-date"></span>
+      </p>
+    </header>
+    <input
+      id="scrub"
+      type="range"
+      min="-1440"
+      max="1440"
+      step="1"
+      value="0"
+      hidden
+      aria-label="Petersburg time, ±24 hours around the scene time"
+      aria-describedby="scrub-help"
+    />
+    <span id="scrub-help" class="sr-only"
+      >Arrow keys step a minute; PageUp and PageDown step an hour; Home and End pick the window
+      bounds; Escape cancels; N returns to now.</span
+    >
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>
