@@ -131,6 +131,15 @@ let lastLabelEpochMs = -1;
 let resizePending = false;
 let titleShown = false;
 
+// §12 instrument: opt-in at build time — `VITE_PERF_LOG=1 pnpm build && pnpm preview`.
+// Console-only readout for the device-gate report; absent from normal builds, never UI.
+const perfLog = import.meta.env.VITE_PERF_LOG === '1';
+let perfWindowStart: number | null = null;
+let perfFrames = 0;
+let perfSumDeltaMs = 0;
+let perfMaxDeltaMs = 0;
+let firstSkyLogged = false;
+
 const applyPresentation = (): void => {
   const presentation = presentationForArrival(arrival, isDeterministic(timeState));
   if (presentation.titleVisible !== titleShown) {
@@ -299,6 +308,32 @@ const tick = (timeMs: number): void => {
   // §11 permits camera-ray uniforms per visible frame; cheap and rotation-correct.
   rig.updateCamera(camera);
   renderer.render(scene, camera);
+
+  if (perfLog) {
+    if (!firstSkyLogged) {
+      firstSkyLogged = true;
+      console.log(
+        `zimny: first sky frame at ${performance.now().toFixed(0)} ms · buffer ` +
+          `${renderer.domElement.width}×${renderer.domElement.height} · css ` +
+          `${window.innerWidth}×${window.innerHeight}`,
+      );
+    }
+    if (perfWindowStart === null) perfWindowStart = timeMs;
+    perfFrames += 1;
+    perfSumDeltaMs += deltaMs;
+    perfMaxDeltaMs = Math.max(perfMaxDeltaMs, deltaMs);
+    if (timeMs - perfWindowStart >= 5000) {
+      console.log(
+        `zimny: ${perfFrames} frames · avg ${(perfSumDeltaMs / perfFrames).toFixed(1)} ms · ` +
+          `max ${perfMaxDeltaMs.toFixed(1)} ms · draws ${renderer.info.render.calls} · ` +
+          `tris ${renderer.info.render.triangles}`,
+      );
+      perfWindowStart = timeMs;
+      perfFrames = 0;
+      perfSumDeltaMs = 0;
+      perfMaxDeltaMs = 0;
+    }
+  }
 
   // Prewarm the massing variant after the first sky opportunity (§10).
   if (!compileStarted) {
