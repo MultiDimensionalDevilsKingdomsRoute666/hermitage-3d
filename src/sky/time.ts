@@ -131,7 +131,8 @@ function parseAt(value: string): number | AtIssue {
 
 // Query = text after the first "?"; without one, the whole fragment is the query.
 // A single leading "#" (as delivered by location.hash) is dropped first.
-function queryOf(fragment: string): string {
+// Exported so other hash-keyed systems (quality tiers) share one extraction rule.
+export function queryOf(fragment: string): string {
   const bare = fragment.startsWith('#') ? fragment.slice(1) : fragment;
   const mark = bare.indexOf('?');
   return mark === -1 ? bare : bare.slice(mark + 1);

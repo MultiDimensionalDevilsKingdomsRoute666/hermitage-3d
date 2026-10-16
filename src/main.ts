@@ -5,16 +5,34 @@ import './style.css';
 import * as THREE from 'three';
 import { SOUTH_FACADE, WINDOW_ROWS } from './content/facade-spec';
 import { TIME } from './content/sky-time';
+import {
+  BENCHMARK,
+  classifyProbe,
+  DEFAULT_TIER_ID,
+  type ProbeResult,
+  parseQualityUpdate,
+  type QualityTier,
+  type QualityTierId,
+  resolveQualityScale,
+  TIERS,
+} from './engine/tier';
 import { buildFacade } from './procedural/facade-builder';
 import { solveSouthFacade } from './procedural/facade-solver';
 import { type SkySample, sampleSky } from './sky/appearance';
 import type { ArrivalState } from './sky/arrival';
 import { advanceArrival, initialArrival, presentationForArrival } from './sky/arrival';
 import { createSkyRig } from './sky/rig';
-import { canonicalAt, formatPetersburg, parseTime, scrubEpoch, type TimeState } from './sky/time';
+import {
+  canonicalAt,
+  formatPetersburg,
+  parseTime,
+  queryOf,
+  scrubEpoch,
+  type TimeState,
+} from './sky/time';
 
-const MAX_BUFFER_PIXELS = 1048576; // §11 designated-device gate: ≤ 1 048 576 drawing-buffer px
 const SUN_DISTANCE = 1000;
+const TIER_STORAGE_KEY = 'zimny:tier';
 
 const canvas = document.querySelector('#scene');
 if (!(canvas instanceof HTMLCanvasElement)) throw new Error('#scene canvas missing');
@@ -202,15 +220,84 @@ const applyEpoch = (nextEpochMs: number): void => {
 };
 applyEpoch(epochMs);
 
-const applyViewport = (): void => {
+// Quality tier. The surfaces (render scale, drawing buffer, sun shadow size) apply BEFORE
+// the massing fade: §11 forbids resizing targets mid-fade, so the auto tier settles once
+// during the sky-only beats via a ~0.85 s probe (architecture.md → Tiers).
+let tier: QualityTier = TIERS[DEFAULT_TIER_ID];
+let tierSettled = false;
+let probeActive = false;
+let probeStartAtMs: number | null = null;
+const probeIntervals: number[] = [];
+
+const persistTier = (value: QualityTierId | 'auto'): void => {
+  try {
+    if (value === 'auto') localStorage.removeItem(TIER_STORAGE_KEY);
+    else localStorage.setItem(TIER_STORAGE_KEY, value);
+  } catch {
+    // Storage can be unavailable (private mode, quota) — the tier simply stays boot-local.
+  }
+};
+
+const settleTier = (next: QualityTier): void => {
+  tier = next;
+  tierSettled = true;
+  probeActive = false;
+  // The shadow map materializes lazily at the next shadow pass; re-arm its size now.
+  sun.shadow.mapSize.set(next.shadowMapSize, next.shadowMapSize);
+  if (sun.shadow.map !== null) {
+    sun.shadow.map.dispose(); // next pass reallocates at the tier's map size
+    sun.shadow.map = null;
+  }
+  applyViewport();
+};
+
+const capabilities = (): { deviceMemoryGiB: number | null } => ({
+  deviceMemoryGiB:
+    // Device Memory API: Chromium-only, `unknown` in the DOM lib until it ships.
+    (navigator as Navigator & { deviceMemory?: number }).deviceMemory ?? null,
+});
+
+const finishProbe = (result: ProbeResult): void => {
+  settleTier(TIERS[result.tier]);
+};
+
+// Boot resolution order — override → persisted override → T1 in det (probe skipped, the
+// golden-frame boot must not depend on wall-clock timing) → probe at T2 surfaces.
+const quality = parseQualityUpdate(new URLSearchParams(queryOf(location.hash)));
+if (quality.tier !== 'auto') {
+  settleTier(TIERS[quality.tier]);
+  persistTier(quality.tier);
+} else {
+  let stored: QualityTierId | null = null;
+  try {
+    const raw = localStorage.getItem(TIER_STORAGE_KEY);
+    if (raw === 't0' || raw === 't1' || raw === 't2') stored = raw;
+  } catch {
+    // No storage → default auto behavior.
+  }
+  if (stored !== null) {
+    settleTier(TIERS[stored]);
+  } else if (isDeterministic(timeState)) {
+    settleTier(TIERS[DEFAULT_TIER_ID]);
+  } else {
+    // Probe posture: T2 surfaces arm the greatest pre-arrival load the scene can pose.
+    tier = TIERS.t2;
+    probeActive = true;
+  }
+}
+
+// Hoisted (function declaration) so the boot-resolution block above may call it — §11's
+// fit must exist before the first frame is presented.
+function applyViewport(): void {
   const width = window.innerWidth;
   const height = window.innerHeight;
+  if (width <= 0 || height <= 0) return; // nothing renderable — skip silently this frame
   camera.aspect = width / height;
   camera.updateProjectionMatrix();
-  const scale = Math.min(1, Math.sqrt(MAX_BUFFER_PIXELS / (width * height)));
-  renderer.setPixelRatio(scale);
+  // §11 fit generalized per tier: scale = min(dprCap, sqrt(bufferPixelsCap / (w·h))).
+  renderer.setPixelRatio(resolveQualityScale(tier, width, height));
   renderer.setSize(width, height, false);
-};
+}
 applyViewport();
 
 let arrival: ArrivalState = initialArrival();
@@ -364,6 +451,13 @@ window.addEventListener('hashchange', () => {
   for (const issue of next.issues) console.warn(`zimny: time issue — ${issue}`);
   timeState = next.state;
   applyEpoch(next.initialEpochMs);
+  // A redirect-style navigation carrying ?q= re-applies (and persists) the tier; ?q=auto
+  // clears the override and keeps the current auto choice (no re-probe after settle).
+  const quality = parseQualityUpdate(new URLSearchParams(queryOf(location.hash)));
+  persistTier(quality.tier);
+  if (quality.tier !== 'auto') settleTier(TIERS[quality.tier]);
+  // A probe still running when an explicit tier lands is cancelled by settleTier above;
+  // an auto navigation leaves an open probe running to its own window end.
 });
 
 document.addEventListener('visibilitychange', () => {
@@ -381,6 +475,20 @@ const tick = (timeMs: number): void => {
   const deltaMs = lastFrameTime === undefined ? 0 : timeMs - lastFrameTime;
   lastFrameTime = timeMs;
   renderer.info.reset(); // whole-frame accounting starts here (§11)
+
+  // Boot probe: sky-only beats sample rAF cadence for ~0.85 s at T2 surfaces, then the
+  // classifier settles the tier. Pre-arrival only — §11 forbids resizing during the fade.
+  if (probeActive) {
+    if (probeStartAtMs === null) {
+      probeStartAtMs = timeMs;
+    } else if (deltaMs > 0) {
+      probeIntervals.push(deltaMs);
+      if (timeMs - probeStartAtMs >= BENCHMARK.windowMs) {
+        finishProbe(classifyProbe(probeIntervals, capabilities()));
+        probeStartAtMs = null;
+      }
+    }
+  }
 
   // Presentation of the CURRENT state, drawn first (§10: state machine rules).
   applyPresentation();
@@ -430,8 +538,9 @@ const tick = (timeMs: number): void => {
     }
   }
 
-  // Prewarm the massing variant after the first sky opportunity (§10).
-  if (!compileStarted) {
+  // Prewarm the massing variant after the tier settles (§10): one compile at the final
+  // shadow map size and render scale, no re-compile when the probe flips surfaces.
+  if (!compileStarted && tierSettled) {
     compileStarted = true;
     renderer
       .compileAsync(scene, camera)
