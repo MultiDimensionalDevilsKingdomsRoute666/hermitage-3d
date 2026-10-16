@@ -17,7 +17,7 @@ One machine: **MacBook Pro 2017 — 2-core i5 2.3 GHz, 8 GB RAM, Iris Plus 640.*
 
 ## Phases
 
-### Phase 0 · Mass & Sky — **in progress — card model + devlog #0 landed; remaining: formal §12 pass in real Safari (owner), then close**
+### Phase 0 · Mass & Sky — **complete 2026-10-16** — exit: URL live · CI green · devlog #0 ([docs/devlog/0000.md](docs/devlog/0000.md) holds the gate numbers and the recorded §12 method notes)
 
 Pure modules complete and gate-green: solar (NOAA, four contract vectors at 1e-5°), exposure, frozen lightmap weights, appearance palette, URL/scrub/det parsing, arrival beats — 55 node tests, JS gzip budget enforced in CI (129 KB of 350 KB). Contract: [docs/design-sky-time.md](docs/design-sky-time.md).
 
@@ -26,7 +26,7 @@ Pure modules complete and gate-green: solar (NOAA, four contract vectors at 1e-5
 - **Exit:** URL live · CI green · devlog #0.
 - *Split rule: if it stalls, split 0a (repo/CI/sky module) from 0b (massing + time UI). Never widen.*
 
-### Phase 1 · The Facade — **not started**
+### Phase 1 · The Facade — **planning**
 
 - **Ships:** the Palace Square facade fully articulated, hundreds of window surrounds catching low sun; the Alexander Column as a simple scale prop; the General Staff building as massing; walk or fly the square.
 - **Builds underneath:** facade grammar + solver + kit of parts (~25 scripted pieces); instancing; shadows; quality tiers + boot microbenchmark; debug HUD; golden-frame tests; `/notes` page v1 with the facade spec viewer.
