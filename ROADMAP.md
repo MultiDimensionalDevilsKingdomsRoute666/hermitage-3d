@@ -17,7 +17,9 @@ One machine: **MacBook Pro 2017 — 2-core i5 2.3 GHz, 8 GB RAM, Iris Plus 640.*
 
 ## Phases
 
-### Phase 0 · Mass & Sky — **in progress — design locked; sky-time contract accepted**
+### Phase 0 · Mass & Sky — **in progress — pure part landed; remaining: rig (dome shader), coordinator, devlog #0**
+
+Pure modules complete and gate-green: solar (NOAA, four contract vectors at 1e-5°), exposure, frozen lightmap weights, appearance palette, URL/scrub/det parsing, arrival beats — 55 node tests, JS gzip budget enforced in CI (129 KB of 350 KB). Contract: [docs/design-sky-time.md](docs/design-sky-time.md).
 
 - **Ships:** Palace Square with the palace as a true-scale white massing (an architect's card model) under the live Petersburg sky; title with the real time; hairline time control; shareable URL.
 - **Builds underneath:** repo, CI/CD with PR previews (Cloudflare Pages), typed store + app state machine, sky/solar module with tests, URL state, perf-budget doc, initial ADRs.
