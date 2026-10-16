@@ -8,5 +8,7 @@ A stylized recreation, not a survey. Every deliberate deviation from the real pa
 - **Shared ornament vocabulary:** one gilt-ornament kit stands in for the palace's real variety.
 - **Mirrored symmetry** where Rastrelli was symmetrical anyway.
 - **Dimension approximations:** footprint ~210 × 175 m, principal facade ~215 m (risalit projections make the crease line longer than the plan), 22 m to the cornice — sourced in `ATTRIBUTIONS.md`; the roof band (~24 m total) and courtyard proportions are declared targets, checked against sources during Phase 1 and corrected here if the record differs.
+- **Facade axis counts (Phase 1 spec):** per-section window-axis counts in `src/content/facade-spec.ts` (south 7 + 20 + 8 + 20 + 7, bay pitch ~3.4 m) are photo-derived working targets, ±1 axis per section; the section structure (three risalits, triple-arch central gateway, paired columns, corner bunches, 3 window-width modules) is sourced. Counts to be checked against the measured elevation drawings during Phase 1 and corrected here and in the spec if the record differs.
+- **Window/decor catalogue:** the 12 window types, 22 surrounds, 32 decor types, 5 capital varieties are catalogued but modelled as a smaller stylized set (one capital archetype, a few surround families) — the grammar reproduces the module system and rhythm, not the one-for-one catalogue.
 
 New rooms add their own line(s) to this file in the same phase that introduces them.
