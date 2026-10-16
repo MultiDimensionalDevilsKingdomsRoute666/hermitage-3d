@@ -1,0 +1,175 @@
+/* /notes page — same two-colour discipline as the palace overlay (src/style.css):
+   system font, near-white text on near-black, hairline rules. Declared chips reuse the
+   kit's gold (facade-builder DRESSING trim), nothing else is coloured. */
+:root {
+  color-scheme: dark;
+  font-family: system-ui, sans-serif;
+}
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+  background: #0b0b0c;
+  color: #e8e6e1;
+}
+.page-head {
+  position: fixed;
+  top: 16px;
+  right: 24px;
+  z-index: 1;
+}
+.back {
+  color: rgba(232, 230, 225, 0.6);
+  text-decoration: none;
+  font-size: 13px;
+}
+.back:hover,
+.back:focus-visible {
+  color: #fff;
+}
+main {
+  max-width: 72rem;
+  margin: 0 auto;
+  padding: 48px 24px 96px;
+  line-height: 1.55;
+}
+h1 {
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+h2 {
+  margin-top: 40px;
+  font-size: 16px;
+  font-weight: 600;
+  border-bottom: 1px solid rgba(232, 230, 225, 0.16);
+  padding-bottom: 6px;
+}
+p,
+li {
+  font-size: 14px;
+  color: rgba(232, 230, 225, 0.82);
+}
+ul {
+  padding-left: 20px;
+}
+a {
+  color: rgba(232, 230, 225, 0.82);
+}
+/* Numbers: label left, value right, hairline separators — the palace's tabular style. */
+dl.numbers div {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  padding: 4px 0;
+  border-bottom: 1px solid rgba(232, 230, 225, 0.08);
+  font-size: 14px;
+}
+dl.numbers dt {
+  flex: 1;
+}
+dl.numbers dd {
+  margin: 0;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.value {
+  font-size: 14px;
+}
+.unit {
+  margin-left: 4px;
+  font-size: 12px;
+  color: rgba(232, 230, 225, 0.5);
+}
+/* Provenance chips — lowercase, boxed; gold marks the declared register. */
+.chip {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 0 6px;
+  border: 1px solid rgba(232, 230, 225, 0.28);
+  border-radius: 999px;
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  color: rgba(232, 230, 225, 0.6);
+  vertical-align: baseline;
+  white-space: nowrap;
+}
+.chip[data-provenance="declared"] {
+  border-color: rgba(201, 162, 39, 0.55);
+  color: #c9a227;
+}
+.chip[data-provenance="derived"] {
+  border-style: dashed;
+  opacity: 0.8;
+}
+/* Tables: hairline borders, chip cells inherit the same markers. */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 16px 0 8px;
+  font-size: 13px;
+}
+caption {
+  text-align: left;
+  font-size: 12px;
+  color: rgba(232, 230, 225, 0.5);
+  padding-bottom: 6px;
+}
+th,
+td {
+  border-bottom: 1px solid rgba(232, 230, 225, 0.08);
+  padding: 6px 10px 6px 0;
+  text-align: left;
+  vertical-align: top;
+}
+thead th {
+  color: rgba(232, 230, 225, 0.5);
+  font-weight: 500;
+  border-bottom-color: rgba(232, 230, 225, 0.24);
+}
+tbody th {
+  font-weight: 500;
+  white-space: nowrap;
+}
+tbody tr.total td,
+tbody tr.total th {
+  border-bottom: 0;
+  border-top: 1px solid rgba(232, 230, 225, 0.24);
+  font-weight: 600;
+}
+/* Callouts: left-hairline blocks; warning echoes the solver, error the contract. */
+.callout {
+  margin: 16px 0;
+  padding: 10px 14px;
+  border-left: 2px solid rgba(232, 230, 225, 0.24);
+  font-size: 13px;
+  color: rgba(232, 230, 225, 0.82);
+}
+.callout[data-level="warning"] {
+  border-left-color: #c9a227;
+}
+.callout[data-level="error"] {
+  border-left-color: #c25b5b;
+}
+nav.links ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  padding-left: 0;
+  list-style: none;
+  font-size: 12px;
+}
+@media (max-width: 720px) {
+  main {
+    padding: 40px 16px 64px;
+  }
+  table {
+    display: block;
+    overflow-x: auto;
+  }
+  .page-head {
+    position: static;
+    padding: 16px 24px 0;
+    text-align: right;
+  }
+}

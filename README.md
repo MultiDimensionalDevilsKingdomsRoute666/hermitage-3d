@@ -9,7 +9,7 @@ Status: **Phase 0 · Mass & Sky - not started.** Plan: [ROADMAP.md](ROADMAP.md).
 - **Scale** - a repetitive classical facade generated from a typed grammar and instanced, so the palace's defining quality costs almost nothing to download.
 - **Light** - a sun/sky model driven by the real clock at 59.9°N; interiors lit by blended baked states, not by UI sliders.
 - **Composition** - a "museum visitor" camera on rails with free look, so every frame is a composed frame and modelling is bounded by what the camera can see.
-- **Engineering in the open** - budgets enforced by CI, ADRs, deterministic golden-frame tests, deep-linkable state, an in-app "how it's built" page.
+- **Engineering in the open** - budgets enforced by CI, ADRs, deterministic golden-frame tests, deep-linkable state, an in-app "how it's built" page ([/notes](https://hermitage-3d.pages.dev/notes) - the facade spec viewer).
 
 Four principles every decision serves:
 

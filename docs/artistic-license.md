@@ -12,5 +12,6 @@ A stylized recreation, not a survey. Every deliberate deviation from the real pa
 - **Window/decor catalogue:** the 12 window types, 22 surrounds, 32 decor types, 5 capital varieties are catalogued but modelled as a smaller stylized set (one capital archetype, a few surround families) — the grammar reproduces the module system and rhythm, not the one-for-one catalogue.
 - **Relief windows:** Phase 1 exterior window recesses are dark relief panels with surrounds on opaque massing — no traversable openings or deep reveals; a real opening is Phase 2 interior-pipeline territory (design-facade-grammar.md §7.4).
 - **Roof ornament allocation:** the sourced ~176 roof figures are read as statues and vases for the whole palace combined; the south facade carries a declared allocation of 48 (24 + 24) at its slots, none over the pediment (design-facade-grammar.md §7.3).
+- **Budget allowance (Phase 1 /notes):** the /notes package projection declares the rest-of-frame cost as working estimates, not measurements — 1 shadow pass, 16 other frame draw calls, 146 massing triangles (the Round 7 massing: 12 boxes + ground plane), 4 096 sky triangles; JS gzip arrives as a CI measurement. Replaced by a real device measurement at the Phase 1 exit gate.
 
 New rooms add their own line(s) to this file in the same phase that introduces them.
