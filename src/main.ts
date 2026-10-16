@@ -45,11 +45,23 @@ renderer.info.autoReset = false;
 
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(55, 1, 0.5, 2000);
-camera.position.set(0, 1.7, 170); // eye height on the square; placeholder-grade framing
-camera.lookAt(0, 12, 0);
+camera.position.set(0, 1.7, 230); // eye height mid-square; framing fits the 227 m south front
+camera.lookAt(0, 11, 0);
 
-// True-metre placeholder massing: the committed card-model stub translated to metres 1:1.
-// The measured palace quadrangle refinement is a later step; numbers stay the stub's.
+// Card-model massing at true scale — the Phase 0 "architect's card model" (ships-list).
+// Sources (ATTRIBUTIONS.md): quadrangle ~210 × 175 m, ~22 m to the cornice, roofline with
+// statuary to ~30 m (modelled as a 2 m band to ~24 m); SE/SW risalits and the central gate
+// pavilion protrude beyond the south facade line. Courtyard proportions are a declared
+// approximation (docs/artistic-license.md). +X east, +Z south (toward Palace Square).
+const PALACE = {
+  halfWidth: 105, // E-W, outer
+  halfDepth: 87.5, // N-S, outer
+  wingDepth: 24,
+  cornice: 22,
+  roof: 24,
+  protrude: 6,
+} as const;
+
 const palace = new THREE.Group();
 palace.name = 'PalaceMassing';
 const massingMaterial = new THREE.MeshLambertMaterial({
@@ -57,8 +69,46 @@ const massingMaterial = new THREE.MeshLambertMaterial({
   transparent: true,
   opacity: 0,
 });
-const massing = new THREE.Mesh(new THREE.BoxGeometry(215, 24, 55), massingMaterial);
-massing.position.y = 12;
+
+const block = (
+  width: number,
+  depth: number,
+  x: number,
+  z: number,
+  height: number = PALACE.cornice,
+  y: number = height / 2,
+): THREE.Mesh => {
+  const mesh = new THREE.Mesh(new THREE.BoxGeometry(width, height, depth), massingMaterial);
+  mesh.position.set(x, y, z);
+  return mesh;
+};
+
+const innerZ = PALACE.halfDepth - PALACE.wingDepth / 2; // 75.5 — wing centres
+const innerX = PALACE.halfWidth - PALACE.wingDepth / 2; // 93
+const wingLength = PALACE.halfDepth * 2 - PALACE.wingDepth * 2; // 127 — E/W wings between N/S
+// South protrusions: 30 m deep, outer face reaching halfDepth + protrude (risalits / gate).
+const southFrontDepth = PALACE.wingDepth + PALACE.protrude; // 30
+const protrusionZ = PALACE.halfDepth + PALACE.protrude - southFrontDepth / 2; // 78.5
+const southWings = [
+  block(PALACE.halfWidth * 2, PALACE.wingDepth, 0, innerZ),
+  block(30, southFrontDepth, -80, protrusionZ), // SW risalit
+  block(35, southFrontDepth, 0, protrusionZ), // gate pavilion
+  block(30, southFrontDepth, 80, protrusionZ), // SE risalit
+];
+const northWings = [block(PALACE.halfWidth * 2, PALACE.wingDepth, 0, -innerZ)];
+const sideWings = [
+  block(PALACE.wingDepth, wingLength, innerX, 0),
+  block(PALACE.wingDepth, wingLength, -innerX, 0),
+];
+// Cornice/balustrade band: one slab per wing, set back 1 m, cornice → roof height.
+const band = { height: PALACE.roof - PALACE.cornice, y: (PALACE.roof + PALACE.cornice) / 2 };
+const bands = [
+  block(PALACE.halfWidth * 2 - 2, PALACE.wingDepth - 2, 0, innerZ, band.height, band.y),
+  block(PALACE.halfWidth * 2 - 2, PALACE.wingDepth - 2, 0, -innerZ, band.height, band.y),
+  block(PALACE.wingDepth - 2, wingLength - 2, innerX, 0, band.height, band.y),
+  block(PALACE.wingDepth - 2, wingLength - 2, -innerX, 0, band.height, band.y),
+];
+
 const groundMaterial = new THREE.MeshLambertMaterial({
   color: 0x8b8b8b,
   transparent: true,
@@ -66,7 +116,7 @@ const groundMaterial = new THREE.MeshLambertMaterial({
 });
 const ground = new THREE.Mesh(new THREE.PlaneGeometry(600, 600), groundMaterial);
 ground.rotation.x = -Math.PI / 2;
-palace.add(ground, massing);
+palace.add(ground, ...southWings, ...northWings, ...sideWings, ...bands);
 palace.visible = false; // §10: the first rendered frame is the procedural sky alone
 scene.add(palace);
 
