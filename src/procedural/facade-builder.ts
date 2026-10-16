@@ -1,0 +1,613 @@
+// Facade kit builder — src/procedural/facade-builder.ts
+// Turns solver placements into InstancedMesh objects. Runtime relief kit:
+// walls are the coordinator's massing boxes; recesses are opaque dark panels.
+// Salvaged from relay round 7; orchestrator correction: the surround opening
+// fills the envelope up to the head ornament (openH = sy − rise) so window
+// heads land on the design row table (3.00 / 9.20 / 15.50 / 19.50 m) — the
+// draft stacked an internal sill ledge and band inside the envelope instead.
+import * as THREE from 'three';
+import type { PartId, Placement, SolvedFacade } from './facade-solver';
+import { KIT, PART_IDS } from './facade-solver';
+
+/* ------------------------------------------------------------------ colours */
+
+/* sRGB hex constants; new THREE.Color(hex) converts to the linear working space. */
+export const DRESSING_HEX = 0xf2f0e8;
+export const RECESS_HEX = 0x23262b;
+export const GOLD_HEX = 0xc9a227;
+export const PALE_STONE_HEX = 0xded9cc;
+
+export const FACADE_COLORS = Object.freeze({
+  dressings: DRESSING_HEX,
+  recess: RECESS_HEX,
+  gold: GOLD_HEX,
+  paleStone: PALE_STONE_HEX,
+});
+
+const WHITE = new THREE.Color(DRESSING_HEX);
+const DARK = new THREE.Color(RECESS_HEX);
+const GOLD = new THREE.Color(GOLD_HEX);
+const STONE = new THREE.Color(PALE_STONE_HEX);
+
+/* ------------------------------------------------------------------ primitives */
+
+/* Pivot convention for every part: bottom-centre-back (x centred, y from 0, z from 0 back to sz front). */
+
+type Pt = readonly [number, number];
+type Piece = { g: THREE.BufferGeometry; c: THREE.Color };
+
+function envelope(id: PartId): { sx: number; sy: number; sz: number } {
+  const { min, max } = KIT[id].localBounds;
+  return { sx: max.x - min.x, sy: max.y - min.y, sz: max.z - min.z };
+}
+
+/** Box given width/height/depth, x centre, bottom y and back z. */
+function box(
+  w: number,
+  h: number,
+  d: number,
+  cx: number,
+  y0: number,
+  z0: number,
+  c: THREE.Color,
+): Piece {
+  return {
+    g: new THREE.BoxGeometry(w, h, d).translate(cx, y0 + h / 2, z0 + d / 2),
+    c,
+  };
+}
+
+/** 8-sided vertical prism/frustum; open-ended by default because bases and capitals cover the ends. */
+function prism(
+  rTop: number,
+  rBottom: number,
+  h: number,
+  cx: number,
+  y0: number,
+  cz: number,
+  c: THREE.Color,
+  open = true,
+): Piece {
+  return {
+    g: new THREE.CylinderGeometry(rTop, rBottom, h, 8, 1, open).translate(cx, y0 + h / 2, cz),
+    c,
+  };
+}
+
+/** 8-sided lathe around a vertical axis at (cx, cz); profile points are (radius, y). */
+function lathe(profile: readonly Pt[], cx: number, cz: number, c: THREE.Color): Piece {
+  const points = profile.map(([x, y]) => new THREE.Vector2(x, y));
+  return { g: new THREE.LatheGeometry(points, 8).translate(cx, 0, cz), c };
+}
+
+/** Flat extrusion of a simple polygon drawn in XY, extruded along +Z from 0 to depth (no closePath: avoids a degenerate side quad). */
+function slab(outline: readonly Pt[], depth: number, c: THREE.Color): Piece {
+  const shape = new THREE.Shape();
+  outline.forEach(([x, y], i) => {
+    if (i === 0) shape.moveTo(x, y);
+    else shape.lineTo(x, y);
+  });
+  return {
+    g: new THREE.ExtrudeGeometry(shape, { depth, bevelEnabled: false, steps: 1 }),
+    c,
+  };
+}
+
+/** Elliptical arc band (outer radii rx/ry, thickness t) centred on (0, cy), from angle a0 to a1 in degrees. */
+function arcBand(
+  rx: number,
+  ry: number,
+  t: number,
+  cy: number,
+  a0: number,
+  a1: number,
+  segments: number,
+  depth: number,
+  c: THREE.Color,
+): Piece {
+  const outer: Pt[] = [];
+  const inner: Pt[] = [];
+  for (let i = 0; i <= segments; i++) {
+    const a = THREE.MathUtils.degToRad(a0 + ((a1 - a0) * i) / segments);
+    const cos = Math.cos(a);
+    const sin = Math.sin(a);
+    outer.push([rx * cos, cy + ry * sin]);
+    inner.push([(rx - t) * cos, cy + (ry - t) * sin]);
+  }
+  return slab([...outer, ...inner.reverse()], depth, c);
+}
+
+/** Concatenates primitive geometries into one indexed geometry carrying a per-vertex linear colour. */
+function merge(pieces: readonly Piece[]): THREE.BufferGeometry {
+  const position: number[] = [];
+  const normal: number[] = [];
+  const color: number[] = [];
+  const index: number[] = [];
+  let offset = 0;
+  for (const { g, c } of pieces) {
+    const p = g.getAttribute('position');
+    const n = g.getAttribute('normal');
+    const idx = g.getIndex();
+    for (let i = 0; i < p.count; i++) {
+      position.push(p.getX(i), p.getY(i), p.getZ(i));
+      normal.push(n.getX(i), n.getY(i), n.getZ(i));
+      color.push(c.r, c.g, c.b);
+    }
+    if (idx) {
+      for (let i = 0; i < idx.count; i++) index.push(idx.getX(i) + offset);
+    } else {
+      for (let i = 0; i < p.count; i++) index.push(i + offset);
+    }
+    offset += p.count;
+    g.dispose();
+  }
+  const out = new THREE.BufferGeometry();
+  out.setAttribute('position', new THREE.Float32BufferAttribute(position, 3));
+  out.setAttribute('normal', new THREE.Float32BufferAttribute(normal, 3));
+  out.setAttribute('color', new THREE.Float32BufferAttribute(color, 3));
+  out.setIndex(index);
+  out.computeBoundingBox();
+  out.computeBoundingSphere();
+  return out;
+}
+
+export function countTriangles(geometry: THREE.BufferGeometry): number {
+  const index = geometry.getIndex();
+  return index ? index.count / 3 : geometry.getAttribute('position').count / 3;
+}
+
+/* ------------------------------------------------------------------ parts */
+
+type HeadKind = 'cornice' | 'broken-arch' | 'pediment';
+
+function surround(id: PartId, opening: number, head: HeadKind, rise: number): THREE.BufferGeometry {
+  const { sx, sy, sz } = envelope(id);
+  const openH = sy - rise; // the opening fills the envelope; the head ornament owns the top `rise`
+  const jamb = Math.max(0.12, (sx - opening) / 2);
+  const rd = Math.min(0.05, sz / 4);
+  const dz = sz * 0.7;
+  const yHead = openH;
+  const half = sx / 2;
+  const pieces: Piece[] = [
+    box(jamb, openH, dz, -(opening + jamb) / 2, 0, 0, WHITE),
+    box(jamb, openH, dz, (opening + jamb) / 2, 0, 0, WHITE),
+    box(opening, openH, rd, 0, 0, 0, DARK),
+    box(0.06, openH, rd, 0, 0, rd, DARK),
+    box(opening, 0.06, rd, 0, openH * 0.62, rd, DARK),
+  ];
+  if (head === 'cornice') {
+    pieces.push(
+      box(sx, rise * 0.45, sz * 0.85, 0, yHead, 0, WHITE),
+      box(sx, rise * 0.55, sz, 0, yHead + rise * 0.45, 0, WHITE),
+    );
+  } else if (head === 'pediment') {
+    pieces.push(
+      box(sx, 0.15, sz, 0, yHead, 0, WHITE),
+      slab(
+        [
+          [-half, yHead + 0.15],
+          [half, yHead + 0.15],
+          [0, yHead + rise],
+        ],
+        sz * 0.85,
+        WHITE,
+      ),
+    );
+  } else {
+    const t = 0.28;
+    pieces.push(
+      arcBand(half, rise, t, yHead, 100, 180, 3, sz * 0.85, WHITE),
+      arcBand(half, rise, t, yHead, 0, 80, 3, sz * 0.85, WHITE),
+      box(0.4, rise, sz, 0, yHead, 0, WHITE),
+    );
+  }
+  return merge(pieces);
+}
+
+function sill(id: PartId): THREE.BufferGeometry {
+  const { sx, sy, sz } = envelope(id);
+  return merge([box(sx, sy, sz, 0, 0, 0, WHITE)]);
+}
+
+function pairedColumn(id: PartId): THREE.BufferGeometry {
+  const { sx, sy, sz } = envelope(id);
+  const r = 0.22;
+  const baseH = 0.45;
+  const bellH = 0.5;
+  const abacusH = 0.15;
+  const cz = Math.max(r, sz - r);
+  const pw = 2 * r + 0.16;
+  const pd = Math.min(sz, pw);
+  const pz = sz - pd;
+  const spread = Math.min(0.4, sx / 2 - 0.36);
+  const pieces: Piece[] = [box(sx, sy, Math.min(0.08, sz * 0.2), 0, 0, 0, WHITE)];
+  for (const cx of [-spread, spread]) {
+    pieces.push(
+      box(pw, baseH, pd, cx, 0, pz, WHITE),
+      prism(r, r, sy - baseH - bellH - abacusH, cx, baseH, cz, WHITE),
+      prism(r + 0.1, r, bellH, cx, sy - bellH - abacusH, cz, WHITE),
+      box(pw + 0.08, abacusH, pd, cx, sy - abacusH, pz, WHITE),
+    );
+  }
+  return merge(pieces);
+}
+
+function cornerBunch(id: PartId): THREE.BufferGeometry {
+  const { sx, sy, sz } = envelope(id);
+  const r = 0.16;
+  const baseH = 0.4;
+  const bellH = 0.4;
+  const abacusH = 0.15;
+  const cz = Math.max(r, sz - r);
+  const step = Math.min(0.36, sx / 2 - r - 0.08);
+  const pieces: Piece[] = [
+    box(sx, sy, Math.min(0.08, sz * 0.2), 0, 0, 0, WHITE),
+    box(sx, baseH, sz, 0, 0, 0, WHITE),
+    box(sx, abacusH, sz, 0, sy - abacusH, 0, WHITE),
+  ];
+  for (const cx of [-step, 0, step]) {
+    pieces.push(
+      prism(r, r, sy - baseH - bellH - abacusH, cx, baseH, cz, WHITE),
+      prism(r + 0.07, r, bellH, cx, sy - bellH - abacusH, cz, WHITE),
+    );
+  }
+  return merge(pieces);
+}
+
+function portalArch(id: PartId): THREE.BufferGeometry {
+  const { sx, sy, sz } = envelope(id);
+  const R = sx / 2;
+  const t = 0.5;
+  const spring = sy - R;
+  return merge([
+    arcBand(R, R, t, spring, 0, 180, 12, sz * 0.85, WHITE),
+    box(t, spring, sz * 0.85, -(R - t / 2), 0, 0, WHITE),
+    box(t, spring, sz * 0.85, R - t / 2, 0, 0, WHITE),
+    box(0.6, 1.0, sz, 0, sy - 1.0, 0, WHITE),
+  ]);
+}
+
+function groundArch(id: PartId): THREE.BufferGeometry {
+  const { sx, sy, sz } = envelope(id);
+  const slabW = Math.min(4.9, sx - 0.5);
+  const slabH = Math.min(9.4, sy - 0.25);
+  const fw = (sx - slabW) / 2;
+  return merge([
+    box(slabW, slabH, Math.min(0.1, sz), 0, 0, 0, DARK),
+    box(fw, sy, sz, -(slabW + fw) / 2, 0, 0, WHITE),
+    box(fw, sy, sz, (slabW + fw) / 2, 0, 0, WHITE),
+    box(slabW, sy - slabH, sz, 0, slabH, 0, WHITE),
+  ]);
+}
+
+function giantColumn(id: PartId): THREE.BufferGeometry {
+  const { sx, sy, sz } = envelope(id);
+  const r = Math.min(0.45, sx / 2 - 0.15);
+  const pw = 2 * r + 0.3;
+  const pd = Math.min(sz, pw);
+  const pz = sz - pd;
+  const cz = sz - pd / 2;
+  return merge([
+    box(pw, 0.5, pd, 0, 0, pz, WHITE),
+    prism(r + 0.04, r + 0.14, 0.3, 0, 0.5, cz, WHITE),
+    prism(r, r, sy - 0.8 - 0.9, 0, 0.8, cz, WHITE),
+    prism(r + 0.15, r, 0.7, 0, sy - 0.9, cz, WHITE),
+    box(pw, 0.2, pd, 0, sy - 0.2, pz, WHITE),
+  ]);
+}
+
+/* Broken-pediment silhouette, normalised: u in [-1, 1] (half-width), v in [0, 1] (height). */
+const PEDIMENT_OUTLINE: readonly Pt[] = [
+  [-1, 0],
+  [1, 0],
+  [1, 0.16],
+  [0.94, 0.32],
+  [0.88, 0.26],
+  [0.29, 0.68],
+  [0.25, 0.6],
+  [0.19, 0.72],
+  [0.1, 0.92],
+  [0, 1],
+  [-0.1, 0.92],
+  [-0.19, 0.72],
+  [-0.25, 0.6],
+  [-0.29, 0.68],
+  [-0.88, 0.26],
+  [-0.94, 0.32],
+  [-1, 0.16],
+];
+
+function pediment(id: PartId): THREE.BufferGeometry {
+  const { sx, sy, sz } = envelope(id);
+  const outline: Pt[] = PEDIMENT_OUTLINE.map(([u, v]) => [(u * sx) / 2, v * sy]);
+  const trim = slab(outline, sz * 0.3, GOLD);
+  const body = slab(outline, sz * 0.7, WHITE);
+  // Slightly smaller white body in front of the full gold slab leaves a gold rim along every edge.
+  body.g.scale(0.96, 0.96, 1).translate(0, 0, sz * 0.3);
+  return merge([trim, body]);
+}
+
+function cartouche(id: PartId): THREE.BufferGeometry {
+  const { sx, sy, sz } = envelope(id);
+  const scaled = (pts: readonly Pt[]): Pt[] => pts.map(([u, v]) => [u * sx, v * sy]);
+  const shield = scaled([
+    [0, 0],
+    [0.23, 0.16],
+    [0.29, 0.4],
+    [0.29, 0.69],
+    [0.19, 0.75],
+    [-0.19, 0.75],
+    [-0.29, 0.69],
+    [-0.29, 0.4],
+    [-0.23, 0.16],
+  ]);
+  const wingL = scaled([
+    [-0.25, 0.38],
+    [-0.5, 0.72],
+    [-0.4, 0.78],
+    [-0.22, 0.6],
+  ]);
+  const wingR: Pt[] = wingL.map(([x, y]) => [-x, y]);
+  const disc = new THREE.CylinderGeometry(0.2 * sx, 0.2 * sx, 0.2 * sz, 8)
+    .rotateX(Math.PI / 2)
+    .translate(0, 0.47 * sy, 0.75 * sz);
+  return merge([
+    slab(shield, 0.65 * sz, GOLD),
+    slab(wingL, 0.45 * sz, GOLD),
+    slab(wingR, 0.45 * sz, GOLD),
+    { g: disc, c: GOLD },
+    box(0.025 * sx, 0.14 * sy, 0.15 * sz, 0, 0.47 * sy, 0.85 * sz, GOLD),
+    box(0.12 * sx, 0.02 * sy, 0.15 * sz, 0.06 * sx, 0.46 * sy, 0.85 * sz, GOLD),
+    box(0.22 * sx, 0.25 * sy, 0.6 * sz, 0, 0.75 * sy, 0, GOLD),
+  ]);
+}
+
+/* Crown profile as (depth fraction, height fraction): frieze 0.4 then stepped crowning to 1.0. */
+const CROWN_PROFILE: readonly Pt[] = [
+  [0, 0],
+  [0.19, 0],
+  [0.19, 0.4],
+  [0.44, 0.45],
+  [0.5, 0.7],
+  [0.75, 0.75],
+  [1, 0.95],
+  [1, 1],
+  [0, 1],
+];
+
+function corniceRun(id: PartId): THREE.BufferGeometry {
+  const { sx, sy, sz } = envelope(id);
+  const piece = slab(
+    CROWN_PROFILE.map(([d, v]): Pt => [d * sz, v * sy]),
+    sx,
+    WHITE,
+  );
+  // Profile was drawn in XY and extruded along Z; bake the turn so the run lies along +X and faces +Z.
+  piece.g.rotateY(-Math.PI / 2).translate(sx / 2, 0, 0);
+  return merge([piece]);
+}
+
+function orderJunction(id: PartId): THREE.BufferGeometry {
+  const { sx, sy, sz } = envelope(id);
+  const a = sx / 2;
+  const c = Math.min(sx, sz) * 0.18;
+  const octagon: Pt[] = [
+    [-a + c, -sz],
+    [a - c, -sz],
+    [a, -sz + c],
+    [a, -c],
+    [a - c, 0],
+    [-a + c, 0],
+    [-a, -c],
+    [-a, -sz + c],
+  ];
+  const piece = slab(octagon, sy, WHITE);
+  // Octagon drawn with y in [-sz, 0]; this turn maps extrusion to +Y and the footprint to z in [0, sz].
+  piece.g.rotateX(-Math.PI / 2);
+  return merge([piece]);
+}
+
+function balustrade(id: PartId): THREE.BufferGeometry {
+  const { sx, sy, sz } = envelope(id);
+  const balH = 0.9;
+  const hb = (sy - balH) * 0.45;
+  const ht = sy - balH - hb;
+  const profile: Pt[] = [
+    [0.06, hb],
+    [0.12, hb + 0.4],
+    [0.05, hb + balH],
+  ];
+  const pieces: Piece[] = [box(sx, hb, sz, 0, 0, 0, WHITE), box(sx, ht, sz, 0, sy - ht, 0, WHITE)];
+  for (let i = 0; i < 6; i++) {
+    pieces.push(lathe(profile, -sx / 2 + (sx * (i + 0.5)) / 6, sz / 2, WHITE));
+  }
+  return merge(pieces);
+}
+
+const VASE_PROFILE: readonly Pt[] = [
+  [0.16, 0.23],
+  [0.12, 0.33],
+  [0.36, 0.54],
+  [0.26, 0.8],
+  [0.3, 0.9],
+  [0, 1],
+];
+
+function vase(id: PartId): THREE.BufferGeometry {
+  const { sx, sy, sz } = envelope(id);
+  return merge([
+    box(0.6 * sx, 0.23 * sy, 0.6 * sz, 0, 0, 0.2 * sz, STONE),
+    lathe(
+      VASE_PROFILE.map(([r, v]): Pt => [r * sx, v * sy]),
+      0,
+      sz / 2,
+      STONE,
+    ),
+  ]);
+}
+
+/* Robed figure as one lathe: hem, waist, shoulders, neck, head, crown. No face by design. */
+const FIGURE_PROFILE: readonly Pt[] = [
+  [0.37, 0.295],
+  [0.33, 0.55],
+  [0.3, 0.72],
+  [0.1, 0.86],
+  [0.14, 0.9],
+  [0.14, 0.98],
+  [0, 1],
+];
+
+function statue(id: PartId): THREE.BufferGeometry {
+  const { sx, sy, sz } = envelope(id);
+  return merge([
+    box(0.83 * sx, 0.27 * sy, 0.83 * sz, 0, 0, 0.085 * sz, STONE),
+    box(sx, 0.025 * sy, sz, 0, 0.27 * sy, 0, STONE),
+    lathe(
+      FIGURE_PROFILE.map(([r, v]): Pt => [r * sx, v * sy]),
+      0,
+      sz / 2,
+      STONE,
+    ),
+    box(0.15 * sx, 0.2 * sy, 0.17 * sz, -0.33 * sx, 0.52 * sy, 0.415 * sz, STONE),
+    box(0.15 * sx, 0.2 * sy, 0.17 * sz, 0.33 * sx, 0.52 * sy, 0.415 * sz, STONE),
+  ]);
+}
+
+/* ------------------------------------------------------------------ catalogue + memo */
+
+const BUILDERS: Partial<Record<PartId, (id: PartId) => THREE.BufferGeometry>> = {
+  'surround-row1-small': (id) => surround(id, 1.0, 'cornice', 0.45),
+  'surround-row2-large': (id) => surround(id, 1.7, 'broken-arch', 0.65),
+  'surround-row3-large': (id) => surround(id, 1.7, 'pediment', 0.6),
+  'surround-row4-small': (id) => surround(id, 1.0, 'cornice', 0.45),
+  sill,
+  'paired-column': pairedColumn,
+  'corner-bunch': cornerBunch,
+  'portal-arch': portalArch,
+  'ground-arch': groundArch,
+  'giant-column': giantColumn,
+  pediment,
+  cartouche,
+  'cornice-run': corniceRun,
+  'order-junction': orderJunction,
+  balustrade,
+  vase,
+  statue,
+};
+
+const geometryCache = new Map<PartId, THREE.BufferGeometry>();
+
+export function getPartGeometry(partId: PartId): THREE.BufferGeometry {
+  const cached = geometryCache.get(partId);
+  if (cached) return cached;
+  const build = BUILDERS[partId];
+  if (!build) throw new Error(`facade-builder: no geometry defined for part "${partId}"`);
+  const geometry = build(partId);
+  geometry.name = partId;
+  geometryCache.set(partId, geometry);
+  return geometry;
+}
+
+/* ------------------------------------------------------------------ assembly */
+
+export type FacadeBuild = Readonly<{
+  group: THREE.Group;
+  meshes: readonly THREE.InstancedMesh[];
+  material: THREE.MeshLambertMaterial;
+  trianglesByPart: Readonly<Record<PartId, number>>;
+  instanceTotal: number;
+}>;
+
+const Y_AXIS = new THREE.Vector3(0, 1, 0);
+
+function placementsFor(solved: SolvedFacade, partId: PartId): readonly Placement[] {
+  const byPart = solved.byPart as Partial<Record<PartId, readonly Placement[]>>;
+  return byPart[partId] ?? [];
+}
+
+export function buildFacade(solved: SolvedFacade): FacadeBuild {
+  if (solved.placements.length === 0) {
+    throw new Error('facade-builder: solved facade carries no placements');
+  }
+  const tally = new Map<PartId, number>();
+  for (const placement of solved.placements) {
+    if (!(placement.partId in KIT)) {
+      throw new Error(
+        `facade-builder: unknown partId "${placement.partId}" on placement "${placement.id}"`,
+      );
+    }
+    tally.set(placement.partId, (tally.get(placement.partId) ?? 0) + 1);
+  }
+
+  const material = new THREE.MeshLambertMaterial({ vertexColors: true, color: 0xffffff });
+  material.name = 'FacadeKit';
+  const group = new THREE.Group();
+  group.name = 'FacadeKit';
+
+  const meshes: THREE.InstancedMesh[] = [];
+  const trianglesByPart = {} as Record<PartId, number>;
+  for (const id of PART_IDS) trianglesByPart[id] = 0;
+
+  const position = new THREE.Vector3();
+  const quaternion = new THREE.Quaternion();
+  const scale = new THREE.Vector3();
+  const matrix = new THREE.Matrix4();
+  let instanceTotal = 0;
+
+  for (const partId of PART_IDS) {
+    const list = placementsFor(solved, partId);
+    const expected = tally.get(partId) ?? 0;
+    if (list.length !== expected) {
+      throw new Error(
+        `facade-builder: byPart["${partId}"] holds ${list.length} placements but placements[] carries ${expected}`,
+      );
+    }
+    if (list.length === 0) continue;
+    for (const placement of list) {
+      if (placement.partId !== partId) {
+        throw new Error(
+          `facade-builder: placement "${placement.id}" (${placement.partId}) filed under "${partId}"`,
+        );
+      }
+    }
+    const geometry = getPartGeometry(partId);
+    const triangles = countTriangles(geometry);
+    const ceiling = KIT[partId].triangleCeiling;
+    if (triangles > ceiling) {
+      throw new Error(
+        `facade-builder: "${partId}" uses ${triangles} triangles, ceiling is ${ceiling}`,
+      );
+    }
+    const mesh = new THREE.InstancedMesh(geometry, material, list.length);
+    mesh.name = partId;
+    list.forEach((placement, i) => {
+      position.set(placement.position.x, placement.position.y, placement.position.z);
+      quaternion.setFromAxisAngle(Y_AXIS, placement.rotationY);
+      scale.set(placement.scale.x, placement.scale.y, placement.scale.z);
+      mesh.setMatrixAt(i, matrix.compose(position, quaternion, scale));
+    });
+    mesh.instanceMatrix.setUsage(THREE.StaticDrawUsage);
+    mesh.instanceMatrix.needsUpdate = true;
+    mesh.computeBoundingSphere();
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
+    meshes.push(mesh);
+    group.add(mesh);
+    trianglesByPart[partId] = triangles;
+    instanceTotal += list.length;
+  }
+
+  if (instanceTotal !== solved.placements.length) {
+    throw new Error(
+      `facade-builder: byPart totals ${instanceTotal} instances but placements[] carries ${solved.placements.length}`,
+    );
+  }
+
+  return Object.freeze({
+    group,
+    meshes: Object.freeze(meshes),
+    material,
+    trianglesByPart: Object.freeze(trianglesByPart),
+    instanceTotal,
+  });
+}

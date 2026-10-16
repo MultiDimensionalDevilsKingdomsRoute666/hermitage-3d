@@ -3,7 +3,10 @@
 // §10 arrival order is immutable: sky frame → title frame → massing fade → settled.
 import './style.css';
 import * as THREE from 'three';
+import { SOUTH_FACADE, WINDOW_ROWS } from './content/facade-spec';
 import { TIME } from './content/sky-time';
+import { buildFacade } from './procedural/facade-builder';
+import { solveSouthFacade } from './procedural/facade-solver';
 import { type SkySample, sampleSky } from './sky/appearance';
 import type { ArrivalState } from './sky/arrival';
 import { advanceArrival, initialArrival, presentationForArrival } from './sky/arrival';
@@ -62,10 +65,19 @@ const PALACE = {
   protrude: 6,
 } as const;
 
+// Phase 1 facade: solve the frozen spec, then build the instanced relief kit.
+// The solved sections also own the south massing front below — the kit mounts
+// exactly on its fronts (docs/design-facade-grammar.md).
+const solvedFacade = solveSouthFacade(SOUTH_FACADE, WINDOW_ROWS);
+if (!solvedFacade.ok) {
+  throw new Error(`facade spec invalid: ${solvedFacade.issues.map((i) => i.message).join('; ')}`);
+}
+const facadeBuild = buildFacade(solvedFacade.value);
+
 const palace = new THREE.Group();
 palace.name = 'PalaceMassing';
 const massingMaterial = new THREE.MeshLambertMaterial({
-  color: 0xffffff,
+  color: 0x7dab93, // Phase 1 palette: pale green walls (owner decision); dressings white via the kit
   transparent: true,
   opacity: 0,
 });
@@ -89,12 +101,23 @@ const wingLength = PALACE.halfDepth * 2 - PALACE.wingDepth * 2; // 127 — E/W w
 // South protrusions: 30 m deep, outer face reaching halfDepth + protrude (risalits / gate).
 const southFrontDepth = PALACE.wingDepth + PALACE.protrude; // 30
 const protrusionZ = PALACE.halfDepth + PALACE.protrude - southFrontDepth / 2; // 78.5
-const southWings = [
-  block(PALACE.halfWidth * 2, PALACE.wingDepth, 0, innerZ),
-  block(30, southFrontDepth, -80, protrusionZ), // SW risalit
-  block(35, southFrontDepth, 0, protrusionZ), // gate pavilion
-  block(30, southFrontDepth, 80, protrusionZ), // SE risalit
-];
+// South front rebuilt from the solved facade sections so the kit mounts exactly
+// on its fronts: stretches 24 m deep on the main line, risalits/portal 30 m deep
+// (outer face at halfDepth + protrude). The old card-model x-positions were
+// approximate and did not match the spec's axis layout.
+let sectionPrefixAxes = 0;
+const southWings = SOUTH_FACADE.sections.map((section) => {
+  const deep = section.declaredProtrusionM > 0;
+  const centreX =
+    -PALACE.halfWidth + (sectionPrefixAxes + section.declaredAxes / 2) * solvedFacade.value.pitchM;
+  sectionPrefixAxes += section.declaredAxes;
+  return block(
+    section.declaredAxes * solvedFacade.value.pitchM,
+    deep ? PALACE.wingDepth + PALACE.protrude : PALACE.wingDepth,
+    centreX,
+    deep ? protrusionZ : innerZ,
+  );
+});
 const northWings = [block(PALACE.halfWidth * 2, PALACE.wingDepth, 0, -innerZ)];
 const sideWings = [
   block(PALACE.wingDepth, wingLength, innerX, 0),
@@ -116,11 +139,29 @@ const groundMaterial = new THREE.MeshLambertMaterial({
 });
 const ground = new THREE.Mesh(new THREE.PlaneGeometry(600, 600), groundMaterial);
 ground.rotation.x = -Math.PI / 2;
-palace.add(ground, ...southWings, ...northWings, ...sideWings, ...bands);
+palace.add(ground, ...southWings, ...northWings, ...sideWings, ...bands, facadeBuild.group);
+// Shadows return with the facade kit (architecture.md): every solid casts and receives.
+ground.receiveShadow = true;
+for (const child of palace.children) {
+  if (child instanceof THREE.Mesh && child !== ground) {
+    child.castShadow = true;
+    child.receiveShadow = true;
+  }
+}
 palace.visible = false; // §10: the first rendered frame is the procedural sky alone
 scene.add(palace);
 
 const sun = new THREE.DirectionalLight(0xffffff, 0); // intensity driven by the sample
+sun.castShadow = true;
+sun.shadow.mapSize.set(1024, 1024); // T1 default until quality tiers land
+sun.shadow.camera.left = -130;
+sun.shadow.camera.right = 130;
+sun.shadow.camera.top = 130;
+sun.shadow.camera.bottom = -130;
+sun.shadow.camera.near = 100;
+sun.shadow.camera.far = 2200;
+sun.shadow.bias = -0.0001;
+sun.shadow.normalBias = 0.25;
 scene.add(sun);
 const hemi = new THREE.HemisphereLight(0xffffff, 0x000000, 1); // colours driven by the sample
 scene.add(hemi);
@@ -201,6 +242,10 @@ const applyPresentation = (): void => {
   if (visible) {
     massingMaterial.opacity = presentation.massingOpacity;
     groundMaterial.opacity = presentation.massingOpacity;
+    const kitMaterial = facadeBuild.material;
+    kitMaterial.opacity = presentation.massingOpacity;
+    // Opaque once settled: depth-write rendering without the transparency pass.
+    kitMaterial.transparent = presentation.massingOpacity < 1;
   }
   scrub.hidden = arrival.phase !== 'settled';
   if (arrival.phase === 'settled' && resizePending) {
