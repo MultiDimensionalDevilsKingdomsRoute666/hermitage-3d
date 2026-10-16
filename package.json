@@ -14,7 +14,8 @@
     "typecheck": "tsc --noEmit",
     "lint": "biome check .",
     "test": "vitest run",
-    "validate": "pnpm typecheck && pnpm lint && pnpm test && pnpm build"
+    "budget": "node tools/budget.mjs",
+    "validate": "pnpm typecheck && pnpm lint && pnpm test && pnpm build && pnpm budget"
   },
   "dependencies": {
     "three": "0.186.1"
