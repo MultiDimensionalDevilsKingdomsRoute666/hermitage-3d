@@ -10,6 +10,8 @@ Each decision: what, why in one line, and the credible rejected alternative. New
 - **DEC-006 · Assets as code** — every committed binary in `public/assets/` regenerates from a committed bpy/gltf-transform script; Blender runs locally headless, never in CI. Fits an agentic workflow and makes art reproducible, reviewable and small. *Rejected: committing .blend files with hand edits — unreproducible, unverifiable.*
 - **DEC-007 · Signature feature: Petersburg Time** — the palace lives in the real sky at 59.9°N (white nights in June, a six-hour December day); interiors shift baked light states by the same clock. Culturally specific, lands in Phase 0, core is pure tested code. *Rejected: The Cut (dollhouse section) as primary — needs ≥ 2 interiors; adopted instead as a standing constraint (true coordinates) and the first v2 feature. Rastrelli's Line (ink-drawing transition) parked — risks reading as a shader demo.*
 - **DEC-008 · Camera: the museum visitor** — rail + composed stops + ±35° free look. *Rejected: free roam — collision systems, full coverage, uncomposed frames.*
+- **DEC-009 · Sky: hand-written analytic dome material** — Preetham (three.js Sky) is a daylight model; below the horizon it extrapolates a look that fails the defining white-night band (−8.6°…−4.6°). The dome is built around a controlled twilight continuation ([docs/design-sky-time.md](design-sky-time.md) §7). Consumes 1 of the ≤ 3 custom-material slots; 2 remain. *Rejected: three.js Sky as-is — costs no material slot, but visually fails the project's defining light state.*
+- **DEC-010 · No PMREM in Phase 0** — exterior massing is diffuse Lambert under a solar directional light + a palette-derived hemispheric light; `scene.environment` stays null. The bake jank failure mode is removed by removing the bake, not rate-limited ([docs/design-sky-time.md](design-sky-time.md) §7). *Rejected: PMREM regeneration on clock movement — a non-preemptible GPU stall returns at any cadence. Revisited by ADR in Phase 2 with interiors.*
 
 ## Resolved owner inputs (2026-10-15)
 
@@ -20,6 +22,4 @@ Each decision: what, why in one line, and the credible rejected alternative. New
 - **Openness:** public GitHub repository from the first commit.
 - **`/notes` page:** the facade spec is published in-app — a strong engineering signal at small UI cost.
 
-## Initial ADR debt (to materialise in Phase 0)
-
-DEC-001…008 get expanded into `docs/adr/0001…0008.md` during Phase 0, one file each, no new content — transcription only.
+Continuation ADRs (from Phase 0): DEC-009 (analytic dome over Preetham) and DEC-010 (no PMREM in Phase 0) are recorded above; DEC-001…010 get expanded into `docs/adr/0001…0010.md` as Phase 0 work proceeds, light files each — transcription plus the one necessary context paragraph.

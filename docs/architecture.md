@@ -47,10 +47,10 @@ A spline rail with composed stops; scroll, drag or arrow keys move along it; poi
 
 ## Lighting model
 
-- **Exterior:** analytic sun/sky from real date, time and the palace latitude; environment via PMREM regenerated only when the clock moves; one directional shadow with a frustum fitted to the visible facade; baked AO on the kit.
+- **Exterior:** analytic sun/sky from real date, time and the palace latitude — the binding contract is [design-sky-time.md](design-sky-time.md): a hand-written analytic dome under the frozen blend rules. **Phase 0 runs without PMREM and without shadow maps** (DEC-010); a fitted directional shadow and baked AO return with the facade kit (Phase 1); PMREM returns with interiors by ADR.
 - **Interior:** lightmap states blended by clock weights; emissive chandeliers + restrained bloom; one cube probe per room.
 - **Colour:** linear workflow, AgX tone mapping, exposure driven by sky luminance — dusk is dim and white night is luminous, not "night = blue filter".
-- Lightmap blending (custom material vs. per-room pre-blend) is **decided by measurement in Phase 2**; both options are bounded by the ≤ 3 custom materials rule.
+- Lightmap blending (custom material vs. per-room pre-blend) is **decided by measurement in Phase 2**; both options are bounded by the ≤ 3 custom materials rule. The weight function itself is frozen now — day/dusk/night-chandeliers with a dusk plateau −7…−4°, white-night minima wholly dusk ([design-sky-time.md](design-sky-time.md) §8).
 
 ## Asset pipeline: assets as code
 

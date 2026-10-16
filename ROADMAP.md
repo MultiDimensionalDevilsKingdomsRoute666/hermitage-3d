@@ -17,7 +17,7 @@ One machine: **MacBook Pro 2017 — 2-core i5 2.3 GHz, 8 GB RAM, Iris Plus 640.*
 
 ## Phases
 
-### Phase 0 · Mass & Sky — **not started**
+### Phase 0 · Mass & Sky — **in progress — design locked; sky-time contract accepted**
 
 - **Ships:** Palace Square with the palace as a true-scale white massing (an architect's card model) under the live Petersburg sky; title with the real time; hairline time control; shareable URL.
 - **Builds underneath:** repo, CI/CD with PR previews (Cloudflare Pages), typed store + app state machine, sky/solar module with tests, URL state, perf-budget doc, initial ADRs.
