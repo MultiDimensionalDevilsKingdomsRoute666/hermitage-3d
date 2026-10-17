@@ -106,6 +106,74 @@ export function parseGlbJson(buf) {
   return JSON.parse(buf.toString('utf8', 20, 20 + buf.readUInt32LE(12)));
 }
 
+/** Both GLB chunks: { json, bin } — bin is the binary chunk (may be empty). */
+export function parseGlb(buf) {
+  const json = parseGlbJson(buf);
+  const off = 20 + buf.readUInt32LE(12);
+  let bin = Buffer.alloc(0);
+  if (off + 8 <= buf.length && buf.readUInt32LE(off + 4) === BIN_CHUNK) {
+    bin = buf.subarray(off + 8, off + 8 + buf.readUInt32LE(off));
+  }
+  return { json, bin };
+}
+
+/**
+ * Single-buffer GLB repack: keep only bufferViews referenced by accessors (images were rewritten
+ * to external KTX2 first), remap bufferView indices and EXT_meshopt_compression chunk offsets
+ * deterministically (ascending copy, 4-byte pad between ranges). GLB allows exactly one buffer.
+ */
+export function repackBin(json, bin) {
+  const bvs = json.bufferViews ?? [];
+  const used = new Set();
+  for (const a of json.accessors ?? []) if (a.bufferView !== undefined) used.add(a.bufferView);
+  const keep = [...used].sort((x, y) => x - y);
+  const indexMap = new Map(keep.map((old, i) => [old, i]));
+  const ranges = [];
+  for (const old of keep) {
+    const bv = bvs[old];
+    ranges.push({ old: bv.byteOffset ?? 0, len: bv.byteLength });
+    const ext = bv.extensions?.EXT_meshopt_compression;
+    if (ext) ranges.push({ old: ext.byteOffset ?? 0, len: ext.byteLength });
+  }
+  ranges.sort((a, b) => a.old - b.old);
+  const parts = [];
+  const offsetMap = new Map(); // old offset -> new offset (aliased starts share one range)
+  let cursor = 0;
+  for (const r of ranges) {
+    if (offsetMap.has(r.old)) continue;
+    const pad = (4 - (cursor % 4)) % 4;
+    if (pad) {
+      parts.push(Buffer.alloc(pad));
+      cursor += pad;
+    }
+    offsetMap.set(r.old, cursor);
+    parts.push(bin.subarray(r.old, r.old + r.len));
+    cursor += r.len;
+  }
+  const bin2 = Buffer.concat(parts);
+  json.bufferViews = keep.map((old) => {
+    const bv = bvs[old];
+    const copy = { ...bv };
+    copy.byteOffset = offsetMap.get(bv.byteOffset ?? 0) ?? 0;
+    const ext = copy.extensions?.EXT_meshopt_compression;
+    if (ext) {
+      copy.extensions = {
+        ...copy.extensions,
+        EXT_meshopt_compression: {
+          ...ext,
+          buffer: 0,
+          byteOffset: offsetMap.get(ext.byteOffset ?? 0) ?? 0,
+        },
+      };
+    }
+    return copy;
+  });
+  for (const a of json.accessors ?? [])
+    if (a.bufferView !== undefined) a.bufferView = indexMap.get(a.bufferView);
+  json.buffers = [{ byteLength: bin2.length }];
+  return bin2;
+}
+
 export function writeGlb(json, bin) {
   const pad = (n) => (4 - (n % 4)) % 4;
   const jsonBuf = Buffer.from(JSON.stringify(json), 'utf8');

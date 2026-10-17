@@ -3,12 +3,14 @@
 // Draco forbidden), then GLB assembly with the albedo as an external KHR_texture_basisu reference.
 // Imported by tools/asset.mjs; exports ROOM (budget/lightmaps for the manifest) and optimise().
 import { copyFileSync, existsSync, readFileSync, writeFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
+import { join } from 'node:path';
 import {
   ChainError,
   ensureDir,
   GLTF_TRANSFORM,
   geometrySummary,
+  parseGlb,
+  repackBin,
   run,
   sha256,
   writeGlb,
@@ -38,6 +40,10 @@ const TOKTX_ARGS = [
   'bt709',
 ];
 // --keep-attributes: prune would otherwise drop TEXCOORD_1 ('lm'), which no material samples yet.
+// The chain ends in .glb on purpose: gltf-transform's meshopt layout is TWO buffers (fallback +
+// compressed chunk) and its .gltf writer keeps the compressed chunk uri-less — the data would be
+// dropped. A .glb output carries one implicit buffer (fallback + chunks + embedded images); the
+// embedded-image weight is dropped by repackBin after the images move to external KTX2.
 const CHAIN = [
   ['dedup'],
   ['prune', '--keep-attributes', 'TEXCOORD_1'],
@@ -60,23 +66,25 @@ export async function optimise({ roomId, stage, out }) {
   ensureDir(join(out, 'tex'));
   copyFileSync(ktx, join(out, ALBEDO_URI));
 
-  // 2. geometry chain; the last step writes .gltf so the buffer lands outside the binary
+  // 2. geometry chain; the final meshopt step writes .glb (one implicit buffer = a valid GLB)
   let input = raw;
   CHAIN.forEach(([cmd, ...flags], i) => {
-    const output = join(stage, `s${i + 1}.${cmd}.${i === CHAIN.length - 1 ? 'gltf' : 'glb'}`);
+    const output = join(stage, `s${i + 1}.${cmd}.glb`);
     run(GLTF_TRANSFORM.cmd, [...GLTF_TRANSFORM.args, cmd, input, output, ...flags]);
     input = output;
   });
 
-  // 3. assemble: single BIN buffer, external KTX2 image, convention checks, GLB write
-  const json = JSON.parse(readFileSync(input, 'utf8'));
-  const external = (json.buffers ?? []).map((b, i) => (b.uri ? i : -1)).filter((i) => i >= 0);
-  if (external.length !== 1 || external[0] !== 0)
+  // 3. assemble: parse the final .glb, externalize the image to KTX2, repack the buffer,
+  // convention checks, GLB write
+  // gltf-transform's GLB writer declares buffer 0 = the whole chunk (fallback regions + the
+  // compressed chunks, ext offsets absolute in buffer 0) plus a trailing {fallback:true}
+  // declaration for the compressed region — repackBin flattens it to the single GLB buffer.
+  const { json, bin } = parseGlb(readFileSync(input));
+  if (!json.buffers?.length || json.buffers[0].uri) {
     throw new ChainError(
-      `expected one external buffer at index 0, got ${JSON.stringify(json.buffers)}`,
+      `meshopt .glb must carry the implicit GLB buffer at index 0, got ${JSON.stringify(json.buffers)}`,
     );
-  const bin = readFileSync(join(dirname(input), decodeURIComponent(json.buffers[0].uri)));
-  json.buffers[0] = { byteLength: bin.length };
+  }
   if ((json.images ?? []).length !== 1 || (json.textures ?? []).length !== 1) {
     throw new ChainError(
       `_check expects exactly 1 image and 1 texture, got ${json.images?.length ?? 0}/${json.textures?.length ?? 0}`,
@@ -119,7 +127,8 @@ export async function optimise({ roomId, stage, out }) {
   if (geo.trianglesDrawn !== summary.triangles)
     throw new ChainError(`triangle drift: bpy ${summary.triangles} vs glb ${geo.trianglesDrawn}`);
 
-  const glb = writeGlb(json, bin);
+  const bin2 = repackBin(json, bin);
+  const glb = writeGlb(json, bin2);
   const glbPath = join(out, `${roomId}.glb`);
   writeFileSync(glbPath, glb);
   console.log(`gltf: ${glbPath} ${glb.length} B sha256 ${sha256(glb)}`);

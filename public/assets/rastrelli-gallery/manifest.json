@@ -1,0 +1,75 @@
+{
+  "id": "rastrelli-gallery",
+  "files": [
+    {
+      "path": "rastrelli-gallery.glb",
+      "bytes": 89652,
+      "sha256": "cdd2737fa31ff05e34f26564f176e313d108530bd4d7ae43e231914a411e013e",
+      "kind": "glb"
+    },
+    {
+      "path": "tex/plaster_dark.ktx2",
+      "bytes": 16320,
+      "sha256": "13d95b5161689ce73825368d5a99a2a5b613516d0f810198b2191987f6f20d2c",
+      "kind": "ktx2"
+    },
+    {
+      "path": "tex/stone_flags.ktx2",
+      "bytes": 16163,
+      "sha256": "20e57190d0043e894c71790e29cc549405e162ab33ca044c60e1613fe684e885",
+      "kind": "ktx2"
+    }
+  ],
+  "geometry": {
+    "meshes": [
+      {
+        "name": "shell",
+        "instances": 1,
+        "primitives": 2,
+        "triangles": 768
+      },
+      {
+        "name": "portal",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 30
+      },
+      {
+        "name": "pilaster",
+        "instances": 24,
+        "primitives": 1,
+        "triangles": 30
+      },
+      {
+        "name": "sconce",
+        "instances": 14,
+        "primitives": 2,
+        "triangles": 42
+      }
+    ],
+    "trianglesUnique": 870,
+    "trianglesDrawn": 2106,
+    "extensionsRequired": [
+      "EXT_meshopt_compression",
+      "KHR_mesh_quantization",
+      "KHR_texture_basisu"
+    ]
+  },
+  "lightmaps": {
+    "states": [],
+    "res": null,
+    "intensity": null
+  },
+  "budget": {
+    "trianglesMax": 110000,
+    "drawsMax": 25,
+    "textureBytesMax": 1000000,
+    "payloadBytesMax": 2000000
+  },
+  "toolchain": {
+    "blender": "4.2.23 LTS",
+    "toktx": "4.4.2",
+    "gltfTransformCli": "4.5.1",
+    "three": "0.186.1"
+  }
+}

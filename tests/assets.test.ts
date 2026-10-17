@@ -36,6 +36,7 @@ type Manifest = {
 type GltfJson = {
   extensionsUsed?: string[];
   extensionsRequired?: string[];
+  buffers?: { uri?: string; byteLength: number }[];
   images?: { uri?: string; mimeType?: string }[];
   textures?: { source?: number; extensions?: Record<string, unknown> }[];
   meshes: { name?: string; primitives: { attributes: Record<string, number> }[] }[];
@@ -95,6 +96,57 @@ describe('tools/toolchain.json', () => {
   it('blender and toktx are real versions, not placeholders', () => {
     expect(common.PLACEHOLDER.test(String(tc.blender))).toBe(false);
     expect(common.PLACEHOLDER.test(String(tc.toktx))).toBe(false);
+  });
+});
+
+// Generic room fence: every committed room directory with a manifest (canary + real rooms)
+// validates its contract rows, byte counts and sha256 recompute. Room-specific CONTENT assertions
+// live in the canary block below.
+const ROOMS_DIR = join(ROOT, 'public', 'assets');
+const committedRooms = existsSync(ROOMS_DIR)
+  ? readdirSync(ROOMS_DIR)
+      .sort()
+      .filter((n) => existsSync(join(ROOMS_DIR, n, 'manifest.json')))
+  : [];
+
+describe.each(committedRooms)('public/assets/%s (room contract)', (room) => {
+  const dir = join(ROOMS_DIR, room);
+  const manifest = readJson(join(dir, 'manifest.json')) as Manifest;
+  it('manifest contract (§8.1): keys, id, lightmaps shape, budget shape', () => {
+    expect(manifest.id).toBe(room);
+    expect(Object.keys(manifest).sort()).toEqual([
+      'budget',
+      'files',
+      'geometry',
+      'id',
+      'lightmaps',
+      'toolchain',
+    ]);
+    expect(manifest.lightmaps).toEqual({ states: [], res: null, intensity: null });
+    expect(manifest.budget.trianglesMax).toBeGreaterThan(0);
+    expect(manifest.budget.textureBytesMax).toBeGreaterThan(0);
+    expect(manifest.budget.payloadBytesMax).toBeGreaterThan(0);
+    expect(manifest.budget.payloadBytesMax).toBeLessThanOrEqual(common.ROOM_CAP_MAX);
+  });
+  it('rows recompute to the committed bytes + sha256, sorted, no unlisted artifacts', () => {
+    const onDisk = walk(dir).filter((p) => p !== 'manifest.json');
+    expect(manifest.files.map((f) => f.path)).toEqual(onDisk);
+    for (const f of manifest.files) {
+      const buf = readFileSync(join(dir, f.path));
+      expect(buf.length, f.path).toBe(f.bytes);
+      expect(sha(buf), f.path).toBe(f.sha256);
+    }
+  });
+  it('geometry summary matches the committed glb', () => {
+    const glbRow = manifest.files.find((f) => f.kind === 'glb');
+    const json = common.parseGlbJson(readFileSync(join(dir, glbRow?.path ?? '')));
+    expect(common.geometrySummary(json)).toEqual(manifest.geometry);
+  });
+  it('single-buffer GLB (strict GLB rule)', () => {
+    const glbRow = manifest.files.find((f) => f.kind === 'glb');
+    const json = common.parseGlbJson(readFileSync(join(dir, glbRow?.path ?? '')));
+    expect(json.buffers?.length).toBe(1);
+    expect(json.buffers?.[0]?.uri).toBeUndefined();
   });
 });
 
