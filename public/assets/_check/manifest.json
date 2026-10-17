@@ -1,0 +1,68 @@
+{
+  "id": "_check",
+  "files": [
+    {
+      "path": "_check.glb",
+      "bytes": 34880,
+      "sha256": "6d337decfc71847df446a706edf26e52ad218b519e3b9453d92810fc6dac186a",
+      "kind": "glb"
+    },
+    {
+      "path": "tex/albedo.ktx2",
+      "bytes": 981,
+      "sha256": "7497de07a0af9cb384408dd71b925f152b9a67cbd8fded35c836c04e29b90e7b",
+      "kind": "ktx2"
+    }
+  ],
+  "geometry": {
+    "meshes": [
+      {
+        "name": "floor",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 8
+      },
+      {
+        "name": "arch",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 576
+      },
+      {
+        "name": "sconce",
+        "instances": 1,
+        "primitives": 2,
+        "triangles": 72
+      },
+      {
+        "name": "baluster",
+        "instances": 3,
+        "primitives": 1,
+        "triangles": 28
+      }
+    ],
+    "trianglesUnique": 684,
+    "trianglesDrawn": 740,
+    "extensionsRequired": [
+      "EXT_meshopt_compression",
+      "KHR_mesh_quantization",
+      "KHR_texture_basisu"
+    ]
+  },
+  "lightmaps": {
+    "states": [],
+    "res": null,
+    "intensity": null
+  },
+  "budget": {
+    "trianglesMax": 5000,
+    "textureBytesMax": 500000,
+    "payloadBytesMax": 500000
+  },
+  "toolchain": {
+    "blender": "4.2.23 LTS",
+    "toktx": "4.4.2",
+    "gltfTransformCli": "4.5.1",
+    "three": "0.186.1"
+  }
+}

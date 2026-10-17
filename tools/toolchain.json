@@ -1,0 +1,6 @@
+{
+  "blender": "4.2.23 LTS",
+  "toktx": "4.4.2",
+  "gltfTransformCli": "4.5.1",
+  "three": "0.186.1"
+}

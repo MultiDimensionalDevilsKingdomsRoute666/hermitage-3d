@@ -300,7 +300,7 @@ Long task: GLTF parse of a ≤3 MB glb and each texture upload must stay <50 ms 
 | triangles: shell / stairs / balustrade+columns / chandeliers+sconces | 60k / — / 20k / 30k | 120k / 90k / 110k (inst.) / 60k | ≤380k in frustum (≤1.0 M) | HUD `data-tris` | r15 (bpy export counts), r16 (frustum) |
 | draw calls (instanced kit) | ≤25 | ≤60 | ≈60 room + post (T1 0) ≈ 60 (≤250) | HUD `data-draws` | r16 |
 | texture VRAM | 3×0.7 + 1.3 ≈ 3.4 MB | 3×2.7 + atlas ≈ 13.4 MB | peak with overlap ≈ 72 MB (≤256) | HUD ledger rows | r17 |
-| payload | glb 1.0 + lm 0.6 + atlas 0.4 ≈ 2.0 MB | glb 3.0 + lm 2.0 + atlas 2.0 ≈ 7.0 MB | per room ≤8 MB; shared basis ≈0.25 MB, own row | `tools/budget.mjs` payload rows | r15 |
+| payload | glb 1.0 + lm 0.6 + atlas 0.4 ≈ 2.0 MB | glb 3.0 + lm 2.0 + atlas 2.0 ≈ 7.0 MB | per room ≤8 MB; shared basis 584 862 B measured (wasm 527 333 + js 57 529, three 0.186.1), cap 600 000 B | `tools/budget.mjs` payload rows | r15 |
 | initial JS | +0 (rooms are lazy chunks) | +0 | engine additions ≤ +60 KB gzip (165,175 → ≤225 of 350,000) | existing budget | r16 |
 | first frame | unchanged (`#/` paints procedurally) | deep link: dark card + caption ≤1 s, frame ≤3 s on device | device gate | headed only | r19 |
 

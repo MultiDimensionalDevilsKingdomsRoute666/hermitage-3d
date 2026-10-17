@@ -8,7 +8,6 @@ import { gzipSync } from 'node:zlib';
 
 const LIMIT_BYTES = 350000;
 const distAssets = join(dirname(fileURLToPath(import.meta.url)), '..', 'dist', 'assets');
-
 let total = 0;
 let chunks = 0;
 try {
@@ -21,9 +20,29 @@ try {
   console.error('budget: dist/assets missing — run pnpm build first');
   process.exit(1);
 }
-
 console.log(`budget: ${chunks} js chunk(s), ${total} gzip bytes of ${LIMIT_BYTES}`);
 if (total > LIMIT_BYTES) {
   console.error('budget: exceeded — failing build stage');
+  process.exit(1);
+}
+
+// Payload rows — design-staircase.md §3.3/§9, DEC-016. Additive: the JS rows above are untouched
+// and still gate first. Raw bytes of the committed tree, no git plumbing: each public/assets/<room>/
+// vs its manifest's budget.payloadBytesMax (≤ 8 000 000), the exterior row (4 000 000 B), the
+// shared public/basis/ row (500 000 B). Every row prints; any breach exits 1 naming room and row.
+import { collectPayloadRows } from './common.mjs';
+
+let breached = 0;
+for (const r of collectPayloadRows()) {
+  console.log(
+    `budget: payload ${r.row} ${r.id}: ${r.bytes} B of ${r.cap} B ${r.ok ? 'ok' : 'FAIL'}${r.error ? ` — ${r.error}` : ''}`,
+  );
+  if (!r.ok) {
+    console.error(`budget: payload breach — row "${r.row}" room "${r.id}"`);
+    breached += 1;
+  }
+}
+if (breached > 0) {
+  console.error(`budget: ${breached} payload row(s) breached — failing build stage`);
   process.exit(1);
 }
