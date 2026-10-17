@@ -14,6 +14,7 @@
     "typecheck": "tsc --noEmit",
     "lint": "biome check .",
     "test": "vitest run",
+    "e2e": "playwright test",
     "budget": "node tools/budget.mjs",
     "validate": "pnpm typecheck && pnpm lint && pnpm test && pnpm build && pnpm budget"
   },
@@ -22,6 +23,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.15",
+    "@playwright/test": "1.64.1",
     "@types/three": "0.186.0",
     "typescript": "7.0.2",
     "vite": "8.3.4",

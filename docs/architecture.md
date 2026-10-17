@@ -66,8 +66,8 @@ Tiers: **T0** (low: DPR 1, no bloom, 1 K shadow, near-LOD instancing) · **T1** 
 
 | Metric | Budget | Enforced by |
 |---|---|---|
-| First frame, exterior, T1, ~10 Mbps | ≤ 3 s | CI timing test |
-| Initial JS | ≤ 350 KB gzip | size-limit |
+| First frame, exterior, T1, ~10 Mbps | ≤ 3 s | Device gate on the reference Mac at each phase gate; CI smoke only bounds hangs (`#title` ≤ 15 s on software GL) |
+| Initial JS | ≤ 350 KB gzip | gzip budget script |
 | Exterior payload | ≤ 4 MB | asset budget script |
 | Per-room payload | ≤ 8 MB | asset budget script |
 | Draw calls, any frame | ≤ 250 | HUD + Playwright assertion |
@@ -80,7 +80,16 @@ Tiers: **T0** (low: DPR 1, no bloom, 1 K shadow, near-LOD instancing) · **T1** 
 
 **Reference device:** MacBook Pro 2017 (2-core i5, 8 GB, Iris Plus 640) — the only machine. T1 is the goal on it; T0 is the hard floor. Budget numbers are hypotheses until Phase 1 measures them; reneging on a budget requires an ADR, not a quiet change.
 
-**Unproven (flagged honestly):** golden-frame tests run in CI on software GL. If they prove flaky there, goldens run locally on the reference Mac and CI keeps smoke + timing. Prove in Phase 0/1.
+**Golden frames — implemented arrangement:** CI runs only the Playwright *smoke* project, in a
+separate `e2e` job on software GL (SwiftShader): deterministic T1 and T0 boots, HUD `data-*` budget
+assertions (draw calls ≤ 250, triangles ≤ 1.0 M), tier-label checks, generous hang bounds (`#title`
+≤ 15 s, settled ≤ 45 s) and a clean-console gate. Pixel goldens (`tests/e2e/golden.spec.ts`: noon
+and white night, deterministic mode, `#scene` only, `maxDiffPixelRatio` 0.01) run locally on the
+reference Mac's GPU. This is the charter's documented "goldens run locally" fallback, adopted
+deliberately rather than after observed flakiness: software-GL output is deterministic per machine,
+but baselines are not portable across platforms, so CI goldens would need their own generated
+baselines and still would not vouch for the real GPU. Borrowed-hardware CI goldens remain an option
+to revisit.
 
 ## Delivery & security
 
@@ -110,4 +119,7 @@ Hashed asset URLs with immutable caching · strict CSP, no inline scripts · no 
 
 ## CI on every PR
 
-typecheck → Biome → Vitest → build → size-limit → asset budget script → Playwright smoke (+ golden frames, deterministic mode — see the caveat above) → preview deploy on Cloudflare Pages. `main` deploys production.
+typecheck → Biome → Vitest → build → gzip budget script → preview deploy on Cloudflare Pages.
+`main` deploys production. `checks` keeps that list; a separate `e2e` job runs the Playwright smoke
+project on software GL (`--project=chromium`) with the HUD budget assertions, and golden frames are
+local-only (see the caveat above).
