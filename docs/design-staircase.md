@@ -1,6 +1,6 @@
 # Phase 2 design — the staircase
 
-Status: draft — planning-round 14; decisions pending owner disposition.
+Status: adopted — planning-round 14 · owner dispositions 2026-10-17: Q1–Q10 accepted **by default** (no overrides); DEC-013…018 + ADR-0013 recorded in the registers; the lightmap-blend ADR stays deferred to r17 measurement (Q5's own plan).
 Scope: ROADMAP phase 2 "The Staircase" only. Planning; no code, no measurements. Rounds 15–19 implement.
 Provenance labels: **sourced** (citation candidate → ATTRIBUTIONS.md) · **declared** (→ docs/artistic-license.md) · **derived** (derivation stated inline).
 Frozen inputs this doc never edits: §8 lightmap weights (src/sky/lightmap-weights.ts), budget table, URL grammar, charter non-goals.
@@ -339,6 +339,7 @@ If the r16 initial-JS headroom (+60 KB) proves optimistic, pre-split r16 into r1
 ## 12. Open questions — orchestrator dispositions
 
 Each: decision · blocks · options · recommendation · default if silent.
+Dispositions (owner, 2026-10-17): **all ten defaults accepted** — the room graph, airlock seam, 2048²/1024² state split, measurement plan §4.4, static probe §5, door-fade arch, post-stack (a), baked-opaque windows and the dark-card cold load all stand as written; Q5 keeps its measurement plan, so the blend ADR is deliberately still unwritten until r17 measures.
 
 **Q1 Room segmentation for phase 2** — blocks r15 (kit list), r16 (registry). (a) two rooms (gallery, jordan) + landing airlock to ∅ · (b) merge the gallery into jordan as one approach sequence (one room, one manifest, one 8 MB cap for everything) · (c) three rooms incl. a ground-floor Jordan Hall colonnade (spends a 3rd of 7 lifetime rooms). Trade: (a) keeps the compression beat its own light-state set and leaves jordan 7 MB headroom; (b) simplest runtime but the gallery eats jordan's payload and loses its own bakes; (c) closest to history, costs a lifetime slot and a round. **Recommend (a). Default (a).**
 
