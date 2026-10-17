@@ -3,8 +3,8 @@
   "files": [
     {
       "path": "jordan.glb",
-      "bytes": 242576,
-      "sha256": "6747683afa97cdf19ff379e4430ff9b603f327d230b95ad0d8b40c4f2f75a37f",
+      "bytes": 439692,
+      "sha256": "b64593868d8bc21c22eb4c794f942d0fc1f2bf90d53d1166302806b47f31da40",
       "kind": "glb"
     },
     {
@@ -45,10 +45,52 @@
         "instances": 1,
         "primitives": 1,
         "triangles": 24
+      },
+      {
+        "name": "stairs",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 864
+      },
+      {
+        "name": "rail",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 192
+      },
+      {
+        "name": "portal",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 260
+      },
+      {
+        "name": "chandelier",
+        "instances": 1,
+        "primitives": 2,
+        "triangles": 356
+      },
+      {
+        "name": "baluster",
+        "instances": 151,
+        "primitives": 1,
+        "triangles": 68
+      },
+      {
+        "name": "column",
+        "instances": 2,
+        "primitives": 1,
+        "triangles": 68
+      },
+      {
+        "name": "sconce",
+        "instances": 10,
+        "primitives": 2,
+        "triangles": 24
       }
     ],
-    "trianglesUnique": 2794,
-    "trianglesDrawn": 2794,
+    "trianglesUnique": 4626,
+    "trianglesDrawn": 15110,
     "extensionsRequired": [
       "EXT_meshopt_compression",
       "KHR_mesh_quantization",

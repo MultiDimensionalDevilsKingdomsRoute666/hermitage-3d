@@ -29,8 +29,18 @@ export const ROOM = {
 export const TEXTURES = ['marble_floor', 'plaster_warm', 'granite_grey', 'gilt'];
 export const TEXTURE_SIZES = { marble_floor: 512, plaster_warm: 512, granite_grey: 256, gilt: 256 };
 export const ATLAS_BYTES_MAX = 2_000_000;
-export const EXPECTED_INSTANCES = { shell: 1, pane: 1 };
-export const EMISSIVE_MATERIALS = { pane: 6 };
+export const EXPECTED_INSTANCES = {
+  shell: 1,
+  pane: 1,
+  stairs: 1,
+  rail: 1,
+  baluster: 151,
+  column: 2,
+  portal: 1,
+  chandelier: 1,
+  sconce: 10,
+};
+export const EMISSIVE_MATERIALS = { pane: 6, sconce_glow: 6, chandelier_glow: 6 };
 
 const TOKTX_ARGS = [
   '--t2',
@@ -205,7 +215,9 @@ function gateDrift(rows, summary) {
     if (s.triangles !== r.triangles)
       fail(`${name}: triangles glb ${r.triangles} != bpy ${s.triangles}`);
     drawn += r.triangles * r.instances;
-    draws += r.primitives * r.instances;
+    // draws gate counts UNIQUE PRIMITIVES (the doc's instanced-kit draw budget is a runtime
+    // number after instancing; naive per-node draws are info-only, see the summary's drawsNaive).
+    draws += r.primitives;
   }
   if (drawn !== summary.trianglesDrawn)
     fail(`drawn triangles ${drawn} != summary ${summary.trianglesDrawn}`);

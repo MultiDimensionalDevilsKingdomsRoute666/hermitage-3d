@@ -300,11 +300,13 @@ Long task: GLTF parse of a ≤3 MB glb and each texture upload must stay <50 ms 
 | triangles: shell / stairs / balustrade+columns / chandeliers+sconces | 60k / — / 20k / 30k | 120k / 90k / 110k (inst.) / 60k | ≤380k in frustum (≤1.0 M) | HUD `data-tris` | r15 (bpy export counts), r16 (frustum) |
 | draw calls (instanced kit) | ≤25 | ≤60 | ≈60 room + post (T1 0) ≈ 60 (≤250) | HUD `data-draws` | r16 |
 | texture VRAM | 3×0.7 + 1.3 ≈ 3.4 MB | 3×2.7 + atlas ≈ 13.4 MB | peak with overlap ≈ 72 MB (≤256) | HUD ledger rows | r17 |
-| payload | glb 1.0 + lm 0.6 + atlas 0.4 ≈ 2.0 MB | glb 3.0 + lm 2.0 + atlas 2.0 ≈ 7.0 MB | per room ≤8 MB; shared basis 584 862 B measured (wasm 527 333 + js 57 529, three 0.186.1), cap 600 000 B | `tools/budget.mjs` payload rows | r15 |
+| payload | declared ≈2.0 MB; measured r15b ≈124 KB (glb + 2 ktx2; lm lands r17) | declared ≈7.0 MB; measured r15c ≈527 KB (glb 439 692 + 4 ktx2 84 512 + manifest; lm lands r17) | per room ≤8 MB; shared basis 584 862 B measured (wasm 527 333 + js 57 529, three 0.186.1), cap 600 000 B | `tools/budget.mjs` payload rows | r15 |
 | initial JS | +0 (rooms are lazy chunks) | +0 | engine additions ≤ +60 KB gzip (165,175 → ≤225 of 350,000) | existing budget | r16 |
 | first frame | unchanged (`#/` paints procedurally) | deep link: dark card + caption ≤1 s, frame ≤3 s on device | device gate | headed only | r19 |
 
 Gates map to the existing CI: the HUD `data-*` contract (extended with room, ledger and hold amounts) + the r15 budget.mjs payload rows. Jordan at 7.0 of 8 MB is the tightest line — the gallery stays lean to leave the hero its headroom; if jordan overruns, drop the albedo atlas to 1024² before touching lightmap resolution.
+
+Measured at r15 (committed bpy scripts, byte-identical regeneration, sha256 manifests validated in CI): gallery **2 106** drawn tris (shell 768 · pilasters 30×24 · sconces 42×14 · portal 30; 6 unique primitives, naive node draws 55) and jordan **15 110** (shell 2 770 · stairs 864 · rail 192 · balusters 68×151 · columns 68×2 · portal 260 incl. 2 vases · chandelier 356 · sconces 24×10; 12 unique primitives, naive node draws 181 info-only) — every cap holds with ≥25× headroom; the fixed 64² lightmap grid carries envelope 1 501 + kit 938 of 4 096 cells (jordan). The declared ~60k/~120k shell projections were caps, not targets; r16/r17 re-measure frustum and runtime draws.
 
 ---
 
