@@ -1,0 +1,75 @@
+{
+  "id": "jordan",
+  "files": [
+    {
+      "path": "jordan.glb",
+      "bytes": 242576,
+      "sha256": "6747683afa97cdf19ff379e4430ff9b603f327d230b95ad0d8b40c4f2f75a37f",
+      "kind": "glb"
+    },
+    {
+      "path": "tex/gilt.ktx2",
+      "bytes": 8540,
+      "sha256": "f9763ce40dc30aafe6100a7e79bd317a85108fb4d58d14fa31fb814d163420af",
+      "kind": "ktx2"
+    },
+    {
+      "path": "tex/granite_grey.ktx2",
+      "bytes": 14007,
+      "sha256": "1e9a689e9ef766c7c540026af49bd0d741bff5ca61e5c9eb36f32777b2c544a6",
+      "kind": "ktx2"
+    },
+    {
+      "path": "tex/marble_floor.ktx2",
+      "bytes": 39545,
+      "sha256": "4f71960e64c2ce437da539a3929b8a850969649f2257bfb8a2f8f3b2adaa4b88",
+      "kind": "ktx2"
+    },
+    {
+      "path": "tex/plaster_warm.ktx2",
+      "bytes": 22420,
+      "sha256": "c6359ecc19a86380a2831d8da8479b86ea9ffa87dbbb953b9d26542f1984fef6",
+      "kind": "ktx2"
+    }
+  ],
+  "geometry": {
+    "meshes": [
+      {
+        "name": "shell",
+        "instances": 1,
+        "primitives": 2,
+        "triangles": 2770
+      },
+      {
+        "name": "pane",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 24
+      }
+    ],
+    "trianglesUnique": 2794,
+    "trianglesDrawn": 2794,
+    "extensionsRequired": [
+      "EXT_meshopt_compression",
+      "KHR_mesh_quantization",
+      "KHR_texture_basisu"
+    ]
+  },
+  "lightmaps": {
+    "states": [],
+    "res": null,
+    "intensity": null
+  },
+  "budget": {
+    "trianglesMax": 380000,
+    "drawsMax": 60,
+    "textureBytesMax": 4000000,
+    "payloadBytesMax": 7000000
+  },
+  "toolchain": {
+    "blender": "4.2.23 LTS",
+    "toktx": "4.4.2",
+    "gltfTransformCli": "4.5.1",
+    "three": "0.186.1"
+  }
+}
