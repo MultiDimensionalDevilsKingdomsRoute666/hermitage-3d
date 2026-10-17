@@ -26,7 +26,7 @@ Pure modules complete and gate-green: solar (NOAA, four contract vectors at 1e-5
 - **Exit:** URL live · CI green · devlog #0.
 - *Split rule: if it stalls, split 0a (repo/CI/sky module) from 0b (massing + time UI). Never widen.*
 
-### Phase 1 · The Facade — **planning**
+### Phase 1 · The Facade — **complete 2026-10-17** — exit: budgets met on the reference device · grammar documented and tested ([docs/devlog/0001.md](docs/devlog/0001.md) holds the device-pass numbers and the §11 verdict)
 
 - **Ships:** the Palace Square facade fully articulated, hundreds of window surrounds catching low sun; the Alexander Column as a simple scale prop; the General Staff building as massing; walk or fly the square.
 - **Builds underneath:** facade grammar + solver + kit of parts (~25 scripted pieces); instancing; shadows; quality tiers + boot microbenchmark; debug HUD; golden-frame tests; `/notes` page v1 with the facade spec viewer.
