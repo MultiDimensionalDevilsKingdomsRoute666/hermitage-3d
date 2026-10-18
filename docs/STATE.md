@@ -8,25 +8,18 @@ file in the same session.
 
 ## Live state
 
-- Updated: 2026-10-18 · measured on the r16a integration commit `268e277`.
-- Round 16 **in flight**. **16a integrated** (`268e277`): registry + airlock FSM + loaders +
-  rooms list/scaffolds + manifest fetcher + main.ts wiring. Adjudications: contract static on
-  the room entry (list = single source, graph fences whole); airlock `to` derived relative to
-  `from` (one def serves both directions, cold entry lands on the def's `to`); boot deep link
-  resolves as a cold entry; dispose-from unmounts synchronously (a same-tick chained entry
-  must not see stale roomWork); gallery bounds cover the committed passage+gallery model
-  (bpy constants). **16b brief open**: `docs/briefs/BRIEF-round-16b-ledger-hud.md` —
-  specialist: src/engine/ledger.ts (pure, §8.3 layer 1) + HUD rows (data-room, data-hold-ms,
-  data-ledger-bytes) + node tests. Orchestrator after the reply: RoomLoadContext gains
-  `ledger` + rooms register/release in load/unmount + main.ts ledger wiring + dev assertion
-  (renderer.info.memory ±0 vs post-boot baseline) + e2e smoke graph walk + ROUNDS row 16 +
-  brief deletion. Gate: smoke walks #/ → gallery → jordan → gallery → #/ with the ledger back
-  to the boot baseline and a clean console.
-- validate green: 237 tests, 14 files (vitest node) · build 6 js chunks, **235,960** gzip of
-  350,000 — cap untouched; the ≤225,000 r16 projection is re-marked measured in §9 (the loader
-  stack GLTFLoader+KTX2+Meshopt cost more than the +60 KB estimate; headroom 114,040). e2e
-  smoke green locally (SwiftShader). ⚠ ROUNDS row 15 / git log say «204 tests» — undercount;
-  corrected numbers: 208 pre-16a → 237 now; note in the round-16 ROUNDS row.
+- Updated: 2026-10-18 · measured on the round-16 close commit (`d876d59`).
+- Round 16 **closed** (gate met): runtime room streaming — registry + airlock FSM + loaders +
+  rooms list/scaffolds + manifest fetcher + main.ts wiring (16a, `268e277`) and the asserted
+  disposal ledger + HUD rows (16b, `d876d59`). The e2e smoke walks the graph
+  #/ → gallery → jordan → queued retarget mid-transit → #/ with the ledger rows back at boot
+  values and a clean console (ROUNDS row 16). Next: **round 17 lightmaps** (agenda item 2) —
+  no brief written yet.
+- validate green: **254** tests, 16 files (vitest node) · build 6 js chunks, **236,663** gzip
+  of 350,000 — cap untouched; the ≤225,000 r16 projection is re-marked measured in §9 (the
+  loader stack GLTFLoader+KTX2+Meshopt cost more than the +60 KB estimate; headroom 113,337).
+  e2e smoke green locally (SwiftShader). ⚠ Historical rows/log lines before round 16 say
+  «204 tests» — undercount; the pre-round number was 208 (recorded in row 16).
 - Payload rows (budget.mjs, all ok): _check 62,161 of 500,000 · jordan 526,735 of 7,000,000 ·
   rastrelli-gallery 123,749 of 2,000,000 · exterior 0 of 4,000,000 · basis 584,862 of 600,000
   (**basis is tight — never add anything to /basis/**).
@@ -36,8 +29,8 @@ file in the same session.
   4,096 cells.
 - r16 interim simplifications still standing: deep-link cold load renders sky until the room
   is ready (dark-card choreography r17/r18); camera snaps to the entry stop / S0 (rail r18);
-  the r16 ledger registers payload bytes only (VRAM-from-format×mips fidelity and RT
-  registers are r17).
+  the ledger registers payload bytes only (VRAM-from-format×mips fidelity and RT registers
+  are r17).
 
 ## Standing protocol
 
