@@ -81,9 +81,16 @@ export type RegistryEntry =
 export type RoomEntry = Extract<RegistryEntry, { kind: 'room' }>;
 export type RoomPayload = Readonly<{ glb: ArrayBuffer; ktx2: ReadonlyMap<string, ArrayBuffer> }>;
 export type RoomObject = unknown;
+/** A decoded runtime texture (three's Texture, opaque here — the pure core never names three). */
+export type RoomTexture = unknown;
 export interface RoomAssetService {
   fetchRoom(manifest: RoomManifest, signal: AbortSignal): Promise<RoomPayload>;
   mountParsed(roomId: RoomId, payload: RoomPayload): Promise<RoomObject>;
+  /** §4: decode the room's lm ktx2 rows (hold-only; the caller maps paths via blend's stateOfPath). */
+  decodeRoomTextures(
+    roomId: RoomId,
+    payload: RoomPayload,
+  ): Promise<ReadonlyMap<string, RoomTexture>>;
   disposeParsed(object: RoomObject): void;
 }
 export interface RoomScene {

@@ -62,6 +62,29 @@ export function createLoaders(renderer: WebGLRenderer): Loaders {
       for (const [row, bytes] of rows) if (row.kind === 'ktx2') ktx2Map.set(row.path, bytes);
       return { glb: glbRow[1], ktx2: ktx2Map };
     },
+    /** §4: decode only the lm rows — the glb's own ktx2 albedos already decoded inside parse. */
+    async decodeRoomTextures(roomId, payload) {
+      const out = new Map<string, RoomObject>();
+      await Promise.all(
+        [...payload.ktx2]
+          .filter(([path]) => path.startsWith('lm/'))
+          .map(
+            ([path, bytes]) =>
+              new Promise<void>((resolve, reject) => {
+                ktx2.parse(
+                  bytes,
+                  (texture: unknown) => {
+                    out.set(path, texture);
+                    resolve();
+                  },
+                  reject,
+                );
+              }),
+          ),
+      );
+      if (out.size === 0) throw new Error(`decodeRoomTextures: ${roomId} has no lm rows`);
+      return out;
+    },
     async mountParsed(roomId: RoomId, payload: RoomPayload): Promise<RoomObject> {
       const blobUrls = new Map<string, string>();
       for (const [key, bytes] of payload.ktx2) {

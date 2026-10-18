@@ -4,6 +4,7 @@
 import './style.css';
 import * as THREE from 'three';
 import { AIRLOCKS, ENTRIES } from '../rooms/index';
+import { applyWeights } from './assets/blend-gl';
 import { createLoaders } from './assets/loaders';
 import { fetchManifest } from './assets/manifests';
 import { SOUTH_FACADE, WINDOW_ROWS } from './content/facade-spec';
@@ -25,6 +26,7 @@ import { solveSouthFacade } from './procedural/facade-solver';
 import { type SkySample, sampleSky } from './sky/appearance';
 import type { ArrivalState } from './sky/arrival';
 import { advanceArrival, initialArrival, presentationForArrival } from './sky/arrival';
+import { lightmapWeights } from './sky/lightmap-weights';
 import { createSkyRig } from './sky/rig';
 import {
   canonicalAt,
@@ -43,6 +45,7 @@ import {
   rollingMedianFrameMs,
 } from './ui/hud';
 import { advanceTransit, beginTransit, finishTransit, type TransitState } from './world/airlock';
+import { blendPayload } from './world/blend';
 import {
   airlockEntering,
   type NodeHandle,
@@ -296,6 +299,17 @@ let queuedTarget: NodeHandle | null = null;
 let transitStarted = false;
 const roomWork = new Map<RoomId, Promise<void>>();
 const roomModules = new Map<RoomId, RoomModule>();
+const intensityByRoom = new Map<RoomId, number>(); // §4: the manifest's lightmap scalar
+
+// The room whose baked light applies this frame: the node being entered during a transit,
+// otherwise the active node. The square owns none; unregistered rooms no-op in blend-gl.
+const blendRoom = (): RoomId | null => {
+  const st = transit?.state;
+  if (st !== undefined && st.phase !== 'idle') {
+    return st.to !== null && st.to !== 'square' ? st.to : null;
+  }
+  return activeNode !== null && activeNode !== 'square' ? activeNode : null;
+};
 
 const roomEntryOf = (id: RoomId): RoomEntry => {
   const hit = ENTRIES.find((e): e is RoomEntry => e.kind === 'room' && e.id === id);
@@ -310,6 +324,11 @@ const ensureRoom = (id: RoomId): Promise<void> => {
     // r16 interim: no external abort source exists until the rail prefetch lands (r18).
     const controller = new AbortController();
     const manifest = await fetchManifest(id, controller.signal);
+    const lmIntensity = manifest.lightmaps.intensity;
+    if (lmIntensity === null || !Number.isFinite(lmIntensity) || lmIntensity <= 0) {
+      throw new Error(`zimny: room ${id} manifest has no usable lightmap intensity`);
+    }
+    intensityByRoom.set(id, lmIntensity);
     const module = await roomEntryOf(id).thunk();
     roomModules.set(id, module); // disposeFrom needs the module synchronously at exit
     await module.load(roomCtx, manifest, controller.signal);
@@ -727,6 +746,18 @@ const tick = (timeMs: number): void => {
   // Coalesced scrub preview: newest request only, one sample per frame (§9).
   if (pendingEpochMs !== null && pendingEpochMs !== epochMs) applyEpoch(pendingEpochMs);
   pendingEpochMs = null;
+
+  // Interior lightmap blend (§4.1): the active room's baked states ride the frozen §8
+  // weights; the elevation comes from the frame's sun sample (y = sin of the elevation).
+  const blendRoomId = blendRoom();
+  if (blendRoomId !== null) {
+    const roomIntensity = intensityByRoom.get(blendRoomId);
+    if (roomIntensity !== undefined) {
+      const elevationDeg =
+        (Math.asin(Math.max(-1, Math.min(1, sample.sunDirection[1]))) * 180) / Math.PI;
+      applyWeights(blendRoomId, blendPayload(lightmapWeights(elevationDeg)), roomIntensity);
+    }
+  }
 
   // Airlock transit: one FSM beat per frame; events swap/mount/dispose (§2.4).
   if (transit !== null) {
