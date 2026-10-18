@@ -301,7 +301,7 @@ Long task: GLTF parse of a ≤3 MB glb and each texture upload must stay <50 ms 
 | draw calls (instanced kit) | ≤25 | ≤60 | ≈60 room + post (T1 0) ≈ 60 (≤250) | HUD `data-draws` | r16 |
 | texture VRAM | 3×0.7 + 1.3 ≈ 3.4 MB | 3×2.7 + atlas ≈ 13.4 MB | peak with overlap ≈ 72 MB (≤256) | HUD ledger rows | r17 |
 | payload | declared ≈2.0 MB; measured r15b ≈124 KB (glb + 2 ktx2; lm lands r17) | declared ≈7.0 MB; measured r15c ≈527 KB (glb 439 692 + 4 ktx2 84 512 + manifest; lm lands r17) | per room ≤8 MB; shared basis 584 862 B measured (wasm 527 333 + js 57 529, three 0.186.1), cap 600 000 B | `tools/budget.mjs` payload rows | r15 |
-| initial JS | +0 (rooms are lazy chunks) | +0 | engine additions ≤ +60 KB gzip (165,175 → ≤225 of 350,000) | existing budget | r16 |
+| initial JS | +0 (rooms are lazy chunks) | +0 | engine additions ≤ +60 KB gzip (165,175 → ≤225 of 350,000); measured r16a: +70,785 gzip (165,175 → 235,960 of 350,000) — the loader stack (GLTFLoader + KTX2Loader + MeshoptDecoder) costs more than the estimate projected; the 350,000 CI cap is untouched with 114,040 headroom, r16b adds ~1 KB (ledger + HUD rows) | existing budget | r16 (measured) |
 | first frame | unchanged (`#/` paints procedurally) | deep link: dark card + caption ≤1 s, frame ≤3 s on device | device gate | headed only | r19 |
 
 Gates map to the existing CI: the HUD `data-*` contract (extended with room, ledger and hold amounts) + the r15 budget.mjs payload rows. Jordan at 7.0 of 8 MB is the tightest line — the gallery stays lean to leave the hero its headroom; if jordan overruns, drop the albedo atlas to 1024² before touching lightmap resolution.
@@ -321,7 +321,7 @@ Measured at r15 (committed bpy scripts, byte-identical regeneration, sha256 mani
 | r18 camera rail | src/camera (spline, stops, look limits, inputs, reduced-motion cuts), captions + a11y; may split r18a rail / r18b stops+captions — pre-split further to rail+inputs vs stops+captions+a11y if scopes crowd | all 10 stops reachable by keyboard; reduced-motion cuts verified; goldens J1/J4/G1 stable | src/world, src/assets, materials |
 | r19 phase-2 exit | contract check per room, device gates headed, disposal verified, devlog #0002 with hero frame, URL updated, ATTRIBUTIONS/artistic-license synced, ROADMAP line closed | deployed URL; all §9 rows re-marked measured | everything except docs and gate-failure fixes |
 
-If the r16 initial-JS headroom (+60 KB) proves optimistic, pre-split r16 into r16a (registry + airlock + loaders) and r16b (ledger + smoke walk).
+If the r16 initial-JS headroom (+60 KB) proves optimistic, pre-split r16 into r16a (registry + airlock + loaders) and r16b (ledger + smoke walk). — Happened as advised: measured r16a is 235,960 gzip (the +60 KB estimate missed by ~11 KB), the 350,000 cap holds.
 
 ---
 

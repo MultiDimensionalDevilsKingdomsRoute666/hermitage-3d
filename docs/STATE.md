@@ -8,25 +8,36 @@ file in the same session.
 
 ## Live state
 
-- Updated: 2026-10-18 · measured this session on a clean tree at `abbc203`.
-- Round 16 **open**; brief **16a** sent to the specialist (awaiting reply) —
-  `docs/briefs/BRIEF-round-16a-runtime-core.md`: src/world/registry.ts + src/world/airlock.ts +
-  src/assets/loaders.ts + 2 test files. Rooms list/scaffolds, manifest fetcher, main.ts wiring =
-  orchestrator integration after the reply. Then **16b**: disposal ledger (src/engine/ledger.ts)
-  + HUD rows (data-room, ledger, data-hold-ms) + smoke walk + docs sync.
-- validate green: 208 tests, 11 files (vitest node) · build 3 js chunks, **165,175** gzip of 350,000.
-  ⚠ ROUNDS row 15 / git log say «204 tests» — undercount; corrected number is 208. Note it in the
-  round-16 ROUNDS row.
+- Updated: 2026-10-18 · measured on the r16a integration commit `268e277`.
+- Round 16 **in flight**. **16a integrated** (`268e277`): registry + airlock FSM + loaders +
+  rooms list/scaffolds + manifest fetcher + main.ts wiring. Adjudications: contract static on
+  the room entry (list = single source, graph fences whole); airlock `to` derived relative to
+  `from` (one def serves both directions, cold entry lands on the def's `to`); boot deep link
+  resolves as a cold entry; dispose-from unmounts synchronously (a same-tick chained entry
+  must not see stale roomWork); gallery bounds cover the committed passage+gallery model
+  (bpy constants). **16b brief open**: `docs/briefs/BRIEF-round-16b-ledger-hud.md` —
+  specialist: src/engine/ledger.ts (pure, §8.3 layer 1) + HUD rows (data-room, data-hold-ms,
+  data-ledger-bytes) + node tests. Orchestrator after the reply: RoomLoadContext gains
+  `ledger` + rooms register/release in load/unmount + main.ts ledger wiring + dev assertion
+  (renderer.info.memory ±0 vs post-boot baseline) + e2e smoke graph walk + ROUNDS row 16 +
+  brief deletion. Gate: smoke walks #/ → gallery → jordan → gallery → #/ with the ledger back
+  to the boot baseline and a clean console.
+- validate green: 237 tests, 14 files (vitest node) · build 6 js chunks, **235,960** gzip of
+  350,000 — cap untouched; the ≤225,000 r16 projection is re-marked measured in §9 (the loader
+  stack GLTFLoader+KTX2+Meshopt cost more than the +60 KB estimate; headroom 114,040). e2e
+  smoke green locally (SwiftShader). ⚠ ROUNDS row 15 / git log say «204 tests» — undercount;
+  corrected numbers: 208 pre-16a → 237 now; note in the round-16 ROUNDS row.
 - Payload rows (budget.mjs, all ok): _check 62,161 of 500,000 · jordan 526,735 of 7,000,000 ·
   rastrelli-gallery 123,749 of 2,000,000 · exterior 0 of 4,000,000 · basis 584,862 of 600,000
   (**basis is tight — never add anything to /basis/**).
 - Room manifest budgets: gallery tris ≤110,000 / draws ≤25 / tex ≤1,000,000 B · jordan
-  tris ≤380,000 / draws ≤60 / tex ≤4,000,000 B. Measured r15: gallery 2,106 drawn (6 unique prims),
-  jordan 15,110 (12 unique prims); jordan fixed 64² lightmap grid carries 2,474 of 4,096 cells.
-- Orchestrator-pinned declared constants awaiting integration (sync artistic-license then):
-  airlock holdMs 1500 (arch-portal, gallery-airlock), 600 (landing-airlock); r16 interim
-  simplifications — deep-link cold load renders sky until the room is ready (DEC-017's dark-card
-  choreography lands r17/r18), camera snaps to the entry stop (rail is r18).
+  tris ≤380,000 / draws ≤60 / tex ≤4,000,000 B. Measured r15: gallery 2,106 drawn (6 unique
+  prims), jordan 15,110 (12 unique prims); jordan fixed 64² lightmap grid carries 2,474 of
+  4,096 cells.
+- r16 interim simplifications still standing: deep-link cold load renders sky until the room
+  is ready (dark-card choreography r17/r18); camera snaps to the entry stop / S0 (rail r18);
+  the r16 ledger registers payload bytes only (VRAM-from-format×mips fidelity and RT
+  registers are r17).
 
 ## Standing protocol
 
