@@ -13,8 +13,15 @@ file in the same session.
   rooms list/scaffolds + manifest fetcher + main.ts wiring (16a, `268e277`) and the asserted
   disposal ledger + HUD rows (16b, `d876d59`). The e2e smoke walks the graph
   #/ → gallery → jordan → queued retarget mid-transit → #/ with the ledger rows back at boot
-  values and a clean console (ROUNDS row 16). Next: **round 17 lightmaps** (agenda item 2) —
-  no brief written yet.
+  values and a clean console (ROUNDS row 16).
+- Round 17 **in flight**: **17a brief open** — `docs/briefs/BRIEF-round-17a-bake-pipeline.md`
+  (the bake side: tools/bpy/bake.py — Cycles CPU, three states, OIDN, white-point LDR encode —
+  + tools/bake.mjs driver + bake-mode guard patches for both committed bpy scripts +
+  the ADR-0013 probe as one equirect 512×256 ktx2, adjudicated against three 0.186.1:
+  fromCubemap exists but KTX2Loader does not compose cube faces, so the probe goes through
+  fromEquirectangular). Then **17b**: the runtime blend (technique A custom slot + PMREM probe
+  in the hold + interior exposure constant + ledger VRAM rows) and the §4.4 falsifiable
+  measurement with stub noise lightmaps (headed, reference device).
 - validate green: **254** tests, 16 files (vitest node) · build 6 js chunks, **236,663** gzip
   of 350,000 — cap untouched; the ≤225,000 r16 projection is re-marked measured in §9 (the
   loader stack GLTFLoader+KTX2+Meshopt cost more than the +60 KB estimate; headroom 113,337).
