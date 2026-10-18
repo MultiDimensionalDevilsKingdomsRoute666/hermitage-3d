@@ -14,19 +14,18 @@ file in the same session.
   disposal ledger + HUD rows (16b, `d876d59`). The e2e smoke walks the graph
   #/ → gallery → jordan → queued retarget mid-transit → #/ with the ledger rows back at boot
   values and a clean console (ROUNDS row 16).
-- Round 17 **in flight**. **17a integrated and COMPLETE** (`60ef9b4` + the bake fill commit):
-  bake pipeline (tools/bpy/bake.py + tools/bake.mjs driver + guard patches + toktx linear
-  OETF). **Both rooms fully baked**: gallery 3 states + probe (1024², 12–29 min/state);
-  jordan 3 states + probe (2048², day 26.8 / dusk 40 / night 34.3 min in the final log —
-  the menu emptied; the first night run's 59.6 min was machine load, bytes identical).
-  **Byte-identity proven on both rooms**: gallery (day triple-run; dusk/night/probe vs
-  committed) and jordan (night run-2 sha `7d9603ce…` == run-1 committed byte-for-byte —
-  load does not affect determinism, only wall time). jordan payload 754,349 B of 7 MB
-  (lm+probe ≈ 227 KB). **17b next**: the runtime blend (technique A custom slot + PMREM
-  probe in the hold + interior exposure constant + ledger VRAM rows) and the §4.4
-  falsifiable measurement with stub noise lightmaps (headed, reference device) — both
-  rooms' real bakes are committed, so 17b develops against the full asset set. No 17b
-  brief written yet.
+- Round 17 **in flight**. **17a integrated and COMPLETE** (`60ef9b4`, `7b8399c`): bake
+  pipeline + both rooms fully baked and committed (gallery 1024², jordan 2048² + probes),
+  byte-identity proven on both rooms (jordan night run-2 == run-1 byte-for-byte under
+  different machine loads). **17b integrated** (`cfeab8d`): the blend runtime —
+  src/world/blend.ts (pure two-state selection) + src/assets/blend-gl.ts (technique A via
+  onBeforeCompile; stock lightMap = state A, B fetch on the shared vLightMapUv, always-bound
+  lmB fallback — no recompiles at crossings) + decodeRoomTextures additive + room/main wiring
+  under the frozen §8 weights; e2e walk green with the blend on SwiftShader; 264 tests;
+  238,616 gzip. **17c next**: PMREM probe (ADR-0013) + interior exposure constant + ledger
+  VRAM rows (format×mips) + the §4.4 measurement harness (B-RT/B-discrete vs A, headed
+  reference device, det plateau times from §8) + goldens at the three plateaux (J1/J4 ×3 +
+  G1-night, local-only) + ROUNDS row 17 + ADR/DEC verdicts. No 17c brief written yet.
 - validate green: **254** tests, 16 files (vitest node) · build 6 js chunks, **236,663** gzip
   of 350,000 — cap untouched; the ≤225,000 r16 projection is re-marked measured in §9 (the
   loader stack GLTFLoader+KTX2+Meshopt cost more than the +60 KB estimate; headroom 113,337).
