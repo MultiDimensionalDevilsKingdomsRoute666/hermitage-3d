@@ -14,18 +14,19 @@ file in the same session.
   disposal ledger + HUD rows (16b, `d876d59`). The e2e smoke walks the graph
   #/ → gallery → jordan → queued retarget mid-transit → #/ with the ledger rows back at boot
   values and a clean console (ROUNDS row 16).
-- Round 17 **in flight**. **17a integrated** (`60ef9b4`): bake pipeline (tools/bpy/bake.py +
-  tools/bake.mjs driver + guard patches + token linear OETF; byte-identity proven on the
-  gallery — day triple-run, dusk/night/probe vs committed) — gallery: all 3 states + probe
-  committed, payload 152,287 B of 2 MB; **jordan: night baked 59.6 min (menu row), day/dusk
-  ON THE MENU per owner decision** — owner task tomorrow: `node tools/bake.mjs jordan day`
-  then `node tools/bake.mjs jordan dusk` (~1–1.5 h each on this 2-core i5; night's 59.6 min
-  is the measured rate), then `node tools/bake.mjs jordan all --verify`, commit + push.
-  Until then jordan stays on placeholder lighting (all-or-nothing manifest law).
-  **17b next**: the runtime blend (technique A custom slot + PMREM probe in the hold +
-  interior exposure constant + ledger VRAM rows) and the §4.4 falsifiable measurement with
-  stub noise lightmaps (headed, reference device) — develops against the gallery's real
-  bakes; jordan joins after its bakes land. No 17b brief written yet.
+- Round 17 **in flight**. **17a integrated and COMPLETE** (`60ef9b4` + the bake fill commit):
+  bake pipeline (tools/bpy/bake.py + tools/bake.mjs driver + guard patches + toktx linear
+  OETF). **Both rooms fully baked**: gallery 3 states + probe (1024², 12–29 min/state);
+  jordan 3 states + probe (2048², day 26.8 / dusk 40 / night 34.3 min in the final log —
+  the menu emptied; the first night run's 59.6 min was machine load, bytes identical).
+  **Byte-identity proven on both rooms**: gallery (day triple-run; dusk/night/probe vs
+  committed) and jordan (night run-2 sha `7d9603ce…` == run-1 committed byte-for-byte —
+  load does not affect determinism, only wall time). jordan payload 754,349 B of 7 MB
+  (lm+probe ≈ 227 KB). **17b next**: the runtime blend (technique A custom slot + PMREM
+  probe in the hold + interior exposure constant + ledger VRAM rows) and the §4.4
+  falsifiable measurement with stub noise lightmaps (headed, reference device) — both
+  rooms' real bakes are committed, so 17b develops against the full asset set. No 17b
+  brief written yet.
 - validate green: **254** tests, 16 files (vitest node) · build 6 js chunks, **236,663** gzip
   of 350,000 — cap untouched; the ≤225,000 r16 projection is re-marked measured in §9 (the
   loader stack GLTFLoader+KTX2+Meshopt cost more than the +60 KB estimate; headroom 113,337).

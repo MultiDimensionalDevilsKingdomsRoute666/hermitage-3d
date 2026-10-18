@@ -8,6 +8,30 @@
       "kind": "glb"
     },
     {
+      "path": "lm/day.ktx2",
+      "bytes": 58548,
+      "sha256": "dd8f486dba09152081407645cb9097cef2d29ad8c2cd5500309cc847bec79fb3",
+      "kind": "ktx2"
+    },
+    {
+      "path": "lm/dusk.ktx2",
+      "bytes": 51646,
+      "sha256": "fbf332d1f7fe13ddc8afc15101ac6ba66803d3991f23d35a43b4c4cc53318985",
+      "kind": "ktx2"
+    },
+    {
+      "path": "lm/night.ktx2",
+      "bytes": 111306,
+      "sha256": "7d9603cef234e6a3f204f3384829539e4c5aa3af4ac99f9eea5bca83d6773655",
+      "kind": "ktx2"
+    },
+    {
+      "path": "probe/dusk.ktx2",
+      "bytes": 5377,
+      "sha256": "7409beccda1f446b244e654b3ce4b4764f8c78cef528ed63f9e0fd4f694c4398",
+      "kind": "ktx2"
+    },
+    {
       "path": "tex/gilt.ktx2",
       "bytes": 8540,
       "sha256": "f9763ce40dc30aafe6100a7e79bd317a85108fb4d58d14fa31fb814d163420af",
@@ -98,9 +122,13 @@
     ]
   },
   "lightmaps": {
-    "states": [],
-    "res": null,
-    "intensity": null
+    "states": [
+      "day",
+      "dusk",
+      "nightChandeliers"
+    ],
+    "res": 2048,
+    "intensity": 6
   },
   "budget": {
     "trianglesMax": 380000,

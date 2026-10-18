@@ -1,6 +1,67 @@
 {
   "room": "jordan",
   "states": {
+    "day": {
+      "blender": "Blender 4.2.23 LTS",
+      "clippedFraction": 0,
+      "command": "node tools/bake.mjs jordan day",
+      "denoiser": "OPENIMAGEDENOISE",
+      "margin": 2,
+      "peak": 2.962,
+      "probe": null,
+      "res": 2048,
+      "samples": 128,
+      "seconds": 1608.7,
+      "state": "day",
+      "whitePoint": 6,
+      "artifacts": [
+        {
+          "rel": "lm/day.ktx2",
+          "bytes": 58548,
+          "sha256": "dd8f486dba09152081407645cb9097cef2d29ad8c2cd5500309cc847bec79fb3"
+        }
+      ]
+    },
+    "dusk": {
+      "blender": "Blender 4.2.23 LTS",
+      "clippedFraction": 0.0003,
+      "command": "node tools/bake.mjs jordan dusk",
+      "denoiser": "OPENIMAGEDENOISE",
+      "margin": 2,
+      "peak": 21.3608,
+      "probe": {
+        "clippedFraction": 0.0008,
+        "peak": 5.9526,
+        "point": [
+          79,
+          9,
+          -74
+        ],
+        "res": [
+          512,
+          256
+        ],
+        "samples": 256,
+        "whitePoint": 1
+      },
+      "res": 2048,
+      "samples": 128,
+      "seconds": 2398.7,
+      "state": "dusk",
+      "whitePoint": 6,
+      "artifacts": [
+        {
+          "rel": "lm/dusk.ktx2",
+          "bytes": 51646,
+          "sha256": "fbf332d1f7fe13ddc8afc15101ac6ba66803d3991f23d35a43b4c4cc53318985"
+        },
+        {
+          "rel": "probe/dusk.ktx2",
+          "bytes": 5377,
+          "sha256": "7409beccda1f446b244e654b3ce4b4764f8c78cef528ed63f9e0fd4f694c4398"
+        }
+      ]
+    },
     "nightChandeliers": {
       "blender": "Blender 4.2.23 LTS",
       "clippedFraction": 0.0003,
@@ -11,7 +72,7 @@
       "probe": null,
       "res": 2048,
       "samples": 128,
-      "seconds": 3578.8,
+      "seconds": 2058.2,
       "state": "nightChandeliers",
       "whitePoint": 6,
       "artifacts": [

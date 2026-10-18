@@ -16,7 +16,14 @@
  * ktx2. Fence: never writes public/basis; the ROOM descriptor (tools/gltf/<room>.mjs) is read,
  * never edited; never import this from tests (Blender is absent in CI).
  */
-import { copyFileSync, existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  copyFileSync,
+  existsSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import {
@@ -334,12 +341,10 @@ async function main() {
   }
   const blenderVersion = run(BLENDER, ['--version'], { capture: true }).split('\n')[0].trim();
   const log = readLog(room);
-  const allArtifacts = [];
   for (const state of states) {
     const stage = stageDir(room, state, '');
     const result = runBlenderBake(room, state, stage);
     const artifacts = encodeOutputs(result.summary, stage);
-    allArtifacts.push(...artifacts);
     log.states[state] = record(state, result, artifacts, blenderVersion);
     if (result.summary.seconds > SLOW_BAKE_SECONDS) {
       console.log(`bake: ${state} took ${minutes(result.summary.seconds)} min — see the menu`);
@@ -358,7 +363,33 @@ async function main() {
     );
     return;
   }
-  publish(room, allArtifacts);
+  // Publish every state's CURRENT ktx2 from its stage dir: a state baked in an earlier run
+  // keeps its stage output, so one run publishing only its own artifacts would leave the
+  // other states' manifest rows pointing at nothing. The log rows carry the same sha256
+  // values — each was recorded from the very bake that left the stage file in place.
+  const staged = [];
+  for (const state of STATES) {
+    const stage = stageDir(room, state, '');
+    for (const prefix of PUBLISH_PREFIXES) {
+      const dir = path.join(stage, prefix);
+      if (!existsSync(dir)) continue;
+      for (const name of readdirSync(dir).sort()) {
+        if (!name.endsWith('.ktx2')) continue;
+        const abs = path.join(dir, name);
+        const bytes = readFileSync(abs);
+        if (!bytes.subarray(0, Buffer.from(KTX2_MAGIC).length).equals(Buffer.from(KTX2_MAGIC))) {
+          throw new ChainError(`${prefix}${name} is not a KTX2 container`);
+        }
+        staged.push({
+          rel: `${prefix}${name}`,
+          abs,
+          bytes: bytes.length,
+          sha256: sha256(bytes),
+        });
+      }
+    }
+  }
+  publish(room, staged);
   const { row, proposed } = lightmapsRow(descriptor, log);
   writeManifest({ ...descriptor, lightmaps: row }, path.join(ASSETS_DIR, room), tc);
   if (proposed) {
