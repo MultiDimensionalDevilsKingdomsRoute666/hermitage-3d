@@ -3,6 +3,9 @@
 // §10 arrival order is immutable: sky frame → title frame → massing fade → settled.
 import './style.css';
 import * as THREE from 'three';
+import { AIRLOCKS, ENTRIES } from '../rooms/index';
+import { createLoaders } from './assets/loaders';
+import { fetchManifest } from './assets/manifests';
 import { SOUTH_FACADE, WINDOW_ROWS } from './content/facade-spec';
 import { TIME } from './content/sky-time';
 import {
@@ -38,6 +41,17 @@ import {
   pushFrameInterval,
   rollingMedianFrameMs,
 } from './ui/hud';
+import { advanceTransit, beginTransit, finishTransit, type TransitState } from './world/airlock';
+import {
+  airlockEntering,
+  type NodeHandle,
+  nextAirlockOnPath,
+  type RoomEntry,
+  type RoomId,
+  type RoomModule,
+  type RoomScene,
+  resolveRoute,
+} from './world/registry';
 
 const SUN_DISTANCE = 1000;
 const TIER_STORAGE_KEY = 'zimny:tier';
@@ -260,6 +274,117 @@ const applyEpoch = (nextEpochMs: number): void => {
 };
 applyEpoch(epochMs);
 
+// --- Room streaming (design-staircase.md §1.1, §2.4, §8; DEC-013/DEC-014) ------------------
+// The square is a resident: it is never mounted or disposed — indoors only its exterior
+// group and the sky dome flip to visible=false. Rooms load lazily behind their thunks; an
+// airlock transit is the only place a room mounts, uploads GPU memory or disposes.
+const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const assets = createLoaders(renderer);
+const roomScene: RoomScene = {
+  add: (object) => scene.add(object as unknown as THREE.Object3D),
+  remove: (object) => scene.remove(object as unknown as THREE.Object3D),
+};
+const roomCtx = { assets, scene: roomScene };
+
+let activeNode: NodeHandle | null = null; // null = cold entry (nothing mounted yet)
+let indoor = false;
+let ready = false;
+let transit: Readonly<{ state: TransitState; target: NodeHandle }> | null = null;
+let queuedTarget: NodeHandle | null = null;
+let transitStarted = false;
+const roomWork = new Map<RoomId, Promise<void>>();
+const roomModules = new Map<RoomId, RoomModule>();
+
+const roomEntryOf = (id: RoomId): RoomEntry => {
+  const hit = ENTRIES.find((e): e is RoomEntry => e.kind === 'room' && e.id === id);
+  if (!hit) throw new Error(`zimny: no registry entry for room ${id}`);
+  return hit;
+};
+
+const ensureRoom = (id: RoomId): Promise<void> => {
+  const existing = roomWork.get(id);
+  if (existing) return existing;
+  const promise = (async () => {
+    // r16 interim: no external abort source exists until the rail prefetch lands (r18).
+    const controller = new AbortController();
+    const manifest = await fetchManifest(id, controller.signal);
+    const module = await roomEntryOf(id).thunk();
+    roomModules.set(id, module); // disposeFrom needs the module synchronously at exit
+    await module.load(roomCtx, manifest, controller.signal);
+    await module.mount(roomCtx);
+    await renderer.compileAsync(scene, camera);
+  })();
+  roomWork.set(id, promise);
+  void promise.catch((error: unknown) => {
+    console.error(`zimny: room ${id} failed`, error); // the transit dwells on the dark card
+    roomWork.delete(id); // a later entry may start the chain again
+  });
+  return promise;
+};
+
+const interiorFar = (id: RoomId): number => {
+  const b = roomEntryOf(id).contract.bounds;
+  const dx = b.max[0] - b.min[0];
+  const dy = b.max[1] - b.min[1];
+  const dz = b.max[2] - b.min[2];
+  return Math.ceil(Math.sqrt(dx * dx + dy * dy + dz * dz)) + 20; // §6.2: diagonal + margin
+};
+
+const applySwap = (to: NodeHandle | null): void => {
+  if (to === 'square') {
+    indoor = false;
+    rig.mesh.visible = true;
+    camera.near = 0.5;
+    camera.far = 2000;
+    camera.position.set(0, 1.7, 230); // S0 — the r16 stopgap snap (rail is r18)
+    camera.lookAt(0, 11, 0);
+    renderer.toneMappingExposure = sample.exposure; // E(h) restored; the room constant lands r17
+  } else if (to !== null) {
+    indoor = true;
+    rig.mesh.visible = false;
+    camera.near = 0.05; // §6.2 interior near/far, swapped in the hold
+    camera.far = interiorFar(to);
+    const stop = roomEntryOf(to).contract.rail.stops[0];
+    if (stop === undefined) throw new Error(`zimny: room ${to} has no entry stop`);
+    camera.position.set(...stop.position);
+    const next = roomEntryOf(to).contract.rail.stops[1];
+    if (next) camera.lookAt(next.position[0], next.position[1], next.position[2]);
+  }
+};
+
+const disposeFrom = (from: NodeHandle | null): void => {
+  if (from === null || from === 'square') return; // residents are never disposed (DEC-013)
+  // Synchronous on purpose: the hold completed, so the module is resolved and cached; the
+  // same tick may chain the next transit, and a chained entry into the room being left
+  // must see roomWork cleared (a stale cached promise would mount a room this unmount
+  // then disposes). §8.3: the departing room disposes exactly once, in exit, never mid-hold.
+  const module = roomModules.get(from);
+  if (module === undefined) return; // never mounted — nothing to dispose
+  module.unmount(roomCtx);
+  roomModules.delete(from);
+  roomWork.delete(from); // the next entry re-runs load+mount
+};
+
+const beginTransitTo = (target: NodeHandle): void => {
+  const def =
+    activeNode === null
+      ? airlockEntering(AIRLOCKS, target)
+      : nextAirlockOnPath(ENTRIES, AIRLOCKS, activeNode, target);
+  if (def === null) {
+    activeNode = target; // already there
+    transit = null;
+    return;
+  }
+  const state = beginTransit({ airlock: def, from: activeNode, reducedMotion });
+  transit = { state, target };
+  ready = state.to === 'square'; // the resident is always ready
+  if (state.to !== null && state.to !== 'square') {
+    void ensureRoom(state.to).then(() => {
+      ready = true;
+    });
+  }
+};
+
 // Quality tier. The surfaces (render scale, drawing buffer, sun shadow size) apply BEFORE
 // the massing fade: §11 forbids resizing targets mid-fade, so the auto tier settles once
 // during the sky-only beats via a ~0.85 s probe (architecture.md → Tiers).
@@ -365,7 +490,7 @@ const applyPresentation = (): void => {
     titleShown = presentation.titleVisible;
   }
   const visible = presentation.massingOpacity > 0;
-  palace.visible = visible;
+  palace.visible = visible && !indoor;
   if (visible) {
     massingMaterial.opacity = presentation.massingOpacity;
     groundMaterial.opacity = presentation.massingOpacity;
@@ -502,6 +627,20 @@ window.addEventListener('hashchange', () => {
   const hudNext = parseHudParam(new URLSearchParams(queryOf(location.hash)));
   for (const issue of hudNext.issues) console.warn(`zimny: hud issue — ${issue}`);
   toggleHud(hudNext.enabled);
+  // Room route: adjacent-or-cold target transits start once the tier settled; mid-transit
+  // navigation re-targets after the current transit completes (the departing room always
+  // disposes first — §2.4).
+  const target = resolveRoute(ENTRIES, location.hash).node;
+  if (tierSettled) {
+    if (transit === null) {
+      if (target !== activeNode) beginTransitTo(target);
+      queuedTarget = null;
+    } else {
+      queuedTarget = target;
+    }
+  } else {
+    queuedTarget = target; // picked up by the settle hook
+  }
   // A probe still running when an explicit tier lands is cancelled by settleTier above;
   // an auto navigation leaves an open probe running to its own window end.
 });
@@ -536,12 +675,43 @@ const tick = (timeMs: number): void => {
     }
   }
 
+  // Room route settle hook: the arrival beats own the pre-settle frames (§11); the first
+  // settled frame starts the queued-or-boot room transit — a boot deep link resolves here
+  // as a cold entry (from = null; the sky renders until the room is ready, r16 interim).
+  if (!transitStarted && tierSettled) {
+    transitStarted = true;
+    const target = queuedTarget ?? resolveRoute(ENTRIES, location.hash).node;
+    queuedTarget = null;
+    if (target !== 'square') beginTransitTo(target);
+  }
+
   // Presentation of the CURRENT state, drawn first (§10: state machine rules).
   applyPresentation();
 
   // Coalesced scrub preview: newest request only, one sample per frame (§9).
   if (pendingEpochMs !== null && pendingEpochMs !== epochMs) applyEpoch(pendingEpochMs);
   pendingEpochMs = null;
+
+  // Airlock transit: one FSM beat per frame; events swap/mount/dispose (§2.4).
+  if (transit !== null) {
+    const advanced = advanceTransit(transit.state, deltaMs, ready);
+    transit = { ...transit, state: advanced.state };
+    for (const event of advanced.events) {
+      // Events imply a hold/exit state — the FSM never fires from idle.
+      if (advanced.state.phase === 'idle') break;
+      if (event === 'upload-swap') applySwap(advanced.state.to);
+      else disposeFrom(advanced.state.from);
+    }
+    if (advanced.state.phase === 'exit') {
+      const { target } = transit;
+      activeNode = advanced.state.to;
+      finishTransit(advanced.state);
+      transit = null;
+      const next = queuedTarget ?? target;
+      queuedTarget = null;
+      if (activeNode !== next) beginTransitTo(next); // next hop of the chain
+    }
+  }
 
   // Live mode samples the wall clock at most once per second (§9); fixed modes stay frozen.
   // During an open scrub gesture the anchor is frozen: no live resample may fight the preview.
