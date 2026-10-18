@@ -32,7 +32,9 @@ export const ROOM = {
     payloadBytesMax: 2_000_000,
   },
   // r17 fills { states: ['day', 'dusk', 'nightChandeliers'], res: 1024 }; keep the empty shape.
-  lightmaps: { states: [], res: null, intensity: null },
+  // r17a: filled by the bake (tools/bake.mjs) — three states at LM_RES 1024, the intensity
+  // scalar is the bake's white point (ETC1S is 8-bit LDR; the runtime restores the level).
+  lightmaps: { states: ['day', 'dusk', 'nightChandeliers'], res: 1024, intensity: 4.0 },
 };
 
 const TEXTURES = ['stone_flags', 'plaster_dark'];

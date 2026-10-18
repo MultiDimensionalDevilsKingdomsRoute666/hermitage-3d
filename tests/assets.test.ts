@@ -122,7 +122,25 @@ describe.each(committedRooms)('public/assets/%s (room contract)', (room) => {
       'lightmaps',
       'toolchain',
     ]);
-    expect(manifest.lightmaps).toEqual({ states: [], res: null, intensity: null });
+    // r17a all-or-nothing law: a lightmaps row either names exactly the three §4 states and
+    // every named state's ktx2 is on disk, or (canary / not yet baked) the row is empty.
+    // The empty-vs-filled check keeps both honest: no fourth state, no room with fewer.
+    const STATES_ON_DISK = ['day', 'dusk', 'nightChandeliers'] as const;
+    const FILE_BY_STATE: Record<string, string> = {
+      day: 'day',
+      dusk: 'dusk',
+      nightChandeliers: 'night',
+    };
+    if (manifest.lightmaps.states.length === 0) {
+      expect(manifest.lightmaps).toEqual({ states: [], res: null, intensity: null });
+    } else {
+      expect(manifest.lightmaps.states).toEqual(STATES_ON_DISK);
+      expect(manifest.lightmaps.res).toBeGreaterThan(0);
+      expect(manifest.lightmaps.intensity).toBeGreaterThan(0);
+      for (const state of STATES_ON_DISK) {
+        expect(existsSync(join(dir, 'lm', `${FILE_BY_STATE[state]}.ktx2`)), state).toBe(true);
+      }
+    }
     expect(manifest.budget.trianglesMax).toBeGreaterThan(0);
     expect(manifest.budget.textureBytesMax).toBeGreaterThan(0);
     expect(manifest.budget.payloadBytesMax).toBeGreaterThan(0);

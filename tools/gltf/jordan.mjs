@@ -23,7 +23,9 @@ export const ROOM = {
     textureBytesMax: 4_000_000,
     payloadBytesMax: 7_000_000,
   },
-  lightmaps: { states: [], res: null, intensity: null },
+  // r17a: filled by the bake (tools/bake.mjs) — three states at LM_RES 2048, the intensity
+  // scalar is the bake's white point (ETC1S is 8-bit LDR; the runtime restores the level).
+  lightmaps: { states: ['day', 'dusk', 'nightChandeliers'], res: 2048, intensity: 6.0 },
 };
 
 export const TEXTURES = ['marble_floor', 'plaster_warm', 'granite_grey', 'gilt'];

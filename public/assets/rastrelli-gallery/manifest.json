@@ -2,6 +2,30 @@
   "id": "rastrelli-gallery",
   "files": [
     {
+      "path": "lm/day.ktx2",
+      "bytes": 1370,
+      "sha256": "3225e529b66fea8be262a21f716d03a43e15ef320f99c4bb34965ab5cafed3dd",
+      "kind": "ktx2"
+    },
+    {
+      "path": "lm/dusk.ktx2",
+      "bytes": 12626,
+      "sha256": "3fc406a826f91f839108cbd86f393fa18aab866c271d13c71ed5c8757a2d4a76",
+      "kind": "ktx2"
+    },
+    {
+      "path": "lm/night.ktx2",
+      "bytes": 12942,
+      "sha256": "6573ebbaf80bfd6c9c9dafcf44ededb31992b1a63910a3a74ff2bddc66ae23cc",
+      "kind": "ktx2"
+    },
+    {
+      "path": "probe/dusk.ktx2",
+      "bytes": 866,
+      "sha256": "34d70cabd6efe58ee9f39d027103bb3ad18e0758b2dcd5ae4ab661f379590603",
+      "kind": "ktx2"
+    },
+    {
       "path": "rastrelli-gallery.glb",
       "bytes": 89652,
       "sha256": "cdd2737fa31ff05e34f26564f176e313d108530bd4d7ae43e231914a411e013e",
@@ -56,9 +80,13 @@
     ]
   },
   "lightmaps": {
-    "states": [],
-    "res": null,
-    "intensity": null
+    "states": [
+      "day",
+      "dusk",
+      "nightChandeliers"
+    ],
+    "res": 1024,
+    "intensity": 4
   },
   "budget": {
     "trianglesMax": 110000,

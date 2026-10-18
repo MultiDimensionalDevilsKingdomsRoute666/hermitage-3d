@@ -1,0 +1,87 @@
+{
+  "room": "rastrelli-gallery",
+  "states": {
+    "day": {
+      "blender": "Blender 4.2.23 LTS",
+      "clippedFraction": 0,
+      "command": "node tools/bake.mjs rastrelli-gallery day",
+      "denoiser": "OPENIMAGEDENOISE",
+      "margin": 2,
+      "peak": 0.202,
+      "probe": null,
+      "res": 1024,
+      "samples": 128,
+      "seconds": 726.9,
+      "state": "day",
+      "whitePoint": 4,
+      "artifacts": [
+        {
+          "rel": "lm/day.ktx2",
+          "bytes": 1370,
+          "sha256": "3225e529b66fea8be262a21f716d03a43e15ef320f99c4bb34965ab5cafed3dd"
+        }
+      ]
+    },
+    "dusk": {
+      "blender": "Blender 4.2.23 LTS",
+      "clippedFraction": 0.0141,
+      "command": "node tools/bake.mjs rastrelli-gallery dusk",
+      "denoiser": "OPENIMAGEDENOISE",
+      "margin": 2,
+      "peak": 9.0536,
+      "probe": {
+        "clippedFraction": 0,
+        "peak": 3.8639,
+        "point": [
+          0,
+          1.7,
+          80
+        ],
+        "res": [
+          512,
+          256
+        ],
+        "samples": 256,
+        "whitePoint": 1
+      },
+      "res": 1024,
+      "samples": 128,
+      "seconds": 1562.7,
+      "state": "dusk",
+      "whitePoint": 4,
+      "artifacts": [
+        {
+          "rel": "lm/dusk.ktx2",
+          "bytes": 12626,
+          "sha256": "3fc406a826f91f839108cbd86f393fa18aab866c271d13c71ed5c8757a2d4a76"
+        },
+        {
+          "rel": "probe/dusk.ktx2",
+          "bytes": 866,
+          "sha256": "34d70cabd6efe58ee9f39d027103bb3ad18e0758b2dcd5ae4ab661f379590603"
+        }
+      ]
+    },
+    "nightChandeliers": {
+      "blender": "Blender 4.2.23 LTS",
+      "clippedFraction": 0.0141,
+      "command": "node tools/bake.mjs rastrelli-gallery nightChandeliers",
+      "denoiser": "OPENIMAGEDENOISE",
+      "margin": 2,
+      "peak": 9.1816,
+      "probe": null,
+      "res": 1024,
+      "samples": 128,
+      "seconds": 1716.9,
+      "state": "nightChandeliers",
+      "whitePoint": 4,
+      "artifacts": [
+        {
+          "rel": "lm/night.ktx2",
+          "bytes": 12942,
+          "sha256": "6573ebbaf80bfd6c9c9dafcf44ededb31992b1a63910a3a74ff2bddc66ae23cc"
+        }
+      ]
+    }
+  }
+}

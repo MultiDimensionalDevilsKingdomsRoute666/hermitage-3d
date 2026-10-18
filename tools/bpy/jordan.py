@@ -22,6 +22,10 @@ from pathlib import Path
 import bpy
 import numpy as np
 
+# Round 17a: tools/bpy/bake.py exec's this builder with ZIMNY_BAKE=1 — build the scene,
+# skip the export + summary (the bake owns stdout and never writes the glb).
+BAKE = os.environ.get('ZIMNY_BAKE') == '1'
+
 ROOM_ID = 'jordan'
 STAGE = 'full'
 
@@ -881,6 +885,8 @@ def main():
     drawn = sum(row['triangles'] * row['instances'] for row in meshes.values())
     draws_naive = sum(primitives[name] * row['instances'] for name, row in meshes.items())
 
+    if BAKE:
+        return
     export_glb(stage / f'{ROOM_ID}.glb')
 
     summary = {

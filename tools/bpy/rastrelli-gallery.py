@@ -22,6 +22,10 @@ import bmesh
 import bpy
 from mathutils import Vector
 
+# Round 17a: tools/bpy/bake.py exec's this builder with ZIMNY_BAKE=1 — build the scene,
+# skip the export + summary (the bake owns stdout and never writes the glb).
+BAKE = os.environ.get('ZIMNY_BAKE') == '1'
+
 ROOM_ID = 'rastrelli-gallery'
 TAU = math.tau
 
@@ -431,6 +435,8 @@ def main():
     for x in SCONCE_X:
         instance('sconce', me_sconce, (x, SCONCE_Y, G_Z0))
         instance('sconce', me_sconce, (x, SCONCE_Y, G_Z1), math.pi)
+    if BAKE:
+        return
     glb_path = os.path.join(stage, f'{ROOM_ID}.raw.glb')
     bpy.ops.export_scene.gltf(
         filepath=glb_path,

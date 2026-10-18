@@ -1,0 +1,26 @@
+{
+  "room": "jordan",
+  "states": {
+    "nightChandeliers": {
+      "blender": "Blender 4.2.23 LTS",
+      "clippedFraction": 0.0003,
+      "command": "node tools/bake.mjs jordan nightChandeliers",
+      "denoiser": "OPENIMAGEDENOISE",
+      "margin": 2,
+      "peak": 20.0613,
+      "probe": null,
+      "res": 2048,
+      "samples": 128,
+      "seconds": 3578.8,
+      "state": "nightChandeliers",
+      "whitePoint": 6,
+      "artifacts": [
+        {
+          "rel": "lm/night.ktx2",
+          "bytes": 111306,
+          "sha256": "7d9603cef234e6a3f204f3384829539e4c5aa3af4ac99f9eea5bca83d6773655"
+        }
+      ]
+    }
+  }
+}
