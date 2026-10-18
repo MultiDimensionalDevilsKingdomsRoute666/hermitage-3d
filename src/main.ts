@@ -45,13 +45,14 @@ import {
   rollingMedianFrameMs,
 } from './ui/hud';
 import { advanceTransit, beginTransit, finishTransit, type TransitState } from './world/airlock';
-import { blendPayload } from './world/blend';
+import { parseLmParam } from './world/lm-mode';
 import {
   airlockEntering,
   type NodeHandle,
   nextAirlockOnPath,
   type RoomEntry,
   type RoomId,
+  type RoomLoadContext,
   type RoomModule,
   type RoomScene,
   resolveRoute,
@@ -222,6 +223,9 @@ let hudBoundAtMs = -1;
 let hudLastLines = '';
 const hudParams = parseHudParam(new URLSearchParams(queryOf(location.hash)));
 for (const issue of hudParams.issues) console.warn(`zimny: hud issue — ${issue}`);
+// The §4.4 measurement switch — dev-only, ephemeral per URL (the HUD's parsing contract).
+const lmParams = parseLmParam(new URLSearchParams(queryOf(location.hash)));
+for (const issue of lmParams.issues) console.warn(`zimny: lm issue — ${issue}`);
 const applyHudBinding = (): void => {
   hud.hidden = !hudOpen;
   if (!hudOpen) return;
@@ -283,13 +287,25 @@ applyEpoch(epochMs);
 // group and the sky dome flip to visible=false. Rooms load lazily behind their thunks; an
 // airlock transit is the only place a room mounts, uploads GPU memory or disposes.
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-const assets = createLoaders(renderer);
-const ledger = createLedger(); // §8.3 layer 1: rooms register payload bytes, release on unmount
+const ledger = createLedger(); // §8.3 layer 1: the loaders register their own GPU allocations
+const assets = createLoaders(renderer, ledger);
 const roomScene: RoomScene = {
   add: (object) => scene.add(object as unknown as THREE.Object3D),
   remove: (object) => scene.remove(object as unknown as THREE.Object3D),
+  setEnvironment: (object) => {
+    scene.environment = (object ?? null) as THREE.Texture | null;
+  },
 };
-const roomCtx = { assets, scene: roomScene, ledger };
+// The `?lm=` technique switch is ephemeral per URL (the hud pattern): parsed at boot and on
+// every hashchange; rooms mounted later pick up the current mode, a mounted room keeps its
+// technique until the next exit disposes it (§4.4's measurement navigates with the flag set).
+let roomCtx: RoomLoadContext = {
+  assets,
+  scene: roomScene,
+  ledger,
+  lmMode: lmParams.mode,
+  renderer,
+};
 
 let activeNode: NodeHandle | null = null; // null = cold entry (nothing mounted yet)
 let indoor = false;
@@ -351,18 +367,29 @@ const interiorFar = (id: RoomId): number => {
   return Math.ceil(Math.sqrt(dx * dx + dy * dy + dz * dz)) + 20; // §6.2: diagonal + margin
 };
 
+// §4.4: bakes carry brightness; indoors the renderer exposure is a per-room CONSTANT
+// (declared 1.0) set in the airlock hold and restored to E(h) on exit — §7 stays an
+// exterior/sky contract. Interiors are lightmap-only: the sun and the hemisphere light are
+// switched off in the hold (they were leaking through walls — unshadowed glb meshes) and
+// restored by applyEpoch on the way out.
+const INTERIOR_EXPOSURE = 1.0;
+
 const applySwap = (to: NodeHandle | null): void => {
   if (to === 'square') {
     indoor = false;
+    sun.visible = true;
+    hemi.visible = true;
+    applyEpoch(epochMs); // restores sun/hemi intensities, colours and E(h) in one step
     rig.mesh.visible = true;
     camera.near = 0.5;
     camera.far = 2000;
     camera.position.set(0, 1.7, 230); // S0 — the r16 stopgap snap (rail is r18)
     camera.lookAt(0, 11, 0);
-    renderer.toneMappingExposure = sample.exposure; // E(h) restored; the room constant lands r17
   } else if (to !== null) {
     indoor = true;
+    // sun.visible = false; hemi.visible = false; // SUB-BISECT: temporarily disabled
     rig.mesh.visible = false;
+    renderer.toneMappingExposure = INTERIOR_EXPOSURE;
     camera.near = 0.05; // §6.2 interior near/far, swapped in the hold
     camera.far = interiorFar(to);
     const stop = roomEntryOf(to).contract.rail.stops[0];
@@ -682,6 +709,11 @@ window.addEventListener('hashchange', () => {
   const hudNext = parseHudParam(new URLSearchParams(queryOf(location.hash)));
   for (const issue of hudNext.issues) console.warn(`zimny: hud issue — ${issue}`);
   toggleHud(hudNext.enabled);
+  // The ?lm= switch re-parses per navigation (ephemeral, like the HUD); rooms mounted
+  // later pick it up — a mounted room keeps its technique until the next exit.
+  const lmNext = parseLmParam(new URLSearchParams(queryOf(location.hash)));
+  for (const issue of lmNext.issues) console.warn(`zimny: lm issue — ${issue}`);
+  roomCtx = { ...roomCtx, lmMode: lmNext.mode };
   // Room route: adjacent-or-cold target transits start once the tier settled; mid-transit
   // navigation re-targets after the current transit completes (the departing room always
   // disposes first — §2.4).
@@ -747,15 +779,15 @@ const tick = (timeMs: number): void => {
   if (pendingEpochMs !== null && pendingEpochMs !== epochMs) applyEpoch(pendingEpochMs);
   pendingEpochMs = null;
 
-  // Interior lightmap blend (§4.1): the active room's baked states ride the frozen §8
-  // weights; the elevation comes from the frame's sun sample (y = sin of the elevation).
+  // Interior lightmap techniques (§4.1–§4.4): the active room's baked states ride the
+  // frozen §8 weights; the elevation comes from the frame's sun sample (y = sin of it).
   const blendRoomId = blendRoom();
   if (blendRoomId !== null) {
     const roomIntensity = intensityByRoom.get(blendRoomId);
     if (roomIntensity !== undefined) {
       const elevationDeg =
         (Math.asin(Math.max(-1, Math.min(1, sample.sunDirection[1]))) * 180) / Math.PI;
-      applyWeights(blendRoomId, blendPayload(lightmapWeights(elevationDeg)), roomIntensity);
+      applyWeights(blendRoomId, lightmapWeights(elevationDeg), roomIntensity);
     }
   }
 

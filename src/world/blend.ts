@@ -68,3 +68,22 @@ export function blendPayload(weights: BlendWeights): BlendPayload {
 export function stateOfPath(path: string): StateId | null {
   return PATH_STATE.get(path) ?? null;
 }
+
+/** ADR-0013's declared envMapIntensity scalars per state — the probe is hour-static, the
+ * intensity follows the sky clock through the frozen §8 weights (Σ = 1). */
+const ENV_SCALARS: Readonly<{ day: number; dusk: number; nightChandeliers: number }> = {
+  day: 1.0,
+  dusk: 0.6,
+  nightChandeliers: 0.35,
+};
+
+export function environmentScalar(weights: BlendWeights): number {
+  assertWeight('day', weights.day);
+  assertWeight('dusk', weights.dusk);
+  assertWeight('nightChandeliers', weights.nightChandeliers);
+  return (
+    ENV_SCALARS.day * weights.day +
+    ENV_SCALARS.dusk * weights.dusk +
+    ENV_SCALARS.nightChandeliers * weights.nightChandeliers
+  );
+}

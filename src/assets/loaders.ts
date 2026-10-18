@@ -12,13 +12,21 @@ import {
   type Material,
   type Mesh,
   type Object3D,
+  PMREMGenerator,
   type Texture,
   type WebGLRenderer,
+  type WebGLRenderTarget,
 } from 'three';
 import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
 import { type GLTF, GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { KTX2Loader } from 'three/examples/jsm/loaders/KTX2Loader.js';
-import type { RoomAssetService, RoomId, RoomObject, RoomPayload } from '../world/registry';
+import type {
+  RoomAssetService,
+  RoomId,
+  RoomLedger,
+  RoomObject,
+  RoomPayload,
+} from '../world/registry';
 
 export interface Loaders extends RoomAssetService {
   dispose(): void;
@@ -34,7 +42,19 @@ const texturesOf = (material: Material): Texture[] =>
     (v): v is Texture => typeof v === 'object' && v !== null && (v as Texture).isTexture === true,
   );
 
-export function createLoaders(renderer: WebGLRenderer): Loaders {
+/** §4.3: the honest GPU size — compressed textures carry their mip chain in image.data;
+ * uncompressed textures estimate width × height × 4 B × 1.33 (the mip chain). */
+const vramBytes = (texture: Texture): number => {
+  const image = texture.image as
+    | { width?: number; height?: number; data?: { byteLength?: number } }
+    | undefined;
+  const data = image?.data;
+  if (data && typeof data.byteLength === 'number') return data.byteLength;
+  if (image?.width === undefined || image?.height === undefined) return 0;
+  return Math.ceil(image.width * image.height * 4 * (4 / 3));
+};
+
+export function createLoaders(renderer: WebGLRenderer, ledger: RoomLedger): Loaders {
   MeshoptDecoder.useWorkers(1);
   const ktx2 = new KTX2Loader()
     .setTranscoderPath('/basis/')
@@ -42,6 +62,8 @@ export function createLoaders(renderer: WebGLRenderer): Loaders {
     .detectSupport(renderer);
   const gltf = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).setKTX2Loader(ktx2);
   const blobsByRoot = new WeakMap<Object3D, string[]>();
+  const envByRoom = new Map<string, WebGLRenderTarget>(); // §5/ADR-0013: one bake per mount
+  const pmrem = new PMREMGenerator(renderer);
   const parseGlb = (data: ArrayBuffer, path: string): Promise<GLTF> =>
     new Promise((resolve, reject) => gltf.parse(data, path, resolve, reject));
   return {
@@ -104,13 +126,47 @@ export function createLoaders(renderer: WebGLRenderer): Loaders {
       ktx2.manager = manager;
       const parsed = await parseGlb(payload.glb, `/assets/${roomId}/`);
       const root = parsed.scene;
+      // §8.3 layer 1: every decoded asset registers its honest GPU size — textures from the
+      // transcoded mip data, geometries from their attribute + index arrays.
       root.traverse((obj) => {
+        const mesh = obj as Mesh;
+        if (mesh.isMesh === true) {
+          let geometryBytes = 0;
+          for (const attribute of Object.values(mesh.geometry.attributes)) {
+            const array = attribute as { array: { byteLength: number } };
+            geometryBytes += array.array.byteLength;
+          }
+          const index = mesh.geometry.index as { array: { byteLength: number } } | null;
+          if (index !== null) geometryBytes += index.array.byteLength;
+          ledger.register(roomId, 'geometry', geometryBytes, `geo/${mesh.uuid}`);
+        }
         for (const material of materialsOf(obj)) {
-          for (const texture of texturesOf(material)) renderer.initTexture(texture);
+          for (const texture of texturesOf(material)) {
+            renderer.initTexture(texture);
+            ledger.register(roomId, 'texture', vramBytes(texture), `tex/${texture.uuid}`);
+          }
         }
       });
       blobsByRoot.set(root, [...blobUrls.values()]);
       return root;
+    },
+    /** §5/ADR-0013: decode the dusk probe, bake PMREM once — inside the hold, never per frame. */
+    async mountEnvironment(roomId, payload) {
+      const probe = [...payload.ktx2].find(([path]) => path.startsWith('probe/'));
+      if (probe === undefined) throw new Error(`mountEnvironment: ${roomId} has no probe row`);
+      const source = await new Promise<Texture>((resolve, reject) =>
+        ktx2.parse(probe[1], resolve, reject),
+      );
+      const rt = pmrem.fromEquirectangular(source);
+      source.dispose(); // baked into the RT; the equirect is never sampled again
+      envByRoom.set(roomId, rt);
+      const image = rt.texture.image as { width: number; height: number };
+      ledger.register(roomId, 'renderTarget', image.width * image.height * 8, 'pmrem-probe');
+      return rt.texture;
+    },
+    disposeEnvironment(roomId) {
+      envByRoom.get(roomId)?.dispose();
+      envByRoom.delete(roomId);
     },
     disposeParsed(object) {
       const root = object as Object3D;
@@ -126,6 +182,7 @@ export function createLoaders(renderer: WebGLRenderer): Loaders {
       blobsByRoot.delete(root);
     },
     dispose() {
+      pmrem.dispose();
       ktx2.dispose();
     },
   };

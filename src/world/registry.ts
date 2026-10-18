@@ -12,6 +12,8 @@
  * (DEC-013) and the whole graph fences at boot.
  */
 import type { RoomLedger } from '../engine/ledger';
+
+export type { RoomLedger } from '../engine/ledger';
 export type RoomId = 'rastrelli-gallery' | 'jordan';
 export type NodeHandle = RoomId | 'square';
 export type AirlockId = 'arch-portal' | 'gallery-airlock' | 'landing-airlock';
@@ -91,18 +93,29 @@ export interface RoomAssetService {
     roomId: RoomId,
     payload: RoomPayload,
   ): Promise<ReadonlyMap<string, RoomTexture>>;
+  /** §5/ADR-0013: decode the dusk probe and bake PMREM once, inside the hold. Returns the env texture. */
+  mountEnvironment(roomId: RoomId, payload: RoomPayload): Promise<RoomObject>;
+  disposeEnvironment(roomId: RoomId): void;
   disposeParsed(object: RoomObject): void;
 }
 export interface RoomScene {
   add(object: RoomObject): void;
   remove(object: RoomObject): void;
+  /** §5: the room's PMREM probe attaches to the host scene's environment; null clears it. */
+  setEnvironment(object: RoomObject | null): void;
 }
 export interface RoomLoadContext {
   readonly assets: RoomAssetService;
   readonly scene: RoomScene;
   /** §8.3 layer 1: rooms register payload bytes in `load`, release in `unmount`. */
   readonly ledger: RoomLedger;
+  /** §4.4 measurement switch (dev-only; the product runs 'a'). */
+  readonly lmMode: LmMode;
+  /** The host renderer, opaque here (B-RT's per-frame quad pass is the only consumer). */
+  readonly renderer: RoomObject;
 }
+/** The lightmap technique — 'a' is the shipped blend; the others are the §4.4 measured alternatives. */
+export type LmMode = 'a' | 'b-rt' | 'b-discrete';
 export interface RoomModule {
   contract: RoomContract;
   load(ctx: RoomLoadContext, manifest: RoomManifest, signal: AbortSignal): Promise<void>;

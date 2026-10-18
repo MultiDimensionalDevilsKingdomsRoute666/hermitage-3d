@@ -7,7 +7,7 @@
  * never mounted twice. The ledger (§8.3 layer 1) registers payload bytes in load and
  * releases the whole scope in unmount.
  */
-import { applyBlend, disposeBlend } from '../../src/assets/blend-gl';
+import { applyTechnique, disposeTechnique } from '../../src/assets/blend-gl';
 import { stateOfPath } from '../../src/world/blend';
 import type {
   RoomLoadContext,
@@ -39,12 +39,24 @@ export const room: RoomModule = {
     if (payload === null) throw new Error(`${contract.id}: mount before load`);
     if (object !== null) return; // idempotent
     object = await ctx.assets.mountParsed(contract.id, payload);
-    applyBlend(contract.id, object, await stateTextures(ctx), intensity);
+    const env = await ctx.assets.mountEnvironment(contract.id, payload);
+    ctx.scene.setEnvironment(env); // §5/ADR-0013: the probe is mounted once, inside the hold
+    applyTechnique(
+      ctx.lmMode,
+      contract.id,
+      object,
+      await stateTextures(ctx),
+      intensity,
+      ctx.renderer,
+      ctx.ledger,
+    );
     ctx.scene.add(object);
   },
   unmount(ctx) {
     if (object === null) return;
-    disposeBlend(contract.id);
+    disposeTechnique(contract.id);
+    ctx.scene.setEnvironment(null);
+    ctx.assets.disposeEnvironment(contract.id);
     ctx.scene.remove(object);
     ctx.assets.disposeParsed(object);
     ctx.ledger.release(contract.id);

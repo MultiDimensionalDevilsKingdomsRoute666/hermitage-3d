@@ -14,18 +14,48 @@ file in the same session.
   disposal ledger + HUD rows (16b, `d876d59`). The e2e smoke walks the graph
   #/ → gallery → jordan → queued retarget mid-transit → #/ with the ledger rows back at boot
   values and a clean console (ROUNDS row 16).
-- Round 17 **in flight**. **17a integrated and COMPLETE** (`60ef9b4`, `7b8399c`): bake
-  pipeline + both rooms fully baked and committed (gallery 1024², jordan 2048² + probes),
-  byte-identity proven on both rooms (jordan night run-2 == run-1 byte-for-byte under
-  different machine loads). **17b integrated** (`cfeab8d`): the blend runtime —
-  src/world/blend.ts (pure two-state selection) + src/assets/blend-gl.ts (technique A via
-  onBeforeCompile; stock lightMap = state A, B fetch on the shared vLightMapUv, always-bound
-  lmB fallback — no recompiles at crossings) + decodeRoomTextures additive + room/main wiring
-  under the frozen §8 weights; e2e walk green with the blend on SwiftShader; 264 tests;
-  238,616 gzip. **17c next**: PMREM probe (ADR-0013) + interior exposure constant + ledger
-  VRAM rows (format×mips) + the §4.4 measurement harness (B-RT/B-discrete vs A, headed
-  reference device, det plateau times from §8) + goldens at the three plateaux (J1/J4 ×3 +
-  G1-night, local-only) + ROUNDS row 17 + ADR/DEC verdicts. No 17c brief written yet.
+- Round 17 **in flight**. **17a complete** (`60ef9b4`, `7b8399c`): bake pipeline + both rooms
+  fully baked and committed, byte-identity proven on both rooms. **17b integrated** (`cfeab8d`,
+  `d4c3ae4`): the blend runtime lived (the 17b day shot showed the baked light —
+  `node_modules/.cache/look/bisect-17b.png`, HEADLESS shot: 1280×720 dpr 1, ~430 ms rAF
+  throttle — fine for pixels, never for cadence). **17c MID-INTEGRATION** (this commit,
+  validate green: 264 tests / 239,779 gzip / smoke green): the technique hub
+  src/assets/blend-gl.ts (applyTechnique/disposeTechnique — §4.1 'a' patched, §4.2
+  'b-discrete' stock argmax, §4.4 'b-rt' per-frame ceiling RT; the coordinator's one per-frame
+  call = applyWeights(roomId, frozenWeights, intensity)) + src/world/lm-mode.ts (the ?lm=
+  dev switch, hud-parsing contract) + the PMREM probe in loaders (mountEnvironment returns
+  the env texture, one bake per hold, the RT row registered) + the honest VRAM ledger rows in
+  mountParsed (geometry/texture kinds; the room payload registers at fetch, unchanged) +
+  RoomScene.setEnvironment + RoomLoadContext {lmMode, renderer} + blend.ts environmentScalar
+  (ADR-0013 scalars 1.0/0.6/0.35) + the rooms wired to the hub + main.ts: the interior
+  exposure constant 1.0 (§4.4) and THE LIGHT SEAM — sun/hemi visible=false indoors, restored
+  by applyEpoch on exit.
+- **17c OPEN BUG — interiors render black under technique 'a'** even though the page probe
+  shows everything correct: lightMap bound to the day texture (BC1, 2 MB mip, avg ≈ 93/255 —
+  NOT black), lightMapIntensity = 6, the patch key 'zimny-lm-blend-v1' set, 2 blend programs
+  compiled, no console errors, tris/draws fine. Diff vs the working 17b: the mount-time bind
+  (17b bound the day texture at mount and preset current.a='day'; 17c binds black at mount
+  and rebinds on the first applyWeights frame — the uniform refresh IS unconditional per
+  frame per WebGLMaterials.js:260, so the rebind itself should work). THE LIGHT SEAM IS
+  TEMPORARILY DISABLED (main.ts applySwap: the sun/hemi hiding commented out with a
+  SUB-BISECT marker) — the sub-bisect step was interrupted; the day stayed black WITH the
+  lights hidden, so the culprit is likely NOT the seam: suspects = the hub rewrite's bind
+  timing vs three's program init, or the PMREM/environment interaction. Next: finish the
+  sub-bisect empirically (bisect-17b.png vs the current tree — both headless jordan-day
+  shots), fix, re-enable the seam, re-shoot.
+- **17c remains after the bug**: the goldens — extend tests/e2e/golden.spec.ts with 6 room
+  scenes (gallery/jordan × day/dusk/night; the det plateau constants ARE COMMITTED-SAFE:
+  at=2026-06-22T03:18:00Z day, 2026-06-20T21:50:00Z dusk, 2026-02-17T16:25:00Z night — the
+  room waits follow the smoke's roomReady pattern: data-room + data-ledger-bytes ≠ '0' +
+  data-hold-ms = '0', then ~300 ms margin; page-level clip captures, headed real GPU, the
+  baselines land under golden.spec.ts-snapshots) + the §4.4 headed measurement (A vs
+  b-discrete vs b-rt at the plateaux AND mid-seam, 10-s HUD medians, the round-13 method) —
+  **THE MEASUREMENT AND GOLDENS NEED A QUIET MACHINE (the owner's film pollutes cadence —
+  ask first)** + ADR-0014 (the blend-technique verdict from the measurement) + the ROUNDS
+  row 17 + the brief-file deletion discipline. The facade nits the owner parked for r19:
+  the surrounds read as touching the columns (the derived module rhythm; a declared-gap fix
+  is trivial mechanically, an art call), the afar blur = no-MSAA + the T1 render scale (by
+  design; an owner question, not a bug).
 - validate green: **254** tests, 16 files (vitest node) · build 6 js chunks, **236,663** gzip
   of 350,000 — cap untouched; the ≤225,000 r16 projection is re-marked measured in §9 (the
   loader stack GLTFLoader+KTX2+Meshopt cost more than the +60 KB estimate; headroom 113,337).
