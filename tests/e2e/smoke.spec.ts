@@ -92,3 +92,39 @@ test('deterministic T0 boot settles within budget', async ({ page }) => {
   await expect(hud).toHaveAttribute('data-tier', 'T0 · low');
   await expectWithinBudgets(hud);
 });
+
+// §8.3 layer 3: the smoke walks the phase-2 graph (transits driven directly in-test — the
+// hash is the r16 input surface; rail-driven walking is asserted in r18) and asserts the
+// HUD metadata ledger rows return to their boot values with a clean console. Smoke asserts
+// contracts, never cadence: attribute waits are generous (holds dwell until data is ready),
+// no frame timing is compared.
+test('smoke walk: the graph returns the ledger to boot values', async ({ page }) => {
+  const query = `${AT}&det=1&hud=1`;
+  const hud = await bootDeterministic(page, query);
+  // Boot posture: the resident owns the row, nothing registered, no hold.
+  await expect(hud).toHaveAttribute('data-room', 'square');
+  await expect(hud).toHaveAttribute('data-ledger-bytes', '0');
+  await expect(hud).toHaveAttribute('data-hold-ms', '0');
+  const nav = (path: string): Promise<void> =>
+    page.evaluate((hash) => {
+      location.hash = hash;
+    }, `#${path}?${query}`);
+
+  // #/ → gallery: a cold entry (from = null); the room registers its payload in load.
+  await nav('/gallery');
+  await expect(hud).toHaveAttribute('data-room', 'rastrelli-gallery', { timeout: 60_000 });
+  await expect(hud).not.toHaveAttribute('data-ledger-bytes', '0');
+
+  // gallery → jordan: the heaviest room must render within the whole-frame budgets.
+  await nav('/jordan');
+  await expect(hud).toHaveAttribute('data-room', 'jordan', { timeout: 60_000 });
+  await expectWithinBudgets(hud);
+
+  // Re-target DURING the open transit: the queued chain still ends where the URL says,
+  // and the departing room always disposes first (§2.4) — this leg exercises that path.
+  await nav('/gallery');
+  await nav('/');
+  await expect(hud).toHaveAttribute('data-room', 'square', { timeout: 60_000 });
+  await expect(hud).toHaveAttribute('data-ledger-bytes', '0', { timeout: 60_000 });
+  await expect(hud).toHaveAttribute('data-hold-ms', '0', { timeout: 60_000 });
+});

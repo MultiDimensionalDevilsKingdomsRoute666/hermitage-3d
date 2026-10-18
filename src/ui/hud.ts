@@ -7,7 +7,8 @@
  * client-only"). Budget table rows this instruments: "Draw calls ≤ 250 — HUD +
  * Playwright assertion" and "Triangles ≤ 1.0 M — same". The round-11 assertions read
  * the buildHudAttrs() keys (data-tier, data-draws, data-tris, data-frame-ms), never
- * the prose lines.
+ * the prose lines. Round 16b extends the contract with data-room, data-hold-ms and
+ * data-ledger-bytes (design-staircase.md §8.3 layer 3, §8.4 / DEC-018, §9 gates).
  *
  * Host contract (main.ts, not this module): renderer.info.autoReset is false and
  * info.reset() runs once per frame, so calls/triangles are whole-frame aggregates
@@ -20,6 +21,12 @@ export type HudState = Readonly<{
   frameDrawCalls: number;
   frameTriangles: number;
   medianFrameMs: number;
+  /** Active registry node id ('square' or a RoomId); fed by the host, no world import. */
+  room: string;
+  /** Effective declared hold of the transit in progress; a reduced-motion cut is 0; idle 0. */
+  holdMs: number;
+  /** The disposal ledger's total registered bytes (§8.3). */
+  ledgerBytes: number;
 }>;
 /** Length of the rolling frame-interval buffer (about half a second at 60 Hz). */
 export const HUD_FRAME_WINDOW = 32 as const;
@@ -76,8 +83,11 @@ function grouped(n: number): string {
 }
 /**
  * Stable machine-readable attributes — the Playwright assertions query these. The keys
- * are the contract: data-tier, data-draws, data-tris, data-frame-ms. Numbers are plain
- * ungrouped integers; the median keeps two decimals.
+ * are the contract: data-tier, data-draws, data-tris, data-frame-ms (round 11, unchanged
+ * formatting) plus data-room, data-hold-ms, data-ledger-bytes (round 16b — §8.3 layer 3
+ * compares the ledger row to its boot value after the smoke walk, §8.4 / DEC-018 exposes
+ * the declared hold so goldens and smoke can see it). Numbers are plain ungrouped
+ * integers; the median keeps two decimals; the room id is passed through as is.
  */
 export function buildHudAttrs(state: HudState): Readonly<Record<string, string>> {
   return {
@@ -85,19 +95,27 @@ export function buildHudAttrs(state: HudState): Readonly<Record<string, string>>
     'data-draws': integerText(state.frameDrawCalls),
     'data-tris': integerText(state.frameTriangles),
     'data-frame-ms': frameMsText(state.medianFrameMs),
+    'data-room': state.room,
+    'data-hold-ms': integerText(state.holdMs),
+    'data-ledger-bytes': integerText(state.ledgerBytes),
   };
 }
 /**
- * Exactly three human lines: tier label, grouped draws/tris, fps + median ms. fps is
- * derived from the median and reads '—' while no interval has been measured — a frozen
- * or hidden frame must not fake a rate.
+ * Exactly four human lines: tier label, grouped draws/tris, fps + median ms, and the
+ * round-16b room line (active room · declared hold in ms · grouped ledger bytes; §8.3,
+ * §8.4 / DEC-018). fps is derived from the median and reads '—' while no interval has
+ * been measured — a frozen or hidden frame must not fake a rate.
  */
 export function buildHudLines(state: HudState): readonly string[] {
   const { medianFrameMs } = state;
   const fps = medianFrameMs > 0 ? String(Math.round(1000 / medianFrameMs)) : '—';
+  const ledgerLine =
+    `room ${state.room} · hold ${integerText(state.holdMs)} ms` +
+    ` · ledger ${grouped(state.ledgerBytes)} B`;
   return [
     state.tierLabel,
     `draws ${grouped(state.frameDrawCalls)} · tris ${grouped(state.frameTriangles)}`,
     `fps ${fps} · ${frameMsText(medianFrameMs)} ms`,
+    ledgerLine,
   ];
 }

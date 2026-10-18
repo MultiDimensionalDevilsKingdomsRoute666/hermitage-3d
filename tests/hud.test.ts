@@ -20,6 +20,9 @@ const STATE: HudState = Object.freeze({
   frameDrawCalls: 132,
   frameTriangles: 132264,
   medianFrameMs: 16.5,
+  room: 'square',
+  holdMs: 0,
+  ledgerBytes: 0,
 });
 describe('parseHudParam', () => {
   it('is off without issues when the param is absent or empty', () => {
@@ -133,10 +136,13 @@ describe('rollingMedianFrameMs', () => {
   });
 });
 describe('buildHudAttrs', () => {
-  it('exposes exactly the four contract keys', () => {
+  it('exposes exactly the seven contract keys', () => {
     expect(Object.keys(buildHudAttrs(STATE)).sort()).toEqual([
       'data-draws',
       'data-frame-ms',
+      'data-hold-ms',
+      'data-ledger-bytes',
+      'data-room',
       'data-tier',
       'data-tris',
     ]);
@@ -161,12 +167,13 @@ describe('buildHudAttrs', () => {
   });
 });
 describe('buildHudLines', () => {
-  it('three lines: tier verbatim, grouped digits, fps from the median', () => {
+  it('four lines: tier verbatim, grouped digits, fps from the median, room row', () => {
     // 1000 / 16.5 = 60.6… → rounds to 61 (not 60).
     expect(buildHudLines(STATE)).toEqual([
       'T1 · default',
       'draws 132 · tris 132 264',
       'fps 61 · 16.5 ms',
+      'room square · hold 0 ms · ledger 0 B',
     ]);
   });
   it('groups every three digits with plain spaces', () => {

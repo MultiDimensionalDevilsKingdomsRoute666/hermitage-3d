@@ -8,6 +8,7 @@ import { createLoaders } from './assets/loaders';
 import { fetchManifest } from './assets/manifests';
 import { SOUTH_FACADE, WINDOW_ROWS } from './content/facade-spec';
 import { TIME } from './content/sky-time';
+import { createLedger } from './engine/ledger';
 import {
   BENCHMARK,
   classifyProbe,
@@ -280,11 +281,12 @@ applyEpoch(epochMs);
 // airlock transit is the only place a room mounts, uploads GPU memory or disposes.
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 const assets = createLoaders(renderer);
+const ledger = createLedger(); // §8.3 layer 1: rooms register payload bytes, release on unmount
 const roomScene: RoomScene = {
   add: (object) => scene.add(object as unknown as THREE.Object3D),
   remove: (object) => scene.remove(object as unknown as THREE.Object3D),
 };
-const roomCtx = { assets, scene: roomScene };
+const roomCtx = { assets, scene: roomScene, ledger };
 
 let activeNode: NodeHandle | null = null; // null = cold entry (nothing mounted yet)
 let indoor = false;
@@ -382,6 +384,40 @@ const beginTransitTo = (target: NodeHandle): void => {
     void ensureRoom(state.to).then(() => {
       ready = true;
     });
+  }
+};
+
+// HUD room row (§8.4 / DEC-018): during a transit it names the node being entered; the
+// active node owns it between transits; null (cold, pre-first-transit) reads 'square'.
+const hudRoom = (): string => {
+  const st = transit?.state;
+  if (st === undefined || st.phase === 'idle') return activeNode ?? 'square';
+  return st.to ?? activeNode ?? 'square';
+};
+const hudHoldMs = (): number => {
+  const st = transit?.state;
+  return st !== undefined && st.phase !== 'idle' ? st.holdMs : 0;
+};
+
+// §8.3 layer 2, dev-only: after every completed transit the departing scope is empty and,
+// on exits back to the resident, the renderer's object counts return to the post-boot
+// baseline. The baseline is captured at the massing prewarm only when no room is mounted
+// (a deep link boots a room early — its ledger rows are still asserted, the GPU counts
+// are not). Warnings are diagnostics; the CI smoke (layer 3) asserts the HUD ledger rows.
+let memoryBaseline: Readonly<{ geometries: number; textures: number }> | null = null;
+const assertDisposal = (departing: NodeHandle | null, arrivedAt: NodeHandle | null): void => {
+  if (!import.meta.env.DEV) return;
+  if (departing !== null && departing !== 'square' && ledger.bytesByScope(departing) !== 0) {
+    console.warn(`zimny: disposal ledger — scope ${departing} not empty at exit`);
+  }
+  if (arrivedAt !== 'square' || memoryBaseline === null) return;
+  const { geometries, textures } = renderer.info.memory;
+  if (geometries !== memoryBaseline.geometries || textures !== memoryBaseline.textures) {
+    console.warn(
+      'zimny: disposal ledger — renderer memory off baseline' +
+        ` (geometries ${geometries} of ${memoryBaseline.geometries},` +
+        ` textures ${textures} of ${memoryBaseline.textures})`,
+    );
   }
 };
 
@@ -707,6 +743,7 @@ const tick = (timeMs: number): void => {
       activeNode = advanced.state.to;
       finishTransit(advanced.state);
       transit = null;
+      assertDisposal(advanced.state.from, activeNode);
       const next = queuedTarget ?? target;
       queuedTarget = null;
       if (activeNode !== next) beginTransitTo(next); // next hop of the chain
@@ -738,6 +775,9 @@ const tick = (timeMs: number): void => {
         frameDrawCalls: renderer.info.render.calls,
         frameTriangles: renderer.info.render.triangles,
         medianFrameMs: rollingMedianFrameMs(hudIntervals),
+        room: hudRoom(),
+        holdMs: hudHoldMs(),
+        ledgerBytes: ledger.snapshot().total,
       };
       for (const [key, value] of Object.entries(buildHudAttrs(hudState))) {
         hud.setAttribute(key, value); // round-11 Playwright asserts the data-* contract
@@ -790,6 +830,13 @@ const tick = (timeMs: number): void => {
       .compileAsync(scene, camera)
       .then(() => {
         massingReady = true;
+        // §8.3 layer 2 baseline: the post-boot object counts, only when no room is mounted.
+        if (ledger.snapshot().total === 0) {
+          memoryBaseline = {
+            geometries: renderer.info.memory.geometries,
+            textures: renderer.info.memory.textures,
+          };
+        }
       })
       .catch((error: unknown) => {
         console.error('zimny: massing prewarm failed', error); // sky and title are retained

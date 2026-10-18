@@ -11,6 +11,7 @@
  * data and the module stays behind the thunk — so the list is the single source of truth
  * (DEC-013) and the whole graph fences at boot.
  */
+import type { RoomLedger } from '../engine/ledger';
 export type RoomId = 'rastrelli-gallery' | 'jordan';
 export type NodeHandle = RoomId | 'square';
 export type AirlockId = 'arch-portal' | 'gallery-airlock' | 'landing-airlock';
@@ -92,6 +93,8 @@ export interface RoomScene {
 export interface RoomLoadContext {
   readonly assets: RoomAssetService;
   readonly scene: RoomScene;
+  /** §8.3 layer 1: rooms register payload bytes in `load`, release in `unmount`. */
+  readonly ledger: RoomLedger;
 }
 export interface RoomModule {
   contract: RoomContract;
