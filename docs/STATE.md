@@ -14,14 +14,18 @@ file in the same session.
   disposal ledger + HUD rows (16b, `d876d59`). The e2e smoke walks the graph
   #/ → gallery → jordan → queued retarget mid-transit → #/ with the ledger rows back at boot
   values and a clean console (ROUNDS row 16).
-- Round 17 **in flight**: **17a brief open** — `docs/briefs/BRIEF-round-17a-bake-pipeline.md`
-  (the bake side: tools/bpy/bake.py — Cycles CPU, three states, OIDN, white-point LDR encode —
-  + tools/bake.mjs driver + bake-mode guard patches for both committed bpy scripts +
-  the ADR-0013 probe as one equirect 512×256 ktx2, adjudicated against three 0.186.1:
-  fromCubemap exists but KTX2Loader does not compose cube faces, so the probe goes through
-  fromEquirectangular). Then **17b**: the runtime blend (technique A custom slot + PMREM probe
-  in the hold + interior exposure constant + ledger VRAM rows) and the §4.4 falsifiable
-  measurement with stub noise lightmaps (headed, reference device).
+- Round 17 **in flight**. **17a integrated** (`60ef9b4`): bake pipeline (tools/bpy/bake.py +
+  tools/bake.mjs driver + guard patches + token linear OETF; byte-identity proven on the
+  gallery — day triple-run, dusk/night/probe vs committed) — gallery: all 3 states + probe
+  committed, payload 152,287 B of 2 MB; **jordan: night baked 59.6 min (menu row), day/dusk
+  ON THE MENU per owner decision** — owner task tomorrow: `node tools/bake.mjs jordan day`
+  then `node tools/bake.mjs jordan dusk` (~1–1.5 h each on this 2-core i5; night's 59.6 min
+  is the measured rate), then `node tools/bake.mjs jordan all --verify`, commit + push.
+  Until then jordan stays on placeholder lighting (all-or-nothing manifest law).
+  **17b next**: the runtime blend (technique A custom slot + PMREM probe in the hold +
+  interior exposure constant + ledger VRAM rows) and the §4.4 falsifiable measurement with
+  stub noise lightmaps (headed, reference device) — develops against the gallery's real
+  bakes; jordan joins after its bakes land. No 17b brief written yet.
 - validate green: **254** tests, 16 files (vitest node) · build 6 js chunks, **236,663** gzip
   of 350,000 — cap untouched; the ≤225,000 r16 projection is re-marked measured in §9 (the
   loader stack GLTFLoader+KTX2+Meshopt cost more than the +60 KB estimate; headroom 113,337).
