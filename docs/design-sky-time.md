@@ -520,7 +520,7 @@ Except for a small immutable sample on dirty updates, the frame loop reuses its 
 
 ### Resolution and resources
 
-For the designated device gate, use no MSAA, device pixel ratio at most 1, and a drawing-buffer area at most 1,048,576 pixels. Fit larger viewports by reducing render scale while preserving aspect ratio. Choose this before arrival; do not resize targets during its fade. The host maps existing `q` semantics to these limits rather than inventing a competing query format here.
+For the designated device gate, use no MSAA, device pixel ratio at most 1, and a drawing-buffer area at most 1,048,576 pixels. Fit larger viewports by reducing render scale while preserving aspect ratio. Choose this before arrival; do not resize targets during its fade. The host maps existing `q` semantics to these limits rather than inventing a competing query format here. *(Amended 2026-10-19 by [ADR-0015](adr/0015.md): MSAA on at every tier — measured free on the reference device; the dpr-1/1,048,576 caps stand pending the owner's dpr-2 disposition, measured viable-but-edge.)*
 
 The sky owns no textures or render targets. That is not a claim that the browser/WebGL context uses zero GPU memory. The global ledger includes all application textures, render-target attachments, mip levels, cube faces, and simultaneously live transition resources; report drawing-buffer/renderbuffer allocations separately or conservatively include them as well.
 

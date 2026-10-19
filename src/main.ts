@@ -117,7 +117,7 @@ let timeState: TimeState = parsed.state;
 let epochMs = parsed.initialEpochMs;
 let sample: SkySample = sampleSky(epochMs);
 
-const renderer = new THREE.WebGLRenderer({ canvas, antialias: false }); // §11: no MSAA
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true }); // r22 experiment: MSAA on — the far-field aliasing fix; the budgets decide keep/revert
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.AgXToneMapping;
 renderer.toneMappingExposure = sample.exposure;
