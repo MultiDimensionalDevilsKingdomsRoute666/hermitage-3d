@@ -9,6 +9,7 @@ import {
   FACADE_COLORS,
   type FacadeBuild,
   getPartGeometry,
+  surroundOpening,
 } from '../src/procedural/facade-builder';
 import type { PartId } from '../src/procedural/facade-solver';
 import { KIT, PART_IDS, solveSouthFacade } from '../src/procedural/facade-solver';
@@ -142,5 +143,26 @@ describe('facade builder', () => {
 
   it('counts a box as 12 triangles', () => {
     expect(countTriangles(getPartGeometry('sill' as PartId))).toBe(12);
+  });
+
+  it('exposes the recess-panel rect for the populated surround parts (DEC-019 lattice)', () => {
+    const ids = [
+      'surround-row1-small',
+      'surround-row2-large',
+      'surround-row3-large',
+      'surround-row4-small',
+    ] as const;
+    for (const id of ids) {
+      const opening = surroundOpening(id);
+      expect(opening.width).toBeGreaterThan(0);
+      expect(opening.height).toBeGreaterThan(0);
+      // the panel is a thin sheet at the back of the reveal (rd = min(0.05, sz/4))
+      expect(opening.depth).toBeGreaterThan(0);
+      expect(opening.depth).toBeLessThanOrEqual(0.05);
+    }
+  });
+
+  it('throws on a non-surround part in surroundOpening', () => {
+    expect(() => surroundOpening('sill' as PartId)).toThrow(/not a surround part/);
   });
 });

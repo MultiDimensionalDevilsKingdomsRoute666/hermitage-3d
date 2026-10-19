@@ -160,11 +160,43 @@ export function countTriangles(geometry: THREE.BufferGeometry): number {
 
 type HeadKind = 'cornice' | 'broken-arch' | 'pediment';
 
+/* The populated surround parts with their opening/head/rise params — consumed by the
+ * BUILDERS table below and re-exposed by surroundOpening() for the DEC-019 night
+ * lattice. One source of truth: the pane must size to the exact recess panel. */
+type SurroundParams = Readonly<{ opening: number; head: HeadKind; rise: number }>;
+const SURROUND_PARAMS: Partial<Record<PartId, SurroundParams>> = {
+  'surround-row1-small': { opening: 1.0, head: 'cornice', rise: 0.45 },
+  'surround-row2-large': { opening: 1.7, head: 'broken-arch', rise: 0.65 },
+  'surround-row3-large': { opening: 1.7, head: 'pediment', rise: 0.6 },
+  'surround-row4-small': { opening: 1.0, head: 'cornice', rise: 0.45 },
+};
+
+function surroundParams(partId: PartId): SurroundParams {
+  const p = SURROUND_PARAMS[partId];
+  if (!p) throw new Error(`facade-builder: "${partId}" is not a surround part`);
+  return p;
+}
+
+/** The dark recess panel's depth (its front-face z in the part's local frame). */
+function panelDepth(sz: number): number {
+  return Math.min(0.05, sz / 4);
+}
+
+/** The dark recess-panel rect in the part's local frame (DEC-019 night lattice reads it):
+ *  the panel is box(opening, openH, rd) at x=0, y∈[0, openH], z∈[0, rd]; the reveal sits
+ *  in front of it. A pane glazing this window sits a hair in front of z = depth. */
+export type SurroundOpening = Readonly<{ width: number; height: number; depth: number }>;
+export function surroundOpening(partId: PartId): SurroundOpening {
+  const p = surroundParams(partId);
+  const { sy, sz } = envelope(partId);
+  return { width: p.opening, height: sy - p.rise, depth: panelDepth(sz) };
+}
+
 function surround(id: PartId, opening: number, head: HeadKind, rise: number): THREE.BufferGeometry {
   const { sx, sy, sz } = envelope(id);
   const openH = sy - rise; // the opening fills the envelope; the head ornament owns the top `rise`
   const jamb = Math.max(0.12, (sx - opening) / 2);
-  const rd = Math.min(0.05, sz / 4);
+  const rd = panelDepth(sz);
   const dz = sz * 0.7;
   const yHead = openH;
   const half = sx / 2;
@@ -475,11 +507,16 @@ function statue(id: PartId): THREE.BufferGeometry {
 
 /* ------------------------------------------------------------------ catalogue + memo */
 
+const surroundOf = (id: PartId): THREE.BufferGeometry => {
+  const p = surroundParams(id);
+  return surround(id, p.opening, p.head, p.rise);
+};
+
 const BUILDERS: Partial<Record<PartId, (id: PartId) => THREE.BufferGeometry>> = {
-  'surround-row1-small': (id) => surround(id, 1.0, 'cornice', 0.45),
-  'surround-row2-large': (id) => surround(id, 1.7, 'broken-arch', 0.65),
-  'surround-row3-large': (id) => surround(id, 1.7, 'pediment', 0.6),
-  'surround-row4-small': (id) => surround(id, 1.0, 'cornice', 0.45),
+  'surround-row1-small': surroundOf,
+  'surround-row2-large': surroundOf,
+  'surround-row3-large': surroundOf,
+  'surround-row4-small': surroundOf,
   sill,
   'paired-column': pairedColumn,
   'corner-bunch': cornerBunch,
