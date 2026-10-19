@@ -21,11 +21,17 @@
  *   Reduced motion turns every glide into a cut. Scroll clamps at the rail ends; only key steps
  *   past an end surface a boundary intent (the host turns it into an airlock transit).
  * - Seed precedence on node entry: ?stop= (known id) > ?cam= (finite, clamped) > entry (u = 0).
+ * - r21 look response: target/current split; the sensitivity and damping laws live in look.ts
+ *   (§6.1; §10 row r21). drag() accumulates the clamped TARGET, advance() eases the CURRENT
+ *   every frame; settle() re-clamps both; at rest the eased look hands back the same object, so
+ *   the never-dragged poses stay bit-identical.
  */
-import type { Rail, Stop, Vec3 } from '../world/registry';
 
-export type LookLimits = Stop['look'];
-export type LookOffset = Readonly<{ yaw: number; pitch: number }>;
+import type { Rail, Stop, Vec3 } from '../world/registry';
+import type { LookLimits, LookOffset } from './look';
+import { clampLook, dragLook, easeLook, NO_LOOK, settleLook } from './look';
+
+export type { LookLimits, LookOffset } from './look';
 export type GlideKind = 'step' | 'scroll';
 export type Glide = Readonly<{
   kind: GlideKind;
@@ -34,7 +40,12 @@ export type Glide = Readonly<{
   durationMs: number;
   elapsedMs: number;
 }>;
-export type RailState = Readonly<{ u: number; glide: Glide | null; look: LookOffset }>;
+export type RailState = Readonly<{
+  u: number;
+  glide: Glide | null;
+  look: LookOffset;
+  lookTarget: LookOffset;
+}>;
 export type Boundary = 'forward' | 'backward';
 export type StepResult = Readonly<{ state: RailState; boundary: Boundary | null }>;
 export type Pose = Readonly<{
@@ -50,9 +61,7 @@ export type SeedResult = Readonly<{ state: RailState; source: SeedSource }>;
 export const STEP_GLIDE_MS = 1400;
 export const SCROLL_GLIDE_MS = 320;
 export const SCROLL_PX_PER_SEGMENT = 900;
-export const DRAG_DEG_PER_PX = 0.16;
 
-const NO_LOOK = { yaw: 0, pitch: 0 } satisfies LookOffset;
 const STOP_EPS = 1e-9;
 const KNOT_EPS = 1e-6;
 const TAU = Math.PI * 2;
@@ -100,7 +109,12 @@ export function nearestStopIndex(rail: Rail, u: number): number {
   return n === 1 ? 0 : Math.round(clamp(u, 0, 1) * (n - 1));
 }
 
-export const restingAt = (u: number): RailState => ({ u, glide: null, look: NO_LOOK });
+export const restingAt = (u: number): RailState => ({
+  u,
+  glide: null,
+  look: NO_LOOK,
+  lookTarget: NO_LOOK,
+});
 
 function locate(rail: Rail, u: number): Place {
   const n = stopCount(rail);
@@ -181,14 +195,9 @@ export function sampleLimits(rail: Rail, u: number): LookLimits {
   };
 }
 
-const clampLook = (look: LookOffset, lim: LookLimits): LookOffset => ({
-  yaw: clamp(look.yaw, -lim.yaw, lim.yaw),
-  pitch: clamp(look.pitch, -lim.pitchDown, lim.pitchUp),
-});
-
 const settle = (rail: Rail, s: RailState): RailState => ({
   ...s,
-  look: clampLook(s.look, sampleLimits(rail, s.u)),
+  ...settleLook(s, sampleLimits(rail, s.u)),
 });
 
 export function samplePose(rail: Rail, state: RailState, gaze?: readonly Vec3[]): Pose {
@@ -222,12 +231,18 @@ export function advance(rail: Rail, state: RailState, deltaMs: number): RailStat
   if (!Number.isFinite(deltaMs) || deltaMs < 0) {
     throw new RangeError(`deltaMs must be finite and non-negative, got ${deltaMs}`);
   }
+  // Damping runs every frame, glide or not. At rest easeLook hands back state.look itself, so
+  // the never-dragged state returns unchanged by reference and the golden poses stay bit-equal.
+  const look = easeLook(state.look, state.lookTarget, deltaMs);
   const g = state.glide;
-  if (g === null) return state;
+  if (g === null) return look === state.look ? state : { ...state, look };
+  const { lookTarget } = state;
   const elapsedMs = g.elapsedMs + deltaMs;
-  if (elapsedMs >= g.durationMs) return settle(rail, { u: g.to, glide: null, look: state.look });
+  if (elapsedMs >= g.durationMs) {
+    return settle(rail, { u: g.to, glide: null, look, lookTarget });
+  }
   const u = lerp(g.from, g.to, smootherstep(elapsedMs / g.durationMs));
-  return settle(rail, { u, glide: { ...g, elapsedMs }, look: state.look });
+  return settle(rail, { u, glide: { ...g, elapsedMs }, look, lookTarget });
 }
 
 function glideTo(
@@ -237,8 +252,9 @@ function glideTo(
   kind: GlideKind,
   reducedMotion: boolean,
 ): RailState {
-  if (reducedMotion || to === state.u)
-    return settle(rail, { u: to, glide: null, look: state.look });
+  if (reducedMotion || to === state.u) {
+    return settle(rail, { u: to, glide: null, look: state.look, lookTarget: state.lookTarget });
+  }
   const durationMs = kind === 'step' ? STEP_GLIDE_MS : SCROLL_GLIDE_MS;
   return { ...state, glide: { kind, from: state.u, to, durationMs, elapsedMs: 0 } };
 }
@@ -276,11 +292,14 @@ export function scroll(
   return glideTo(rail, state, to, 'scroll', reducedMotion);
 }
 
-export function drag(rail: Rail, state: RailState, dxPx: number, dyPx: number): RailState {
-  if (!Number.isFinite(dxPx) || !Number.isFinite(dyPx)) {
-    throw new RangeError('drag deltas must be finite');
-  }
-  const yaw = state.look.yaw + dxPx * DRAG_DEG_PER_PX;
-  const pitch = state.look.pitch + dyPx * DRAG_DEG_PER_PX;
-  return { ...state, look: clampLook({ yaw, pitch }, sampleLimits(rail, state.u)) };
+/** Accumulates the drag onto `lookTarget`; the rendered `look` eases toward it in advance(). */
+export function drag(
+  rail: Rail,
+  state: RailState,
+  dxPx: number,
+  dyPx: number,
+  viewportHeightPx: number,
+): RailState {
+  const unclamped = dragLook(state.lookTarget, dxPx, dyPx, viewportHeightPx);
+  return { ...state, lookTarget: clampLook(unclamped, sampleLimits(rail, state.u)) };
 }

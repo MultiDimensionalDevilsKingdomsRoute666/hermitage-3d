@@ -823,20 +823,27 @@ canvas.addEventListener(
   },
   { passive: false },
 );
-let dragActive = false;
+let dragAnchor: Readonly<{ pointerId: number; x: number; y: number }> | null = null;
 canvas.addEventListener('pointerdown', (event) => {
   if (!railInputReady()) return;
-  dragActive = true;
+  dragAnchor = { pointerId: event.pointerId, x: event.clientX, y: event.clientY };
   canvas.setPointerCapture(event.pointerId);
 });
 canvas.addEventListener('pointermove', (event) => {
-  if (!dragActive) return;
+  const anchor = dragAnchor;
+  if (anchor === null || event.pointerId !== anchor.pointerId) return;
+  // r21: tracked client deltas — PointerEvent.movementX is unreliable on touch (iOS often 0).
+  const dxPx = event.clientX - anchor.x;
+  const dyPx = event.clientY - anchor.y;
+  dragAnchor = { pointerId: anchor.pointerId, x: event.clientX, y: event.clientY };
+  const viewportHeightPx = canvas.clientHeight; // CSS px, same units as clientX/clientY
+  if (viewportHeightPx <= 0) return; // not laid out yet; the law rejects a zero height
   // Grab-the-world sign law: drag right looks left, drag down looks up (§6.1 look offsets).
-  railState = drag(rail, railState, -event.movementX, event.movementY);
+  railState = drag(rail, railState, -dxPx, dyPx, viewportHeightPx);
 });
 const endDrag = (event: PointerEvent): void => {
-  if (!dragActive) return;
-  dragActive = false;
+  if (dragAnchor === null) return;
+  if (event.pointerId === dragAnchor.pointerId) dragAnchor = null;
   if (canvas.hasPointerCapture(event.pointerId)) canvas.releasePointerCapture(event.pointerId);
 };
 canvas.addEventListener('pointerup', endDrag);

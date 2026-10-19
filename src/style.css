@@ -14,6 +14,8 @@ body {
   display: block;
   width: 100%;
   height: 100%;
+  /* r21: the canvas owns touch drags — pointermove must arrive without the page scrolling. */
+  touch-action: none;
 }
 #title {
   position: fixed;

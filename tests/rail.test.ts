@@ -94,13 +94,18 @@ describe('look limits', () => {
     expect(lim.pitchDown).toBeCloseTo(15);
   });
   it('clamp drag offsets', () => {
-    expect(drag(STAIR, restingAt(0), 1000, -1000).look).toEqual({ yaw: 30, pitch: -10 });
+    // r21: drag accumulates the clamped TARGET; the rendered look eases in advance().
+    expect(drag(STAIR, restingAt(0), 1000, -1000, 800).lookTarget).toEqual({ yaw: 30, pitch: -10 });
   });
   it('re-clamp when a glide narrows them', () => {
-    const wide = drag(STAIR, restingAt(2 / 3), 1000, 0);
-    expect(wide.look.yaw).toBe(60);
+    const wide = drag(STAIR, restingAt(2 / 3), 2000, 0, 800);
+    expect(wide.lookTarget.yaw).toBe(60);
     const back = run(STAIR, stepStop(STAIR, wide, -1, false).state);
     expect(back.look.yaw).toBe(30);
+  });
+  it('leave the never-dragged state bit-identical at rest (the r21 golden gate)', () => {
+    const s = restingAt(0);
+    expect(advance(STAIR, s, 16)).toBe(s); // the eased look hands back the same reference
   });
 });
 
@@ -219,7 +224,7 @@ describe('purity', () => {
       .replace(/'(?:\\.|[^'\\\n])*'/g, '')
       .replace(/"(?:\\.|[^"\\\n])*"/g, '');
   it('loads the module source', () => {
-    expect(Object.keys(sources)).toHaveLength(3);
+    expect(Object.keys(sources)).toHaveLength(4); // rail + square-rail + cam-param + look (r21)
   });
   it('imports nothing from three or node', () => {
     for (const src of Object.values(sources)) {
