@@ -6,16 +6,30 @@
  *
  * fetch is injectable for node tests; no DOM, no timers.
  */
+import { LIGHT_STATES } from '../content/lightmap-look';
 import type { RoomManifest } from '../world/registry';
 
 const cache = new Map<string, RoomManifest>();
 
 const SHA_PATTERN = /^[0-9a-f]{64}$/;
 
+const isIntensityRow = (value: unknown): value is RoomManifest['lightmaps']['intensity'] => {
+  if (value === null) return true;
+  if (typeof value !== 'object') return false;
+  const record = value as Record<string, unknown>;
+  return LIGHT_STATES.every((state) => {
+    const entry = record[state];
+    return typeof entry === 'number' && Number.isFinite(entry) && entry > 0;
+  });
+};
+
 const isManifest = (value: unknown, id: string): value is RoomManifest => {
   if (typeof value !== 'object' || value === null) return false;
   const m = value as Record<string, unknown>;
   if (m.id !== id || !Array.isArray(m.files) || m.files.length === 0) return false;
+  const lightmaps = m.lightmaps as Record<string, unknown> | undefined;
+  if (typeof lightmaps !== 'object' || lightmaps === null) return false;
+  if (!('intensity' in lightmaps) || !isIntensityRow(lightmaps.intensity)) return false;
   const budget = m.budget as Record<string, unknown> | undefined;
   if (
     typeof budget !== 'object' ||

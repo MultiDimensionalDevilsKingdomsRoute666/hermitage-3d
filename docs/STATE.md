@@ -8,70 +8,63 @@ file in the same session.
 
 ## Live state
 
-- Updated: 2026-10-18 · measured on the round-16 close commit (`d876d59`).
-- Round 16 **closed** (gate met): runtime room streaming — registry + airlock FSM + loaders +
-  rooms list/scaffolds + manifest fetcher + main.ts wiring (16a, `268e277`) and the asserted
-  disposal ledger + HUD rows (16b, `d876d59`). The e2e smoke walks the graph
-  #/ → gallery → jordan → queued retarget mid-transit → #/ with the ledger rows back at boot
-  values and a clean console (ROUNDS row 16).
-- Round 17 **in flight**. **17a complete** (`60ef9b4`, `7b8399c`): bake pipeline + both rooms
-  fully baked and committed, byte-identity proven on both rooms. **17b integrated** (`cfeab8d`,
-  `d4c3ae4`): the blend runtime lived (the 17b day shot showed the baked light —
-  `node_modules/.cache/look/bisect-17b.png`, HEADLESS shot: 1280×720 dpr 1, ~430 ms rAF
-  throttle — fine for pixels, never for cadence). **17c MID-INTEGRATION** (this commit,
-  validate green: 264 tests / 239,779 gzip / smoke green): the technique hub
-  src/assets/blend-gl.ts (applyTechnique/disposeTechnique — §4.1 'a' patched, §4.2
-  'b-discrete' stock argmax, §4.4 'b-rt' per-frame ceiling RT; the coordinator's one per-frame
-  call = applyWeights(roomId, frozenWeights, intensity)) + src/world/lm-mode.ts (the ?lm=
-  dev switch, hud-parsing contract) + the PMREM probe in loaders (mountEnvironment returns
-  the env texture, one bake per hold, the RT row registered) + the honest VRAM ledger rows in
-  mountParsed (geometry/texture kinds; the room payload registers at fetch, unchanged) +
-  RoomScene.setEnvironment + RoomLoadContext {lmMode, renderer} + blend.ts environmentScalar
-  (ADR-0013 scalars 1.0/0.6/0.35) + the rooms wired to the hub + main.ts: the interior
-  exposure constant 1.0 (§4.4) and THE LIGHT SEAM — sun/hemi visible=false indoors, restored
-  by applyEpoch on exit.
-- **17c OPEN BUG — interiors render black under technique 'a'** even though the page probe
-  shows everything correct: lightMap bound to the day texture (BC1, 2 MB mip, avg ≈ 93/255 —
-  NOT black), lightMapIntensity = 6, the patch key 'zimny-lm-blend-v1' set, 2 blend programs
-  compiled, no console errors, tris/draws fine. Diff vs the working 17b: the mount-time bind
-  (17b bound the day texture at mount and preset current.a='day'; 17c binds black at mount
-  and rebinds on the first applyWeights frame — the uniform refresh IS unconditional per
-  frame per WebGLMaterials.js:260, so the rebind itself should work). THE LIGHT SEAM IS
-  TEMPORARILY DISABLED (main.ts applySwap: the sun/hemi hiding commented out with a
-  SUB-BISECT marker) — the sub-bisect step was interrupted; the day stayed black WITH the
-  lights hidden, so the culprit is likely NOT the seam: suspects = the hub rewrite's bind
-  timing vs three's program init, or the PMREM/environment interaction. Next: finish the
-  sub-bisect empirically (bisect-17b.png vs the current tree — both headless jordan-day
-  shots), fix, re-enable the seam, re-shoot.
-- **17c remains after the bug**: the goldens — extend tests/e2e/golden.spec.ts with 6 room
-  scenes (gallery/jordan × day/dusk/night; the det plateau constants ARE COMMITTED-SAFE:
-  at=2026-06-22T03:18:00Z day, 2026-06-20T21:50:00Z dusk, 2026-02-17T16:25:00Z night — the
-  room waits follow the smoke's roomReady pattern: data-room + data-ledger-bytes ≠ '0' +
-  data-hold-ms = '0', then ~300 ms margin; page-level clip captures, headed real GPU, the
-  baselines land under golden.spec.ts-snapshots) + the §4.4 headed measurement (A vs
-  b-discrete vs b-rt at the plateaux AND mid-seam, 10-s HUD medians, the round-13 method) —
-  **THE MEASUREMENT AND GOLDENS NEED A QUIET MACHINE (the owner's film pollutes cadence —
-  ask first)** + ADR-0014 (the blend-technique verdict from the measurement) + the ROUNDS
-  row 17 + the brief-file deletion discipline. The facade nits the owner parked for r19:
-  the surrounds read as touching the columns (the derived module rhythm; a declared-gap fix
-  is trivial mechanically, an art call), the afar blur = no-MSAA + the T1 render scale (by
-  design; an owner question, not a bug).
-- validate green: **254** tests, 16 files (vitest node) · build 6 js chunks, **236,663** gzip
-  of 350,000 — cap untouched; the ≤225,000 r16 projection is re-marked measured in §9 (the
-  loader stack GLTFLoader+KTX2+Meshopt cost more than the +60 KB estimate; headroom 113,337).
-  e2e smoke green locally (SwiftShader). ⚠ Historical rows/log lines before round 16 say
-  «204 tests» — undercount; the pre-round number was 208 (recorded in row 16).
-- Payload rows (budget.mjs, all ok): _check 62,161 of 500,000 · jordan 526,735 of 7,000,000 ·
-  rastrelli-gallery 123,749 of 2,000,000 · exterior 0 of 4,000,000 · basis 584,862 of 600,000
+- Updated: 2026-10-19 · measured on the round-17 close commit.
+- Round 17 **closed** (gate met): the interior light pipeline, three relay slices. **17a**
+  (`60ef9b4`, `7b8399c`): the bake pipeline (Cycles CPU per state, compositor-OIDN denoise, toktx
+  ETC1S linear, sha256 gates, all-or-nothing publish) + both rooms fully baked, byte-identity
+  proven. **17b** (`cfeab8d`): the blend runtime (pure blend payload; the onBeforeCompile A+B
+  patch on the stock lightmap path; the lm rows decoded via ktx2.parse; the rooms wired). **17c**
+  (this commit): the technique hub `applyTechnique/disposeTechnique` (mode 'a' = §4.1 patched A;
+  'b-discrete' = stock argmax floor; 'b-rt' = the per-frame ceiling), the `?lm=` and `?stop=`
+  dev switches, the PMREM probe in loaders (one bake per hold) + the honest VRAM ledger rows,
+  `RoomScene.setEnvironment` + `RoomLoadContext {lmMode, renderer}`, `blend.ts environmentScalar`
+  (ADR-0013 1.0/0.6/0.35), the interior exposure constant 1.0, and the light seam (sun/hemi
+  hidden indoors, restored by applyEpoch on exit — re-enabled for good).
+- **The round-17c bisect** (the reported «black interiors»): the runtime chain exonerated layer
+  by layer — the GPU ktx2 decode ≡ the stage PNG row-by-row, ETC1S killed only 0.7% of the
+  surviving samples, uv1 alive and in range, all three techniques consistent, the material
+  bindings correct. The cause: the day bake's indirect light is nearly absent at the walls
+  (56% of the day EXR < 0.001 linear; the visible J0 view = the under-stair vestibule the bake
+  legitimately leaves dark) + ONE night-tuned white point per room quantising the remaining
+  field to 8-bit codes 0–2, which ETC1S finished off. The fix (the r17c scalar law, §4.4):
+  per-state white points in the manifests' `lightmaps.intensity` record (jordan 0.1/0.1/3.0,
+  gallery 0.03/0.2/0.2 — from the covered-percentile sizing policy; gallery night = a
+  field-preservation adjudication over the bimodal distribution) + the declared per-room
+  per-state look gain (`src/content/lightmap-look.ts`: both rooms day 4 / dusk 3 / night 1)
+  + `tools/reencode.mjs` re-encoding all six atlases from the surviving denoised EXRs
+  (determinism byte-verified on the pinned toolchain). Highlights clip flat at bake — declared,
+  owner-accepted. The earlier «lightmap avg 93/255» probe reading was bogus (measured the wrong
+  thing; no atlas averages that).
+- b-rt had never actually worked (the channel-1 maps sampled the plane geometry's missing uv1
+  attribute → a black RT) — fixed: HalfFloat target, stock-colour scaling (w·eff, One/One onto a
+  black-cleared target; opacity cannot carry scale > 1), the shared uv1 attribute, the target
+  texture on channel 1, the consuming lightMapIntensity = 1, the loud renderability check
+  (WebGL2 + EXT_color_buffer_float). Amendments recorded in §4.2.
+- **The §4.4 measurement ran (ADR-0014 keeps technique A)**: headed, reference device, T1, jordan
+  J1, det day plateau, 10-s HUD medians: A 16.70 ms · b-discrete 16.70 · b-rt 16.70 (the vsync
+  floor; +2 draws +4 tris; the ceiling re-blends every frame = the mid-seam worst case for free),
+  the b-rt ledger 40.6 MB < 128 MB. The flip thresholds unmet. Honest limitation: the medians
+  pin at 60 Hz — sub-vsync differences are below the resolution of this measurement.
+- Gate MET — the goldens: 8 scenes green (noon + white night + the 6 room scenes
+  jordan-J4/gallery-G1 × day/dusk/night; the det times day 2026-06-22T03:18:00Z, dusk
+  2026-06-20T21:50:00Z, night 2026-02-17T16:25:00Z; the roomReady pattern = data-room +
+  data-ledger-bytes ≠ '0' + data-hold-ms = '0' + ~300 ms; page-level clip, headed real GPU,
+  baselines under `tests/e2e/golden.spec.ts-snapshots/`, local-only per ADR-0012). The owner
+  reviewed and accepted the looks; parked with the acceptance: J0's dark entry (an honest unlit
+  vestibule — framing rides r18's rail), the interior panes' constant night emission (Phase 2b,
+  DEC-019), the visible 64² lightmap cell structure (an art call, r19+ menu).
+- validate green: **280** tests, 20 files (vitest node) · build 6 js chunks, **240,486** gzip of
+  350,000 · e2e smoke green locally (SwiftShader, 3 tests incl. the graph walk) · golden 8/8.
+  Payload rows (budget.mjs, all ok): _check 62,161 of 500,000 · jordan 1,172,871 of 7,000,000 ·
+  rastrelli-gallery 228,982 of 2,000,000 · exterior 0 of 4,000,000 · basis 584,862 of 600,000
   (**basis is tight — never add anything to /basis/**).
 - Room manifest budgets: gallery tris ≤110,000 / draws ≤25 / tex ≤1,000,000 B · jordan
   tris ≤380,000 / draws ≤60 / tex ≤4,000,000 B. Measured r15: gallery 2,106 drawn (6 unique
-  prims), jordan 15,110 (12 unique prims); jordan fixed 64² lightmap grid carries 2,474 of
-  4,096 cells.
-- r16 interim simplifications still standing: deep-link cold load renders sky until the room
-  is ready (dark-card choreography r17/r18); camera snaps to the entry stop / S0 (rail r18);
-  the ledger registers payload bytes only (VRAM-from-format×mips fidelity and RT registers
-  are r17).
+  prims), jordan 15,110 (12 unique prims).
+- Next: **r18 the camera rail** (§6: the spline, the stops, the look limits, the inputs, the
+  captions + a11y; may split r18a/r18b) — the ?stop= switch is the dev stopgap until the rail
+  lands. r19: §9 re-marks + architecture.md + ROADMAP (the facade nits stay parked there:
+  the surrounds-vs-columns rhythm, the afar no-MSAA blur by design).
 
 ## Standing protocol
 
@@ -90,6 +83,9 @@ Owner reads Russian; briefs and code in English.
    `TRUNCATED-HERE: <next file>`; continuation brief carries the adopted constants block + the
    committed file.
 3. Reply budget: ~450 lines; cut at a file boundary, never mid-file.
+4. Same-base `page.goto` is a FRAGMENT navigation (no reload), and a mounted room keeps its
+   technique until the next exit disposes it — measurement/e2e configs must open a FRESH page
+   per configuration (the round-17c measurement's first run silently re-measured config 1).
 
 **Brief boilerplate (copy blocks, compose fresh only the task-specific parts).**
 - ROLE line: «You are the specialist of a relay. You have no tools, no repo access and no prior
@@ -111,8 +107,8 @@ Owner reads Russian; briefs and code in English.
 **Purity gate (house standard).** Regex scan of module source — strip comments and string
 literals, then assert no /from\s+['"]three/, no node:, and no document/window/localStorage/
 performance/Date/setTimeout/Math.random. Reference implementation: tests/hud.test.ts (~line 229).
-Applies to every pure module (sky/*, engine/tier, ui/hud, and from r16: world/registry,
-world/airlock, engine/ledger).
+Applies to every pure module (sky/*, engine/tier, ui/hud, world/registry, world/airlock,
+engine/ledger, world/blend, world/lm-mode, world/stop-param, content/lightmap-look).
 
 **Verified three 0.186.1 facts** (checked in node_modules 2026-10-18; do not re-derive):
 - Import paths: three/examples/jsm/loaders/GLTFLoader.js · KTX2Loader.js ·
@@ -122,16 +118,19 @@ world/airlock, engine/ledger).
 - GLTFLoader: setMeshoptDecoder · parse(data, path, onLoad, onError) — callback-style, wrap in a
   promise; `path` resolves external texture URIs. renderer.initTexture(t) forces GPU upload.
 - @types/three 0.186.0 covers examples/jsm.
+- `capabilities.isWebGL2` is kept hardcoded true in r186 (backwards compat) — the half-float
+  renderability check works, but the extension check is the real gate.
+- A KTX2Loader CompressedTexture carries `mipmaps.length === 1` + the LinearMipmapLinear
+  minFilter and still samples correctly (three/ANGLE keeps mip 0); the albedo chain ships mips.
 
 **Budget gates (CI contracts — fixed by art/tier, never by loosening).**
-JS gzip total ≤350,000 (budget.mjs counts EVERY dist/assets/*.js — lazy room chunks included;
-round-16 target: total ≤225,000). Per-room payload caps from each manifest (≤8,000,000 ceiling);
-exterior ≤4,000,000; shared basis ≤600,000. HUD data-draws ≤250, data-tris ≤1,000,000 asserted by
-CI smoke; the toolchain draws gate counts UNIQUE primitives (naive node draws are info-only).
-Goldens local-only (ADR-0012); CI smoke on SwiftShader asserts contracts, never cadence; device
-numbers headed only; chromium on macOS 13.7 via PLAYWRIGHT_HOST_PLATFORM_OVERRIDE=mac14;
-locator screenshots fail element-stability on rAF-canvas — page-level capture with clip,
-expect timeout 60 s.
+JS gzip total ≤350,000 (budget.mjs counts EVERY dist/assets/*.js — lazy room chunks included).
+Per-room payload caps from each manifest (≤8,000,000 ceiling); exterior ≤4,000,000; shared basis
+≤600,000. HUD data-draws ≤250, data-tris ≤1,000,000 asserted by CI smoke; the toolchain draws gate
+counts UNIQUE primitives (naive node draws are info-only). Goldens local-only (ADR-0012); CI smoke
+on SwiftShader asserts contracts, never cadence; device numbers headed only; chromium on macOS
+13.7 via PLAYWRIGHT_HOST_PLATFORM_OVERRIDE=mac14; locator screenshots fail element-stability on
+rAF-canvas — page-level capture with clip, expect timeout 60 s.
 
 **Per-round read map (read only what the brief will quote; full reads only at wiring time).**
 Design doc: docs/design-staircase.md. r16: §1.1, §2, §8, §10 (+src/main.ts at wiring).

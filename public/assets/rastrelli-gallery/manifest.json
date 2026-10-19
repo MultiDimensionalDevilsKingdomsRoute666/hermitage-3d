@@ -3,20 +3,20 @@
   "files": [
     {
       "path": "lm/day.ktx2",
-      "bytes": 1370,
-      "sha256": "3225e529b66fea8be262a21f716d03a43e15ef320f99c4bb34965ab5cafed3dd",
+      "bytes": 38056,
+      "sha256": "ac3e8923998647acc506a1d149d2518b5702e291025acf170c819bc13bd26716",
       "kind": "ktx2"
     },
     {
       "path": "lm/dusk.ktx2",
-      "bytes": 12626,
-      "sha256": "3fc406a826f91f839108cbd86f393fa18aab866c271d13c71ed5c8757a2d4a76",
+      "bytes": 33524,
+      "sha256": "dc96e56f62f4d2a3770d680bea9ff97c55a14ec52f9dae10b4b88b8e64d9d3ef",
       "kind": "ktx2"
     },
     {
       "path": "lm/night.ktx2",
-      "bytes": 12942,
-      "sha256": "6573ebbaf80bfd6c9c9dafcf44ededb31992b1a63910a3a74ff2bddc66ae23cc",
+      "bytes": 31978,
+      "sha256": "8abeb4e8736c6312586497744d8d9c93fa4c5481fb8508b4155501188f8e0d01",
       "kind": "ktx2"
     },
     {
@@ -86,7 +86,11 @@
       "nightChandeliers"
     ],
     "res": 1024,
-    "intensity": 4
+    "intensity": {
+      "day": 0.03,
+      "dusk": 0.2,
+      "nightChandeliers": 0.2
+    }
   },
   "budget": {
     "trianglesMax": 110000,

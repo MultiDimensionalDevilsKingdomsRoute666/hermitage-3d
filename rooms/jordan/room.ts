@@ -2,14 +2,16 @@
 /**
  * Jordan Staircase room module — design-staircase.md §8.1. The glb's placeholder materials
  * ship committed; the lightmap blend (§4.1 technique A) patches them at mount under the
- * manifest's intensity scalar; the PMREM probe and the interior exposure land with the next
- * slice. Module-level state is safe: the coordinator serializes transits, so a room is
+ * manifest's per-state intensity record (the r17c scalar law: white point × look gain lives
+ * in the hub). Module-level state is safe: the coordinator serializes transits, so a room is
  * never mounted twice. The ledger (§8.3 layer 1) registers payload bytes in load and
  * releases the whole scope in unmount.
  */
 import { applyTechnique, disposeTechnique } from '../../src/assets/blend-gl';
+import { LIGHT_STATES } from '../../src/content/lightmap-look';
 import { stateOfPath } from '../../src/world/blend';
 import type {
+  LightmapIntensity,
   RoomLoadContext,
   RoomManifest,
   RoomModule,
@@ -20,7 +22,7 @@ import type {
 import { contract } from './contract';
 
 let payload: RoomPayload | null = null;
-let intensity = 1;
+let whitePoint: LightmapIntensity | null = null;
 let object: RoomObject | null = null;
 
 export const room: RoomModule = {
@@ -33,10 +35,12 @@ export const room: RoomModule = {
     for (const [path, bytes] of payload.ktx2) {
       ctx.ledger.register(contract.id, 'ktx2', bytes.byteLength, path);
     }
-    intensity = manifestIntensity(manifest);
+    whitePoint = manifestIntensity(manifest);
   },
   async mount(ctx) {
-    if (payload === null) throw new Error(`${contract.id}: mount before load`);
+    if (payload === null || whitePoint === null) {
+      throw new Error(`${contract.id}: mount before load`);
+    }
     if (object !== null) return; // idempotent
     object = await ctx.assets.mountParsed(contract.id, payload);
     const env = await ctx.assets.mountEnvironment(contract.id, payload);
@@ -46,7 +50,7 @@ export const room: RoomModule = {
       contract.id,
       object,
       await stateTextures(ctx),
-      intensity,
+      whitePoint,
       ctx.renderer,
       ctx.ledger,
     );
@@ -64,12 +68,18 @@ export const room: RoomModule = {
   },
 };
 
-const manifestIntensity = (manifest: RoomManifest): number => {
-  const value = manifest.lightmaps.intensity;
-  if (value === null || !Number.isFinite(value) || value <= 0) {
-    throw new Error(`${contract.id}: manifest has no usable lightmap intensity`);
+const manifestIntensity = (manifest: RoomManifest): LightmapIntensity => {
+  const record = manifest.lightmaps.intensity;
+  if (record === null) {
+    throw new Error(`${contract.id}: manifest has no lightmap intensity record`);
   }
-  return value;
+  for (const state of LIGHT_STATES) {
+    const value = record[state];
+    if (!Number.isFinite(value) || value <= 0) {
+      throw new Error(`${contract.id}: lightmap intensity[${state}] must be finite and > 0`);
+    }
+  }
+  return record;
 };
 
 const stateTextures = async (ctx: RoomLoadContext): Promise<ReadonlyMap<StateId, unknown>> => {

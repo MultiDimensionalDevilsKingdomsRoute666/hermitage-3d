@@ -57,6 +57,7 @@ import {
   type RoomScene,
   resolveRoute,
 } from './world/registry';
+import { parseStopParam } from './world/stop-param';
 
 const SUN_DISTANCE = 1000;
 const TIER_STORAGE_KEY = 'zimny:tier';
@@ -94,6 +95,13 @@ renderer.toneMapping = THREE.AgXToneMapping;
 renderer.toneMappingExposure = sample.exposure;
 // §11 runtime counting: one reset per frame, every render in that frame aggregates.
 renderer.info.autoReset = false;
+// SUB-BISECT: temporary dev-only scene access for the lightmap probes; removed before commit.
+const zimnyDebug: { scene?: unknown; renderer?: unknown } = {};
+(window as { __zimnyDebug?: unknown }).__zimnyDebug = zimnyDebug;
+queueMicrotask(() => {
+  zimnyDebug.scene = scene;
+  zimnyDebug.renderer = renderer;
+});
 
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(55, 1, 0.5, 2000);
@@ -226,6 +234,11 @@ for (const issue of hudParams.issues) console.warn(`zimny: hud issue — ${issue
 // The §4.4 measurement switch — dev-only, ephemeral per URL (the HUD's parsing contract).
 const lmParams = parseLmParam(new URLSearchParams(queryOf(location.hash)));
 for (const issue of lmParams.issues) console.warn(`zimny: lm issue — ${issue}`);
+// The `?stop=` camera-stop switch (dev-only, r17c) shares the `?lm=` lifecycle: parsed at boot
+// and on every hashchange, resolved per room in applySwap, never persisted.
+const stopParams = parseStopParam(new URLSearchParams(queryOf(location.hash)));
+for (const issue of stopParams.issues) console.warn(`zimny: stop issue — ${issue}`);
+let requestedStop: string | null = stopParams.stop;
 const applyHudBinding = (): void => {
   hud.hidden = !hudOpen;
   if (!hudOpen) return;
@@ -315,7 +328,6 @@ let queuedTarget: NodeHandle | null = null;
 let transitStarted = false;
 const roomWork = new Map<RoomId, Promise<void>>();
 const roomModules = new Map<RoomId, RoomModule>();
-const intensityByRoom = new Map<RoomId, number>(); // §4: the manifest's lightmap scalar
 
 // The room whose baked light applies this frame: the node being entered during a transit,
 // otherwise the active node. The square owns none; unregistered rooms no-op in blend-gl.
@@ -340,11 +352,6 @@ const ensureRoom = (id: RoomId): Promise<void> => {
     // r16 interim: no external abort source exists until the rail prefetch lands (r18).
     const controller = new AbortController();
     const manifest = await fetchManifest(id, controller.signal);
-    const lmIntensity = manifest.lightmaps.intensity;
-    if (lmIntensity === null || !Number.isFinite(lmIntensity) || lmIntensity <= 0) {
-      throw new Error(`zimny: room ${id} manifest has no usable lightmap intensity`);
-    }
-    intensityByRoom.set(id, lmIntensity);
     const module = await roomEntryOf(id).thunk();
     roomModules.set(id, module); // disposeFrom needs the module synchronously at exit
     await module.load(roomCtx, manifest, controller.signal);
@@ -387,16 +394,32 @@ const applySwap = (to: NodeHandle | null): void => {
     camera.lookAt(0, 11, 0);
   } else if (to !== null) {
     indoor = true;
-    // sun.visible = false; hemi.visible = false; // SUB-BISECT: temporarily disabled
+    sun.visible = false;
+    hemi.visible = false; // SUB-BISECT: seam ON for this shot
     rig.mesh.visible = false;
     renderer.toneMappingExposure = INTERIOR_EXPOSURE;
     camera.near = 0.05; // §6.2 interior near/far, swapped in the hold
     camera.far = interiorFar(to);
-    const stop = roomEntryOf(to).contract.rail.stops[0];
-    if (stop === undefined) throw new Error(`zimny: room ${to} has no entry stop`);
+    const stops = roomEntryOf(to).contract.rail.stops;
+    const entry = stops[0];
+    if (entry === undefined) throw new Error(`zimny: room ${to} has no entry stop`);
+    // `?stop=` resolves by id in this room; unknown ids fall back to the entry stop, warned once.
+    let index = 0;
+    if (requestedStop !== null) {
+      const found = stops.findIndex((s) => s.id === requestedStop);
+      if (found === -1) console.warn(`zimny: stop issue — ${to} has no stop ${requestedStop}`);
+      else index = found;
+    }
+    const stop = stops[index] ?? entry;
     camera.position.set(...stop.position);
-    const next = roomEntryOf(to).contract.rail.stops[1];
+    const next = stops[index + 1];
     if (next) camera.lookAt(next.position[0], next.position[1], next.position[2]);
+    else {
+      // A last stop has no next-stop look target; look back at the previous stop instead
+      // (a same-position +y lookAt would point the camera straight up with arbitrary roll).
+      const previous = stops[index - 1] ?? entry;
+      camera.lookAt(previous.position[0], previous.position[1], previous.position[2]);
+    }
   }
 };
 
@@ -714,6 +737,10 @@ window.addEventListener('hashchange', () => {
   const lmNext = parseLmParam(new URLSearchParams(queryOf(location.hash)));
   for (const issue of lmNext.issues) console.warn(`zimny: lm issue — ${issue}`);
   roomCtx = { ...roomCtx, lmMode: lmNext.mode };
+  // The ?stop= switch re-parses per navigation (ephemeral, like the HUD and ?lm=).
+  const stopNext = parseStopParam(new URLSearchParams(queryOf(location.hash)));
+  for (const issue of stopNext.issues) console.warn(`zimny: stop issue — ${issue}`);
+  requestedStop = stopNext.stop;
   // Room route: adjacent-or-cold target transits start once the tier settled; mid-transit
   // navigation re-targets after the current transit completes (the departing room always
   // disposes first — §2.4).
@@ -783,12 +810,9 @@ const tick = (timeMs: number): void => {
   // frozen §8 weights; the elevation comes from the frame's sun sample (y = sin of it).
   const blendRoomId = blendRoom();
   if (blendRoomId !== null) {
-    const roomIntensity = intensityByRoom.get(blendRoomId);
-    if (roomIntensity !== undefined) {
-      const elevationDeg =
-        (Math.asin(Math.max(-1, Math.min(1, sample.sunDirection[1]))) * 180) / Math.PI;
-      applyWeights(blendRoomId, lightmapWeights(elevationDeg), roomIntensity);
-    }
+    const elevationDeg =
+      (Math.asin(Math.max(-1, Math.min(1, sample.sunDirection[1]))) * 180) / Math.PI;
+    applyWeights(blendRoomId, lightmapWeights(elevationDeg));
   }
 
   // Airlock transit: one FSM beat per frame; events swap/mount/dispose (§2.4).

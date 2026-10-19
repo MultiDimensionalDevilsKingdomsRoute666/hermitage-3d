@@ -20,6 +20,26 @@ const HIDE_OVERLAYS_CSS = '#title, #scrub, #notes-link, #hud { visibility: hidde
 
 const MAX_DIFF_PIXEL_RATIO = 0.01;
 
+// Screenshot options shared by every scene (see the comment on 'golden: noon' for why page-level).
+const SHOT = {
+  clip: { x: 0, y: 0, width: 1280, height: 720 },
+  maxDiffPixelRatio: MAX_DIFF_PIXEL_RATIO,
+  timeout: 60_000,
+} as const;
+
+// design-staircase §4.4 room goldens: one stop per interior room at the three §4 det times.
+// `stop` is the dev-only `?stop=` switch (src/world/stop-param.ts); the det times are the same
+// instants the smoke and the room look review use. Six scenes = 2 rooms × 3 light states.
+const DET_AT = {
+  day: '2026-06-22T03:18:00Z',
+  dusk: '2026-06-20T21:50:00Z',
+  night: '2026-02-17T16:25:00Z',
+} as const;
+const ROOM_SCENES = [
+  { name: 'jordan', route: 'jordan', roomId: 'jordan', stop: 'J4' },
+  { name: 'gallery', route: 'gallery', roomId: 'rastrelli-gallery', stop: 'G1' },
+] as const;
+
 async function settledPage(page: Page, query: string): Promise<void> {
   await page.goto(`/#/?${query}`);
   await expect(page.locator('#scrub')).toBeVisible({ timeout: SETTLE_TIMEOUT_MS });
@@ -27,6 +47,27 @@ async function settledPage(page: Page, query: string): Promise<void> {
   await page.waitForTimeout(SETTLE_MARGIN_MS);
   // Guard: the canvas must fill the viewport exactly at DPR 1 — a smaller canvas would silently
   // turn into a cropped page capture, a larger one would change the pixelRatio inputs.
+  expect(await page.locator('#scene').boundingBox(), '#scene fills the viewport exactly').toEqual({
+    x: 0,
+    y: 0,
+    ...VIEWPORT,
+  });
+}
+
+// The smoke's roomReady contract: the HUD reports the target room, a non-zero ledger (the room's
+// textures are resident) and hold-ms 0 (the swap hold has released), then the same margin.
+async function roomReady(
+  page: Page,
+  scene: (typeof ROOM_SCENES)[number],
+  at: string,
+): Promise<void> {
+  await page.goto(`/#/${scene.route}?at=${at}&det=1&stop=${scene.stop}&hud=1`);
+  const hud = page.locator('#hud');
+  await expect(hud).toHaveAttribute('data-room', scene.roomId, { timeout: SETTLE_TIMEOUT_MS });
+  await expect(hud).not.toHaveAttribute('data-ledger-bytes', '0', { timeout: SETTLE_TIMEOUT_MS });
+  await expect(hud).toHaveAttribute('data-hold-ms', '0', { timeout: SETTLE_TIMEOUT_MS });
+  await page.addStyleTag({ content: HIDE_OVERLAYS_CSS });
+  await page.waitForTimeout(SETTLE_MARGIN_MS);
   expect(await page.locator('#scene').boundingBox(), '#scene fills the viewport exactly').toEqual({
     x: 0,
     y: 0,
@@ -43,18 +84,19 @@ test('golden: noon', async ({ page }) => {
   // timeout: raw captures measure 2–6 s each on the reference machine (diagnostic probe,
   // gitignored), and the internal two-capture stability loop must fit inside this assertion
   // timeout — the 5 s default provably trips first.
-  await expect(page).toHaveScreenshot('golden-noon.png', {
-    clip: { x: 0, y: 0, width: 1280, height: 720 },
-    maxDiffPixelRatio: MAX_DIFF_PIXEL_RATIO,
-    timeout: 60_000,
-  });
+  await expect(page).toHaveScreenshot('golden-noon.png', SHOT);
 });
 
 test('golden: white night (devlog-0000 hero)', async ({ page }) => {
   await settledPage(page, 'at=2026-06-20T21:45:00Z&det=1');
-  await expect(page).toHaveScreenshot('golden-white-night.png', {
-    clip: { x: 0, y: 0, width: 1280, height: 720 },
-    maxDiffPixelRatio: MAX_DIFF_PIXEL_RATIO,
-    timeout: 60_000,
-  });
+  await expect(page).toHaveScreenshot('golden-white-night.png', SHOT);
 });
+
+for (const scene of ROOM_SCENES) {
+  for (const [light, at] of Object.entries(DET_AT)) {
+    test(`golden: ${scene.name} ${scene.stop} ${light}`, async ({ page }) => {
+      await roomReady(page, scene, at);
+      await expect(page).toHaveScreenshot(`golden-${scene.name}-${light}.png`, SHOT);
+    });
+  }
+}

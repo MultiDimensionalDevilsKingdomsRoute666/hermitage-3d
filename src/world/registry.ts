@@ -21,6 +21,10 @@ export type RouteKey = '/gallery' | '/jordan';
 export type Vec3 = readonly [number, number, number];
 export type Bounds = Readonly<{ min: Vec3; max: Vec3 }>;
 export type StateId = 'day' | 'dusk' | 'nightChandeliers';
+/** The three baked states (§4). The manifest intensity record and the look gain key on it. */
+export type LightState = StateId;
+/** Per-state encoding white point = per-state runtime restore scalar (one field, r17c). */
+export type LightmapIntensity = Readonly<Record<LightState, number>>;
 export type Stop = Readonly<{
   id: string;
   position: Vec3;
@@ -58,7 +62,12 @@ export type RoomFileRow = Readonly<{
 export type RoomManifest = Readonly<{
   id: string;
   files: readonly RoomFileRow[];
-  lightmaps: Readonly<{ states: readonly string[]; res: number | null; intensity: number | null }>;
+  lightmaps: Readonly<{
+    states: readonly string[];
+    res: number | null;
+    /** All three entries required, finite, > 0 when the record exists (manifests.ts checks). */
+    intensity: LightmapIntensity | null;
+  }>;
   budget: RoomBudget;
   toolchain: Readonly<Record<string, string>>;
 }>;

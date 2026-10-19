@@ -29,7 +29,7 @@ type Manifest = {
   id: string;
   files: FileRow[];
   geometry: Geometry;
-  lightmaps: { states: string[]; res: number | null; intensity: number | null };
+  lightmaps: { states: string[]; res: number | null; intensity: Record<string, number> | null };
   budget: { trianglesMax: number; textureBytesMax: number; payloadBytesMax: number };
   toolchain: Record<'blender' | 'toktx' | 'gltfTransformCli' | 'three', string>;
 };
@@ -125,6 +125,8 @@ describe.each(committedRooms)('public/assets/%s (room contract)', (room) => {
     // r17a all-or-nothing law: a lightmaps row either names exactly the three §4 states and
     // every named state's ktx2 is on disk, or (canary / not yet baked) the row is empty.
     // The empty-vs-filled check keeps both honest: no fourth state, no room with fewer.
+    // r17c: `intensity` is the per-state white-point record (encode white point = runtime
+    // restore scalar), one finite positive entry per state; null only in the empty branch.
     const STATES_ON_DISK = ['day', 'dusk', 'nightChandeliers'] as const;
     const FILE_BY_STATE: Record<string, string> = {
       day: 'day',
@@ -136,7 +138,14 @@ describe.each(committedRooms)('public/assets/%s (room contract)', (room) => {
     } else {
       expect(manifest.lightmaps.states).toEqual(STATES_ON_DISK);
       expect(manifest.lightmaps.res).toBeGreaterThan(0);
-      expect(manifest.lightmaps.intensity).toBeGreaterThan(0);
+      const intensity = manifest.lightmaps.intensity;
+      expect(intensity, 'intensity record').not.toBeNull();
+      expect(typeof intensity, 'intensity is an object').toBe('object');
+      for (const state of STATES_ON_DISK) {
+        const value = intensity?.[state] ?? Number.NaN;
+        expect(Number.isFinite(value), `intensity.${state} finite`).toBe(true);
+        expect(value, `intensity.${state} > 0`).toBeGreaterThan(0);
+      }
       for (const state of STATES_ON_DISK) {
         expect(existsSync(join(dir, 'lm', `${FILE_BY_STATE[state]}.ktx2`)), state).toBe(true);
       }
