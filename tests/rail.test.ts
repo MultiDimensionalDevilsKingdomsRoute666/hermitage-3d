@@ -95,10 +95,13 @@ describe('look limits', () => {
   });
   it('clamp drag offsets', () => {
     // r21: drag accumulates the clamped TARGET; the rendered look eases in advance().
-    expect(drag(STAIR, restingAt(0), 1000, -1000, 800).lookTarget).toEqual({ yaw: 30, pitch: -10 });
+    expect(drag(STAIR, restingAt(0), 1000, -1000, 800, 'mouse').lookTarget).toEqual({
+      yaw: 30,
+      pitch: -10,
+    });
   });
   it('re-clamp when a glide narrows them', () => {
-    const wide = drag(STAIR, restingAt(2 / 3), 2000, 0, 800);
+    const wide = drag(STAIR, restingAt(2 / 3), 2000, 0, 800, 'mouse');
     expect(wide.lookTarget.yaw).toBe(60);
     const back = run(STAIR, stepStop(STAIR, wide, -1, false).state);
     expect(back.look.yaw).toBe(30);

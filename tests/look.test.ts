@@ -16,6 +16,7 @@ import {
   lookSettled,
   NO_LOOK,
   settleLook,
+  TOUCH_SPAN_FACTOR,
 } from '../src/camera/look';
 
 const LIM = { yaw: 30, pitchUp: 20, pitchDown: 15 } satisfies LookLimits;
@@ -78,37 +79,54 @@ describe('frame-rate independence', () => {
 });
 
 describe('sensitivity', () => {
-  it('the same viewport fraction yields the same degrees on any screen', () => {
+  it('the same viewport fraction yields the same degrees on any screen (mouse)', () => {
     for (const vh of [568, 844, 1080, 2160]) {
-      expect(dragLook(NO_LOOK, 0, vh / 2, vh).pitch).toBeCloseTo(DRAG_SPAN_DEG / 2, 9);
-      expect(dragDegPerPx(vh) * vh).toBeCloseTo(DRAG_SPAN_DEG, 9);
+      expect(dragLook(NO_LOOK, 0, vh / 2, vh, 'mouse').pitch).toBeCloseTo(DRAG_SPAN_DEG / 2, 9);
+      expect(dragDegPerPx(vh, 'mouse') * vh).toBeCloseTo(DRAG_SPAN_DEG, 9);
+    }
+  });
+  it('touch runs TOUCH_SPAN_FACTOR hotter; mouse and pen are identical', () => {
+    for (const vh of [568, 844, 1080]) {
+      const mouse = dragLook(NO_LOOK, 0, 100, vh, 'mouse');
+      expect(dragLook(NO_LOOK, 0, 100, vh, 'touch').pitch).toBeCloseTo(
+        mouse.pitch * TOUCH_SPAN_FACTOR,
+        12,
+      );
+      expect(dragLook(NO_LOOK, 0, 100, vh, 'pen').pitch).toBe(mouse.pitch);
+      expect(dragDegPerPx(vh, 'touch') / dragDegPerPx(vh, 'mouse')).toBeCloseTo(
+        TOUCH_SPAN_FACTOR,
+        12,
+      );
     }
   });
   it('is isotropic and accumulates onto the given target', () => {
-    const k = dragDegPerPx(800);
-    const diagonal = dragLook(NO_LOOK, 120, 120, 800);
+    const k = dragDegPerPx(800, 'mouse');
+    const diagonal = dragLook(NO_LOOK, 120, 120, 800, 'mouse');
     expect(diagonal.yaw).toBe(diagonal.pitch);
-    const moved = dragLook({ yaw: 5, pitch: -2 }, 100, -50, 800);
+    const moved = dragLook({ yaw: 5, pitch: -2 }, 100, -50, 800, 'mouse');
     expect(moved.yaw).toBeCloseTo(5 + 100 * k, 12);
     expect(moved.pitch).toBeCloseTo(-2 - 50 * k, 12);
   });
   it('rejects a non-positive or non-finite viewport height and non-finite deltas', () => {
     for (const vh of [0, -1, Number.NaN, Number.POSITIVE_INFINITY]) {
-      expect(() => dragDegPerPx(vh)).toThrow(RangeError);
+      expect(() => dragDegPerPx(vh, 'mouse')).toThrow(RangeError);
     }
-    expect(() => dragLook(NO_LOOK, Number.NaN, 0, 800)).toThrow(RangeError);
-    expect(() => dragLook(NO_LOOK, 0, Number.POSITIVE_INFINITY, 800)).toThrow(RangeError);
+    expect(() => dragLook(NO_LOOK, Number.NaN, 0, 800, 'mouse')).toThrow(RangeError);
+    expect(() => dragLook(NO_LOOK, 0, Number.POSITIVE_INFINITY, 800, 'mouse')).toThrow(RangeError);
   });
 });
 
 describe('clamp interplay', () => {
   it('an oversized drag clamps the target to the limits on both axes', () => {
-    expect(clampLook(dragLook(NO_LOOK, 5000, 5000, 1000), LIM)).toEqual({ yaw: 30, pitch: 20 });
-    const down = clampLook(dragLook(NO_LOOK, -5000, -5000, 1000), LIM);
+    expect(clampLook(dragLook(NO_LOOK, 5000, 5000, 1000, 'mouse'), LIM)).toEqual({
+      yaw: 30,
+      pitch: 20,
+    });
+    const down = clampLook(dragLook(NO_LOOK, -5000, -5000, 1000, 'mouse'), LIM);
     expect(down).toEqual({ yaw: -30, pitch: -15 });
   });
   it('the eased current never leaves the limits and lands on the clamped target', () => {
-    const target = clampLook(dragLook(NO_LOOK, 5000, -5000, 1000), LIM);
+    const target = clampLook(dragLook(NO_LOOK, 5000, -5000, 1000, 'mouse'), LIM);
     let look: LookOffset = NO_LOOK;
     for (let i = 0; i < 120; i += 1) {
       look = easeLook(look, target, FRAME_MS);

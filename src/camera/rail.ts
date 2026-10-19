@@ -28,7 +28,7 @@
  */
 
 import type { Rail, Stop, Vec3 } from '../world/registry';
-import type { LookLimits, LookOffset } from './look';
+import type { LookLimits, LookOffset, PointerTypeName } from './look';
 import { clampLook, dragLook, easeLook, NO_LOOK, settleLook } from './look';
 
 export type { LookLimits, LookOffset } from './look';
@@ -299,7 +299,8 @@ export function drag(
   dxPx: number,
   dyPx: number,
   viewportHeightPx: number,
+  pointerType: PointerTypeName,
 ): RailState {
-  const unclamped = dragLook(state.lookTarget, dxPx, dyPx, viewportHeightPx);
+  const unclamped = dragLook(state.lookTarget, dxPx, dyPx, viewportHeightPx, pointerType);
   return { ...state, lookTarget: clampLook(unclamped, sampleLimits(rail, state.u)) };
 }

@@ -8,6 +8,7 @@ import { applyWeights } from './assets/blend-gl';
 import { createLoaders } from './assets/loaders';
 import { fetchManifest } from './assets/manifests';
 import { parseCamParam } from './camera/cam-param';
+import { toPointerType } from './camera/look';
 import {
   advance,
   drag,
@@ -839,7 +840,16 @@ canvas.addEventListener('pointermove', (event) => {
   const viewportHeightPx = canvas.clientHeight; // CSS px, same units as clientX/clientY
   if (viewportHeightPx <= 0) return; // not laid out yet; the law rejects a zero height
   // Grab-the-world sign law: drag right looks left, drag down looks up (§6.1 look offsets).
-  railState = drag(rail, railState, -dxPx, dyPx, viewportHeightPx);
+  // r21.1: the pointer type rides along — touch runs ~15% hotter (TOUCH_SPAN_FACTOR, the
+  // owner's tuning: a thumb swipe is a shorter gesture than a mouse drag).
+  railState = drag(
+    rail,
+    railState,
+    -dxPx,
+    dyPx,
+    viewportHeightPx,
+    toPointerType(event.pointerType),
+  );
 });
 const endDrag = (event: PointerEvent): void => {
   if (dragAnchor === null) return;

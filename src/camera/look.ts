@@ -52,13 +52,28 @@ export const settleLook = (s: LookState, lim: LookLimits): LookState => ({
   look: clampLook(s.look, lim),
   lookTarget: clampLook(s.lookTarget, lim),
 });
+/**
+ * Declared tuning target. The touch pointer's span multiplier (the owner's r21.1 report: after
+ * the viewport normalization the desktop felt right but touch felt too slow — a thumb swipe is
+ * a shorter physical gesture than a mouse drag, so touch runs ~15% hotter; r21.1 says «around
+ * 15% faster»). Mouse and pen stay at 1.
+ */
+export const TOUCH_SPAN_FACTOR = 1.15;
+export type PointerTypeName = 'mouse' | 'touch' | 'pen';
 /** Viewport-normalized sensitivity: degrees of look per CSS pixel of drag. */
-export const dragDegPerPx = (viewportHeightPx: number): number => {
+export const dragDegPerPx = (viewportHeightPx: number, pointerType: PointerTypeName): number => {
   if (!Number.isFinite(viewportHeightPx) || viewportHeightPx <= 0) {
     throw new RangeError(`viewport height must be finite and positive, got ${viewportHeightPx}`);
   }
-  return DRAG_SPAN_DEG / viewportHeightPx;
+  const span = DRAG_SPAN_DEG * (pointerType === 'touch' ? TOUCH_SPAN_FACTOR : 1);
+  return span / viewportHeightPx;
 };
+/**
+ * Total guard over the DOM's `pointerType: string` (lib.dom types it wider than the union):
+ * known kinds pass, anything future defaults to 'mouse' — the un-tuned baseline.
+ */
+export const toPointerType = (s: string): PointerTypeName =>
+  s === 'touch' || s === 'pen' ? s : 'mouse';
 /**
  * Accumulate one drag delta onto the target. Unclamped: the caller clamps with the limits at its
  * u. Signs are the host's grab-the-world law (it passes -dx, +dy); this law adds them as given.
@@ -68,11 +83,12 @@ export const dragLook = (
   dxPx: number,
   dyPx: number,
   viewportHeightPx: number,
+  pointerType: PointerTypeName,
 ): LookOffset => {
   if (!Number.isFinite(dxPx) || !Number.isFinite(dyPx)) {
     throw new RangeError('drag deltas must be finite');
   }
-  const k = dragDegPerPx(viewportHeightPx);
+  const k = dragDegPerPx(viewportHeightPx, pointerType);
   return { yaw: target.yaw + dxPx * k, pitch: target.pitch + dyPx * k };
 };
 /** Fraction of the remaining offset one step of dtMs closes: 1 - exp(-dt / TAU). */
