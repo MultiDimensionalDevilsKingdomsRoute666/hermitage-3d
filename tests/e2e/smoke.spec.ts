@@ -115,6 +115,9 @@ test('smoke walk: the graph returns the ledger to boot values', async ({ page })
   await nav('/gallery');
   await expect(hud).toHaveAttribute('data-room', 'rastrelli-gallery', { timeout: 60_000 });
   await expect(hud).not.toHaveAttribute('data-ledger-bytes', '0', { timeout: 60_000 });
+  // §8.4/§1.2: the dwell shows the destination's seed-stop caption and hands over to the
+  // rest frame on the same stop — the dark card never flashes a second text.
+  await expect(page.locator('#caption')).toHaveText('dark; the square behind', { timeout: 60_000 });
 
   // gallery → jordan: the heaviest room must render within the whole-frame budgets.
   await nav('/jordan');
@@ -146,6 +149,20 @@ test('keyboard walk: every stop reachable, reduced-motion cuts', async ({ page }
   // ~500 ms on a healthy frame — the change-wait absorbs slow frames without overshooting).
   // A cut transit to the instant-ready resident never reports a non-zero hold — data-stop
   // is the honest gate, and every landing is observed (§10 r18 gate).
+  const caption = page.locator('#caption');
+  // The §6.1 caption beats, verbatim from the committed stop data (rooms/*/contract.ts).
+  const BEATS: Readonly<Record<string, string>> = {
+    S0: 'the facade and the hour',
+    S1: 'the arch opens',
+    G0: 'dark; the square behind',
+    G1: 'compression',
+    G2: 'the door (airlock)',
+    J0: 'looking up into light',
+    J1: 'the flight',
+    J2: 'portholes mirror the windows',
+    J3: 'the gallery above',
+    J4: 'arrival; the portal (landing airlock)',
+  };
   const walkTo = (stop: string, key = 'ArrowRight'): Promise<void> =>
     expect
       .poll(
@@ -164,12 +181,23 @@ test('keyboard walk: every stop reachable, reduced-motion cuts', async ({ page }
         },
         { timeout: 180_000, intervals: [1000] },
       )
-      .toBe(stop);
+      .toBe(stop)
+      .then(async () => {
+        // Every landing shows that stop's beat (the caption doubles as the description).
+        const beat = BEATS[stop];
+        if (beat === undefined) throw new Error(`no committed beat for stop ${stop}`);
+        await expect(caption).toHaveAttribute('data-stop', stop, { timeout: 60_000 });
+        await expect(caption).toHaveText(beat, { timeout: 60_000 });
+      });
   // Forward: S0 → S1, the arch-portal boundary, G0 → G2, the gallery-airlock boundary,
   // J0 → J4 — every stop of the phase observed landed.
   for (const stop of ['S1', 'G0', 'G1', 'G2', 'J0', 'J1', 'J2', 'J3', 'J4']) {
     await walkTo(stop);
   }
+  // The live region names the stop (§1.2) and tracks the walk's landings.
+  await expect(page.locator('#caption-live')).toHaveText(
+    'J4 · arrival; the portal (landing airlock)',
+  );
   // The landing's far end is inert: a press past J4 fires the boundary intent, but the
   // dead end has no neighbor to transit to (§1.1) — the stop stays, no room row changes.
   await page.keyboard.press('ArrowRight');
@@ -180,6 +208,7 @@ test('keyboard walk: every stop reachable, reduced-motion cuts', async ({ page }
   for (const stop of ['J3', 'J2', 'J1', 'J0', 'G2', 'G1', 'G0', 'S1', 'S0']) {
     await walkTo(stop, 'ArrowLeft');
   }
+  await expect(page.locator('#caption-live')).toHaveText('S0 · the facade and the hour');
   await expect(hud).toHaveAttribute('data-room', 'square');
   await expect(hud).toHaveAttribute('data-ledger-bytes', '0', { timeout: 60_000 });
 });

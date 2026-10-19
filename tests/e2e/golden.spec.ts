@@ -16,7 +16,8 @@ const VIEWPORT = { width: 1280, height: 720 };
 
 // An element screenshot is a clip of the composited page, so overlapping DOM overlays would land
 // in the baseline. Hide them (visibility keeps layout, so nothing reflows).
-const HIDE_OVERLAYS_CSS = '#title, #scrub, #notes-link, #hud { visibility: hidden !important; }';
+const HIDE_OVERLAYS_CSS =
+  '#title, #scrub, #notes-link, #hud, #caption { visibility: hidden !important; }';
 
 const MAX_DIFF_PIXEL_RATIO = 0.01;
 

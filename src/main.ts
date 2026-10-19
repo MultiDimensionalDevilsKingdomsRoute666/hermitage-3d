@@ -49,6 +49,13 @@ import {
   type TimeState,
 } from './sky/time';
 import {
+  type CaptionStop,
+  type CaptionView,
+  captionChanges,
+  EMPTY_CAPTION,
+  presentCaption,
+} from './ui/captions';
+import {
   buildHudAttrs,
   buildHudLines,
   type HudState,
@@ -88,6 +95,10 @@ const scrub = document.querySelector('#scrub');
 if (!(scrub instanceof HTMLInputElement)) throw new Error('#scrub missing');
 const hud = document.querySelector('#hud');
 if (!(hud instanceof HTMLElement)) throw new Error('#hud missing');
+const caption = document.querySelector('#caption');
+if (!(caption instanceof HTMLElement)) throw new Error('#caption missing');
+const captionLive = document.querySelector('#caption-live');
+if (!(captionLive instanceof HTMLElement)) throw new Error('#caption-live missing');
 const notesLink = document.querySelector('#notes-link');
 if (!(notesLink instanceof HTMLAnchorElement)) throw new Error('#notes-link missing');
 
@@ -414,6 +425,13 @@ let rail: Rail = SQUARE_RAIL;
 let railState: RailState = seedState(rail, { stop: requestedStop, cam: requestedCam }).state;
 let seedAtFarStop = false; // beginTransitTo sets this for backward entries
 
+// One seed law, two consumers: seedRail applies it on a node change; dwellStop derives the
+// dark-card caption from it, so the dwell hands over to the rest frame without a flash.
+const seedInputs = (): Readonly<{ stop: string | null; cam: number | null }> => ({
+  stop: requestedStop,
+  cam: requestedCam ?? (seedAtFarStop ? 1 : null),
+});
+
 const seedRail = (node: NodeHandle): void => {
   const next = railFor(node);
   if (requestedStop !== null && !next.stops.some((s) => s.id === requestedStop)) {
@@ -421,10 +439,19 @@ const seedRail = (node: NodeHandle): void => {
   }
   railNode = node;
   rail = next;
-  railState = seedState(next, {
-    stop: requestedStop,
-    cam: requestedCam ?? (seedAtFarStop ? 1 : null),
-  }).state;
+  railState = seedState(next, seedInputs()).state;
+  captionStops = next.stops.map((s) => ({ id: s.id, caption: s.caption }));
+};
+
+// The dark-card caption (§8.4, §1.2): while a transit dwells, the DESTINATION's seed stop —
+// the stop the frame will rest on — shows its beat; the hand-over changes nothing.
+const dwellStop = (): CaptionStop | null => {
+  const st = transit?.state;
+  if (st === undefined || st.phase !== 'hold' || st.to === null) return null;
+  const dest = railFor(st.to);
+  const seeded = seedState(dest, seedInputs()).state;
+  const stop = dest.stops[nearestStopIndex(dest, seeded.u)];
+  return stop === undefined ? null : { id: stop.id, caption: stop.caption };
 };
 
 // The square's default gaze is its authored framing, not the room pose law: S0 up at the
@@ -433,6 +460,11 @@ const seedRail = (node: NodeHandle): void => {
 const galleryEntry = roomEntryOf('rastrelli-gallery').contract.rail.stops[0];
 if (galleryEntry === undefined) throw new Error('zimny: gallery has no entry stop');
 const SQUARE_GAZE: readonly Vec3[] = [SQUARE_S0_GAZE, galleryEntry.position];
+let captionStops: readonly CaptionStop[] = rail.stops.map((s) => ({
+  id: s.id,
+  caption: s.caption,
+}));
+let captionView: CaptionView = EMPTY_CAPTION;
 
 const UP_AXIS = new THREE.Vector3(0, 1, 0);
 const RIGHT_AXIS = new THREE.Vector3(1, 0, 0);
@@ -999,6 +1031,23 @@ const tick = (timeMs: number): void => {
       }
     }
   }
+
+  // Caption overlay (§6.1/§8.4): one pure presentation call per frame, DOM writes only on
+  // change (the hud law). The dwell outranks: the dark card carries the destination's
+  // seed-stop caption; the arrival title beat suppresses until settled.
+  const captionNext = presentCaption(captionView, {
+    stops: captionStops,
+    stopIndex: nearestStopIndex(rail, railState.u),
+    gliding: railState.glide !== null,
+    dwell: dwellStop(),
+    suppressed: arrival.phase !== 'settled',
+  });
+  const captionDiff = captionChanges(captionView, captionNext);
+  if (captionDiff.text) caption.textContent = captionNext.text;
+  if (captionDiff.visible) caption.dataset.visible = String(captionNext.visible);
+  if (captionDiff.stopId) caption.dataset.stop = captionNext.stopId ?? '';
+  if (captionDiff.announcement) captionLive.textContent = captionNext.announcement;
+  captionView = captionNext;
   if (perfLog) {
     if (!firstSkyLogged) {
       firstSkyLogged = true;

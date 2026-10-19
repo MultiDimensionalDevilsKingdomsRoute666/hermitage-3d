@@ -10,7 +10,12 @@
     <title>Winter Palace in the browser</title>
   </head>
   <body>
-    <canvas id="scene"></canvas>
+    <canvas
+      id="scene"
+      tabindex="0"
+      aria-label="Winter Palace walkthrough"
+      aria-describedby="scene-help caption-live"
+    ></canvas>
     <!-- Overlay, design-sky-time.md §9/§10: title on beat 2, hairline scrub only after settling. -->
     <header id="title" hidden>
       <h1 id="wordmark">Winter Palace</h1>
@@ -34,9 +39,19 @@
       >Arrow keys step a minute; PageUp and PageDown step an hour; Home and End pick the window
       bounds; Escape cancels; N returns to now.</span
     >
+    <p id="scene-help" class="sr-only">
+      Scroll, drag, or use the arrow keys to move along the rail from stop to stop.
+    </p>
     <!-- Debug HUD (?hud=1 or the H key): client-only overlay per architecture.md delivery
          rules. aria-hidden: a developer tool, repeated state already announced elsewhere. -->
     <aside id="hud" hidden aria-hidden="true"></aside>
+    <!-- Caption overlay (§6.1): the stop's beat text; hidden from AT because #caption-live
+         mirrors it. Visible at a rest stop, faded while gliding, the dark-card caption
+         during an airlock dwell. data-stop/data-visible are e2e contract rows. -->
+    <p id="caption" class="caption" aria-hidden="true" data-visible="false" data-stop=""></p>
+    <!-- Live region: «<stop id> · <caption>», rewritten only when it changes (§1.2: stops
+         are named in a11y text). -->
+    <div id="caption-live" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
     <a id="notes-link" href="/notes.html" hidden>How it’s built →</a>
     <script type="module" src="/src/main.ts"></script>
   </body>

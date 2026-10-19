@@ -117,3 +117,35 @@ body {
 #notes-link[hidden] {
   display: none;
 }
+/* Caption overlay — design-staircase.md §6.1 beats: visible at a rest stop, faded while
+   gliding, the dark-card caption during an airlock dwell (§8.4). Write-on-change from the
+   pure core (src/ui/captions.ts); --caption-fade must stay equal to CAPTION_FADE_MS there. */
+.caption {
+  --caption-fade: 240ms;
+  position: fixed;
+  left: 50%;
+  bottom: 52px; /* above the 32px hairline scrub, clear of the bottom-left notes link */
+  transform: translateX(-50%);
+  max-width: min(32rem, 80vw);
+  margin: 0;
+  padding: 0;
+  font-size: 14px; /* the timeline's size — one quieter step than the 20px wordmark */
+  line-height: 1.5;
+  letter-spacing: 0.02em;
+  text-align: center;
+  text-wrap: balance;
+  color: rgba(255, 255, 255, 0.85);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+  opacity: 1;
+  transition: opacity var(--caption-fade) ease;
+  pointer-events: none;
+  user-select: none;
+}
+.caption[data-visible="false"] {
+  opacity: 0;
+}
+@media (prefers-reduced-motion: reduce) {
+  .caption {
+    transition: none;
+  }
+}

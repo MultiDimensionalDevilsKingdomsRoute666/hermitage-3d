@@ -8,7 +8,7 @@ file in the same session.
 
 ## Live state
 
-- Updated: 2026-10-19 · measured on the round-18a close commit.
+- Updated: 2026-10-19 · measured on the round-18b close commit.
 - Round 17 **closed** (gate met): the interior light pipeline, three relay slices. **17a**
   (`60ef9b4`, `7b8399c`): the bake pipeline (Cycles CPU per state, compositor-OIDN denoise, toktx
   ETC1S linear, sha256 gates, all-or-nothing publish) + both rooms fully baked, byte-identity
@@ -61,11 +61,26 @@ file in the same session.
 - Room manifest budgets: gallery tris ≤110,000 / draws ≤25 / tex ≤1,000,000 B · jordan
   tris ≤380,000 / draws ≤60 / tex ≤4,000,000 B. Measured r15: gallery 2,106 drawn (6 unique
   prims), jordan 15,110 (12 unique prims).
-- Next: **r18b** — captions + a11y (the §6.1 caption beats surface as the per-stop overlay +
-  aria-live text; the data-stop row is already the e2e instrument), then r19: §9 re-marks +
-  architecture.md + ROADMAP (the facade nits stay parked there: the surrounds-vs-columns
-  rhythm, the afar no-MSAA blur by design). The ?stop=/?cam= switches stay dev/URL surfaces;
-  the square's S1 gaze and the far-stop backward seed are §6.1 law (r18a adjudication).
+- Next: **r19** — §9 re-marks + architecture.md + ROADMAP (the facade nits stay parked
+  there: the surrounds-vs-columns rhythm, the afar no-MSAA blur by design); the round-18
+  exit gate is fully green. Open r18 observations for r19 disposition: scroll-only travel
+  clamps at the rail ends (arrows own the airlocks) — a scroll-past-end affordance, if the
+  owner wants one, is a product decision; the landing lit «to be continued» card waits for
+  phase-3 position portals.
+- **Round 18b delivered** (this commit): captions + a11y — the pure presentation core
+  `src/ui/captions.ts` (precedence dwell > suppressed > gliding > rest; the glide fades out
+  holding the departure text and swaps only on landing — CAPTION_FADE_MS 240 < the
+  shortest glide 320; the dwell shows the destination's seed-stop caption and hands over to
+  the rest frame with zero changes; the announcement `<id> · <caption>` is sticky and
+  rewrite-on-change; malformed committed data fails loud), the caption overlay `#caption`
+  (aria-hidden, mirrored by the `role="status"` live region #caption-live), the focusable
+  canvas (tabindex 0, aria-label, describedby → sr-only #scene-help + the live region;
+  no role="application" — argued), the caption bound per frame with write-on-change, the
+  dwell caption single-sourced from the seed law (seedInputs shared by seedRail/dwellStop).
+  e2e: every walk landing asserts its beat text (the §6.1 beats verbatim off the committed
+  data), the live region tracks the walk's ends (J4 forward, S0 backward), the graph walk
+  asserts the dwell hand-over text, goldens hide #caption. validate green: **326** tests,
+  243,239 gzip of 350,000 · e2e 12/12.
 - **Round 18a delivered** (this commit): the camera rail — the pure core `src/camera/rail.ts`
   (centripetal Catmull-Rom α=½ through the stops + end phantoms only; stop-snapped parameters
   bit-identical to the committed data; the committed pose law exact at stops, angle-blended
