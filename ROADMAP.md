@@ -38,7 +38,7 @@ Pure modules complete and gate-green: solar (NOAA, four contract vectors at 1e-5
 - **Builds underneath:** Blender → glTF → KTX2 pipeline; baked lightmap states + runtime blend; interior kit; first airlock; camera rail; post stack; resource disposal ledger (asserted).
 - **Exit:** room meets its contract ([docs/architecture.md](docs/architecture.md)) · disposal verified · devlog.
 
-### Phase 2b · Night Windows — **not started**
+### Phase 2b · Night Windows — **complete 2026-10-19** — exit: the Dec-21 21:00 golden reads the facade from the lattice alone ([docs/devlog/0003.md](docs/devlog/0003.md) holds the gate numbers)
 
 - **Ships:** the night facade as a lit window lattice — the interior `nightChandeliers` state seen from the square. One emissive pane per window, hashed into three stock-material levels (dark / dim warm / bright warm), intensity driven by the same §8 weight curve that blends the interiors; `hemi.groundColor` warms cornice undersides on the same weight. No lights, no custom materials, no fourth baked state.
 - **Builds underneath:** instanced pane quads (facade recesses are opaque dark panels today) + weight import + hemisphere ground lerp; unit test (pane intensity ≡ weight over −15°…+5°, ≤ 10% of peak at June-solstice midnight — weight is 0 on the −7…−4° dusk plateau, so white-night windows stay dark under a still-luminous sky); night goldens re-baselined once, day/dusk goldens bit-identical. Decision: DEC-019.

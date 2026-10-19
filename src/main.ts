@@ -35,6 +35,7 @@ import {
 } from './engine/tier';
 import { buildFacade } from './procedural/facade-builder';
 import { solveSouthFacade } from './procedural/facade-solver';
+import { buildNightLattice } from './procedural/night-lattice';
 import { type SkySample, sampleSky } from './sky/appearance';
 import type { ArrivalState } from './sky/arrival';
 import { advanceArrival, initialArrival, presentationForArrival } from './sky/arrival';
@@ -65,6 +66,7 @@ import {
 } from './ui/hud';
 import { advanceTransit, beginTransit, finishTransit, type TransitState } from './world/airlock';
 import { parseLmParam } from './world/lm-mode';
+import { WINDOW_WARM_LINEAR, warmGround } from './world/night-facade';
 import {
   airlockEntering,
   type NodeHandle,
@@ -155,6 +157,9 @@ if (!solvedFacade.ok) {
   throw new Error(`facade spec invalid: ${solvedFacade.issues.map((i) => i.message).join('; ')}`);
 }
 const facadeBuild = buildFacade(solvedFacade.value);
+// DEC-019 night lattice: one pane quad per window recess, hashed into three stock levels.
+// Lives inside the palace group — the indoors visibility flip is inherited for free.
+const nightLattice = buildNightLattice(solvedFacade.value);
 
 const palace = new THREE.Group();
 palace.name = 'PalaceMassing';
@@ -221,7 +226,15 @@ const groundMaterial = new THREE.MeshLambertMaterial({
 });
 const ground = new THREE.Mesh(new THREE.PlaneGeometry(600, 600), groundMaterial);
 ground.rotation.x = -Math.PI / 2;
-palace.add(ground, ...southWings, ...northWings, ...sideWings, ...bands, facadeBuild.group);
+palace.add(
+  ground,
+  ...southWings,
+  ...northWings,
+  ...sideWings,
+  ...bands,
+  facadeBuild.group,
+  nightLattice.group,
+);
 // Shadows return with the facade kit (architecture.md): every solid casts and receives.
 ground.receiveShadow = true;
 for (const child of palace.children) {
@@ -291,6 +304,11 @@ document.addEventListener('keydown', (event) => {
 
 const rig = createSkyRig(scene, camera);
 
+// One elevation formula for every §8 consumer (the room blend in the frame loop and the
+// DEC-019 night lattice here): the frame's sun sample carries the sine of the elevation.
+const elevationDegOf = (s: SkySample): number =>
+  (Math.asin(Math.max(-1, Math.min(1, s.sunDirection[1]))) * 180) / Math.PI;
+
 const applyEpoch = (nextEpochMs: number): void => {
   epochMs = nextEpochMs;
   sample = sampleSky(nextEpochMs);
@@ -309,7 +327,15 @@ const applyEpoch = (nextEpochMs: number): void => {
     0.25 * z[1] + 0.75 * h[1],
     0.25 * z[2] + 0.75 * h[2],
   );
-  hemi.groundColor.setRGB(0.25 * h[0], 0.25 * h[1], 0.25 * h[2]);
+  // DEC-019: the night facade's lattice and the hemisphere's ground warm-up ride the same §8
+  // weight the interiors blend by — one clock curve, so inside and outside agree. warmGround is
+  // endpoint-exact: at wNight === 0 (day, white-night plateau) the ground law is bit-identical
+  // to the pre-lattice sample line, and the lattice group is hidden outright.
+  const wNight = lightmapWeights(elevationDegOf(sample)).nightChandeliers;
+  nightLattice.setNight(wNight);
+  hemi.groundColor.setRGB(
+    ...warmGround([0.25 * h[0], 0.25 * h[1], 0.25 * h[2]], WINDOW_WARM_LINEAR, wNight),
+  );
   // Label churn guard: the DOM text only changes when the minute actually changes.
   if (nextEpochMs !== lastLabelEpochMs) {
     lastLabelEpochMs = nextEpochMs;
@@ -952,9 +978,7 @@ const tick = (timeMs: number): void => {
   // frozen §8 weights; the elevation comes from the frame's sun sample (y = sin of it).
   const blendRoomId = blendRoom();
   if (blendRoomId !== null) {
-    const elevationDeg =
-      (Math.asin(Math.max(-1, Math.min(1, sample.sunDirection[1]))) * 180) / Math.PI;
-    applyWeights(blendRoomId, lightmapWeights(elevationDeg));
+    applyWeights(blendRoomId, lightmapWeights(elevationDegOf(sample)));
   }
 
   // Airlock transit: one FSM beat per frame; events swap/mount/dispose (§2.4).

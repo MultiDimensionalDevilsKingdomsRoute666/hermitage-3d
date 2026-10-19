@@ -93,6 +93,14 @@ test('golden: white night (devlog-0000 hero)', async ({ page }) => {
   await expect(page).toHaveScreenshot('golden-white-night.png', SHOT);
 });
 
+// Phase 2b exit gate (DEC-019): 21 Dec 21:00 local (18:00Z) — deep winter night, the sun far
+// below the horizon, the sky near-dark. The facade must read from the pane lattice alone; the
+// hemisphere's ground warm-up is the only secondary. wNight === 1 at this instant.
+test('golden: dec night (lattice)', async ({ page }) => {
+  await settledPage(page, 'at=2026-12-21T18:00:00Z&det=1');
+  await expect(page).toHaveScreenshot('golden-dec-night.png', SHOT);
+});
+
 for (const scene of ROOM_SCENES) {
   for (const [light, at] of Object.entries(DET_AT)) {
     test(`golden: ${scene.name} ${scene.stop} ${light}`, async ({ page }) => {
