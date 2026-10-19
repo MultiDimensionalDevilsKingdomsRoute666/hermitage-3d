@@ -26,9 +26,10 @@ export default defineConfig({
   testDir: 'tests/e2e',
   fullyParallel: true,
   forbidOnly: isCi,
-  // Two simultaneous SwiftShader WebGL2 contexts on a 2-vCPU runner halve each other's frame rate
-  // and load the 45 s settle bound for no benefit — smoke runs serially in CI.
-  workers: isCi ? 1 : undefined,
+  // Two simultaneous WebGL2 contexts saturate the 2-core reference device (and any 2-vCPU
+  // runner): each halves the other's frame rate and loads the data-bound transit dwells
+  // for no benefit. Everything runs serially, local included.
+  workers: 1,
   // Smoke worst case is 15 s (title) + 45 s (settled) + 10 s (HUD bind).
   timeout: 90_000,
   reporter: isCi ? [['github'], ['html', { open: 'never' }]] : 'list',

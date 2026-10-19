@@ -99,6 +99,7 @@ test('deterministic T0 boot settles within budget', async ({ page }) => {
 // contracts, never cadence: attribute waits are generous (holds dwell until data is ready),
 // no frame timing is compared.
 test('smoke walk: the graph returns the ledger to boot values', async ({ page }) => {
+  test.slow(); // four transits on a starved page: the load dwell is data-bound, not timed
   const query = `${AT}&det=1&hud=1`;
   const hud = await bootDeterministic(page, query);
   // Boot posture: the resident owns the row, nothing registered, no hold.
@@ -113,7 +114,7 @@ test('smoke walk: the graph returns the ledger to boot values', async ({ page })
   // #/ → gallery: a cold entry (from = null); the room registers its payload in load.
   await nav('/gallery');
   await expect(hud).toHaveAttribute('data-room', 'rastrelli-gallery', { timeout: 60_000 });
-  await expect(hud).not.toHaveAttribute('data-ledger-bytes', '0');
+  await expect(hud).not.toHaveAttribute('data-ledger-bytes', '0', { timeout: 60_000 });
 
   // gallery → jordan: the heaviest room must render within the whole-frame budgets.
   await nav('/jordan');
@@ -127,4 +128,58 @@ test('smoke walk: the graph returns the ledger to boot values', async ({ page })
   await expect(hud).toHaveAttribute('data-room', 'square', { timeout: 60_000 });
   await expect(hud).toHaveAttribute('data-ledger-bytes', '0', { timeout: 60_000 });
   await expect(hud).toHaveAttribute('data-hold-ms', '0', { timeout: 60_000 });
+});
+
+// r18 gate (§6.1, §10): every stop of the phase is reachable by keyboard — arrows step
+// stop→stop and a boundary intent past an end stop IS the keyboard's airlock — and
+// reduced-motion glides are cuts. Reduced motion is emulated BEFORE boot (the host reads
+// matchMedia once); cuts make the walk instant. The room flips and the hold rows carry the
+// assertions; per-stop captions surface in r18b. Fresh page: a mounted room keeps its
+// technique (no reload between configurations — the round-17 measurement trap).
+test('keyboard walk: every stop reachable, reduced-motion cuts', async ({ page }) => {
+  test.slow(); // same data-bound dwell per transit, on top of the instant reduced-motion cuts
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  const hud = await bootDeterministic(page, `${AT}&det=1&hud=1`);
+  // Press-and-poll one stop at a time. data-stop re-binds at most every 500 ms and a press
+  // fired while a transit is open is dropped by design (§2.4 owns the camera), so: press,
+  // then wait for the row to CHANGE (a dropped press retries; a landed one binds within
+  // ~500 ms on a healthy frame — the change-wait absorbs slow frames without overshooting).
+  // A cut transit to the instant-ready resident never reports a non-zero hold — data-stop
+  // is the honest gate, and every landing is observed (§10 r18 gate).
+  const walkTo = (stop: string, key = 'ArrowRight'): Promise<void> =>
+    expect
+      .poll(
+        async () => {
+          const before = await hud.getAttribute('data-stop');
+          if (before !== stop) {
+            await page.keyboard.press(key);
+            // The change-wait must outlast a data-bound load dwell (seconds on a starved
+            // page): the press either lands, or an open transit's swap lands its seed —
+            // either way the row changes; a dropped press needs no retry of its own.
+            await expect
+              .poll(() => hud.getAttribute('data-stop'), { timeout: 30_000, intervals: [250] })
+              .not.toBe(before);
+          }
+          return hud.getAttribute('data-stop');
+        },
+        { timeout: 180_000, intervals: [1000] },
+      )
+      .toBe(stop);
+  // Forward: S0 → S1, the arch-portal boundary, G0 → G2, the gallery-airlock boundary,
+  // J0 → J4 — every stop of the phase observed landed.
+  for (const stop of ['S1', 'G0', 'G1', 'G2', 'J0', 'J1', 'J2', 'J3', 'J4']) {
+    await walkTo(stop);
+  }
+  // The landing's far end is inert: a press past J4 fires the boundary intent, but the
+  // dead end has no neighbor to transit to (§1.1) — the stop stays, no room row changes.
+  await page.keyboard.press('ArrowRight');
+  await page.waitForTimeout(2000);
+  await expect(hud).toHaveAttribute('data-stop', 'J4');
+  // Backward: the whole way home through both airlocks — the backward entries seed the
+  // far stop (G2, then S1), so the direction of travel is preserved (§6.1 seed law).
+  for (const stop of ['J3', 'J2', 'J1', 'J0', 'G2', 'G1', 'G0', 'S1', 'S0']) {
+    await walkTo(stop, 'ArrowLeft');
+  }
+  await expect(hud).toHaveAttribute('data-room', 'square');
+  await expect(hud).toHaveAttribute('data-ledger-bytes', '0', { timeout: 60_000 });
 });

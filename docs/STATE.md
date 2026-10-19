@@ -8,7 +8,7 @@ file in the same session.
 
 ## Live state
 
-- Updated: 2026-10-19 · measured on the round-17 close commit.
+- Updated: 2026-10-19 · measured on the round-18a close commit.
 - Round 17 **closed** (gate met): the interior light pipeline, three relay slices. **17a**
   (`60ef9b4`, `7b8399c`): the bake pipeline (Cycles CPU per state, compositor-OIDN denoise, toktx
   ETC1S linear, sha256 gates, all-or-nothing publish) + both rooms fully baked, byte-identity
@@ -61,10 +61,29 @@ file in the same session.
 - Room manifest budgets: gallery tris ≤110,000 / draws ≤25 / tex ≤1,000,000 B · jordan
   tris ≤380,000 / draws ≤60 / tex ≤4,000,000 B. Measured r15: gallery 2,106 drawn (6 unique
   prims), jordan 15,110 (12 unique prims).
-- Next: **r18 the camera rail** (§6: the spline, the stops, the look limits, the inputs, the
-  captions + a11y; may split r18a/r18b) — the ?stop= switch is the dev stopgap until the rail
-  lands. r19: §9 re-marks + architecture.md + ROADMAP (the facade nits stay parked there:
-  the surrounds-vs-columns rhythm, the afar no-MSAA blur by design).
+- Next: **r18b** — captions + a11y (the §6.1 caption beats surface as the per-stop overlay +
+  aria-live text; the data-stop row is already the e2e instrument), then r19: §9 re-marks +
+  architecture.md + ROADMAP (the facade nits stay parked there: the surrounds-vs-columns
+  rhythm, the afar no-MSAA blur by design). The ?stop=/?cam= switches stay dev/URL surfaces;
+  the square's S1 gaze and the far-stop backward seed are §6.1 law (r18a adjudication).
+- **Round 18a delivered** (this commit): the camera rail — the pure core `src/camera/rail.ts`
+  (centripetal Catmull-Rom α=½ through the stops + end phantoms only; stop-snapped parameters
+  bit-identical to the committed data; the committed pose law exact at stops, angle-blended
+  between; per-stop look limits blended linearly; glide (step 1400 ms / scroll 320 ms,
+  smootherstep) with in-flight retarget/extend and reduced-motion cuts; wheel/drag/arrow
+  INTENTS — the host owns the DOM; boundary intents only from arrow steps), `square-rail.ts`
+  (S0/S1, §6.1 declared values) and `cam-param.ts` (?cam= parser mirroring ?stop=). Wired in
+  main.ts: seed precedence ?stop= > ?cam= > entry, far-stop seed on backward entries,
+  wheel (travels, preventDefault) / pointer drag (grab-the-world signs) / arrows (step +
+  boundary→airlock via the §1.1 chain), the pose applied per frame from samplePose. HUD +
+  `data-stop` (nearest stop id) — the e2e instrument, since a cut transit's data-hold-ms
+  reads 0 by the r16 contract. e2e: the keyboard walk observes EVERY stop landed forward and
+  backward across both airlocks (§10 r18 gate), the far end inert, the ledger back to boot
+  values; press-during-open-transit is dropped by design → press-and-poll with a change-wait
+  that outlasts the data-bound dwell. playwright workers=1 unconditionally (two WebGL
+  contexts saturate the 2-core reference device — CI's old rule is now local law too).
+  validate green: **310** tests, 242,635 gzip of 350,000 · e2e 12/12 (smoke 4 + goldens 8,
+  un-rebaselined).
 
 ## Standing protocol
 

@@ -8,7 +8,9 @@
  * Playwright assertion" and "Triangles ≤ 1.0 M — same". The round-11 assertions read
  * the buildHudAttrs() keys (data-tier, data-draws, data-tris, data-frame-ms), never
  * the prose lines. Round 16b extends the contract with data-room, data-hold-ms and
- * data-ledger-bytes (design-staircase.md §8.3 layer 3, §8.4 / DEC-018, §9 gates).
+ * data-ledger-bytes (design-staircase.md §8.3 layer 3, §8.4 / DEC-018, §9 gates). Round
+ * 18a adds data-stop — the active rail's nearest stop id (§6.1): the e2e contract for the
+ * keyboard-reachability gate and the surface the r18b captions read.
  *
  * Host contract (main.ts, not this module): renderer.info.autoReset is false and
  * info.reset() runs once per frame, so calls/triangles are whole-frame aggregates
@@ -23,6 +25,8 @@ export type HudState = Readonly<{
   medianFrameMs: number;
   /** Active registry node id ('square' or a RoomId); fed by the host, no world import. */
   room: string;
+  /** The active rail's nearest stop id (§6.1); '—' while the host has no rail. */
+  stop: string;
   /** Effective declared hold of the transit in progress; a reduced-motion cut is 0; idle 0. */
   holdMs: number;
   /** The disposal ledger's total registered bytes (§8.3). */
@@ -86,8 +90,9 @@ function grouped(n: number): string {
  * are the contract: data-tier, data-draws, data-tris, data-frame-ms (round 11, unchanged
  * formatting) plus data-room, data-hold-ms, data-ledger-bytes (round 16b — §8.3 layer 3
  * compares the ledger row to its boot value after the smoke walk, §8.4 / DEC-018 exposes
- * the declared hold so goldens and smoke can see it). Numbers are plain ungrouped
- * integers; the median keeps two decimals; the room id is passed through as is.
+ * the declared hold so goldens and smoke can see it) and data-stop (round 18a — §6.1's
+ * keyboard-reachability gate). Numbers are plain ungrouped integers; the median keeps two
+ * decimals; the room id and stop id are passed through as is.
  */
 export function buildHudAttrs(state: HudState): Readonly<Record<string, string>> {
   return {
@@ -96,6 +101,7 @@ export function buildHudAttrs(state: HudState): Readonly<Record<string, string>>
     'data-tris': integerText(state.frameTriangles),
     'data-frame-ms': frameMsText(state.medianFrameMs),
     'data-room': state.room,
+    'data-stop': state.stop,
     'data-hold-ms': integerText(state.holdMs),
     'data-ledger-bytes': integerText(state.ledgerBytes),
   };

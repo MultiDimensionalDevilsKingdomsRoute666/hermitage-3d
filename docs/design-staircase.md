@@ -238,6 +238,22 @@ Eye height 1.7 m above the local floor; `t` on the room rail; look limits yaw/pi
 
 Rail: Catmull-Rom through stop positions with two helper points per flight for the turns; `cam` float as today. Inputs unchanged (scroll/drag/arrows). `prefers-reduced-motion`: glides become cuts stop→stop; airlocks force `transit:'cut'`.
 
+> **r18a adjudication (binding).** Path: centripetal Catmull-Rom (α = ½) through the stop
+> positions with end phantoms only — mid-segment turn helpers are rejected: centripetal
+> parameterisation is cusp-free from the stop data alone and the frozen contracts carry no
+> numbers to justify extras (the helper law above is superseded). Default gaze = the committed
+> pose law (look at the next stop; the last stop looks back), the bounding stops' yaw/pitch
+> blended between stops by the §8 smootherstep, yaw by shortest arc — at stops the pose is
+> bit-identical, which keeps the eight goldens green un-rebaselined. The square's S0 keeps its
+> authored gaze (the goldens' cornice framing) and S1 gazes into the arch: a per-stop gaze
+> override lives with the square data, S1's target host-resolved to the gallery entry stop.
+> Seed precedence on node entry: `?stop=` (known id) > `?cam=` (clamped) > entry; a backward
+> entry (through the airlock's home side) seeds the far stop so travel continues in its
+> direction. Scroll clamps at the rail ends silently; only arrow steps surface boundary
+> intents — the keyboard's airlock across the §1.1 chain. The HUD `data-stop` row (nearest
+> stop id) is the e2e reachability instrument: a cut transit's `data-hold-ms` reads 0 by
+> contract, so the hold row cannot gate a reduced-motion walk.
+
 ### 6.2 Exterior → interior hand-off
 
 - **Near/far:** exterior near/far stay as today (0.5 / 2000); interior near 0.05 m, far = room bounds diagonal + margin, swapped in the arch hold.

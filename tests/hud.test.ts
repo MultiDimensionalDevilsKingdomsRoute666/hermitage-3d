@@ -21,6 +21,7 @@ const STATE: HudState = Object.freeze({
   frameTriangles: 132264,
   medianFrameMs: 16.5,
   room: 'square',
+  stop: 'S0',
   holdMs: 0,
   ledgerBytes: 0,
 });
@@ -136,13 +137,14 @@ describe('rollingMedianFrameMs', () => {
   });
 });
 describe('buildHudAttrs', () => {
-  it('exposes exactly the seven contract keys', () => {
+  it('exposes exactly the eight contract keys', () => {
     expect(Object.keys(buildHudAttrs(STATE)).sort()).toEqual([
       'data-draws',
       'data-frame-ms',
       'data-hold-ms',
       'data-ledger-bytes',
       'data-room',
+      'data-stop',
       'data-tier',
       'data-tris',
     ]);

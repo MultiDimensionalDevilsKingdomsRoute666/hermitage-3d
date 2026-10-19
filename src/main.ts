@@ -7,6 +7,18 @@ import { AIRLOCKS, ENTRIES } from '../rooms/index';
 import { applyWeights } from './assets/blend-gl';
 import { createLoaders } from './assets/loaders';
 import { fetchManifest } from './assets/manifests';
+import { parseCamParam } from './camera/cam-param';
+import {
+  advance,
+  drag,
+  nearestStopIndex,
+  type RailState,
+  samplePose,
+  scroll,
+  seedState,
+  stepStop,
+} from './camera/rail';
+import { SQUARE_RAIL, SQUARE_S0_GAZE } from './camera/square-rail';
 import { SOUTH_FACADE, WINDOW_ROWS } from './content/facade-spec';
 import { TIME } from './content/sky-time';
 import { createLedger } from './engine/ledger';
@@ -50,12 +62,14 @@ import {
   airlockEntering,
   type NodeHandle,
   nextAirlockOnPath,
+  type Rail,
   type RoomEntry,
   type RoomId,
   type RoomLoadContext,
   type RoomModule,
   type RoomScene,
   resolveRoute,
+  type Vec3,
 } from './world/registry';
 import { parseStopParam } from './world/stop-param';
 
@@ -239,6 +253,11 @@ for (const issue of lmParams.issues) console.warn(`zimny: lm issue — ${issue}`
 const stopParams = parseStopParam(new URLSearchParams(queryOf(location.hash)));
 for (const issue of stopParams.issues) console.warn(`zimny: stop issue — ${issue}`);
 let requestedStop: string | null = stopParams.stop;
+// The ?cam= rail parameter (§1.2) shares that lifecycle: parsed at boot and on every
+// hashchange, consumed by the rail seed on the next node change, never persisted.
+const camParams = parseCamParam(new URLSearchParams(queryOf(location.hash)));
+for (const issue of camParams.issues) console.warn(`zimny: cam issue — ${issue}`);
+let requestedCam: number | null = camParams.cam;
 const applyHudBinding = (): void => {
   hud.hidden = !hudOpen;
   if (!hudOpen) return;
@@ -381,6 +400,56 @@ const interiorFar = (id: RoomId): number => {
 // restored by applyEpoch on the way out.
 const INTERIOR_EXPOSURE = 1.0;
 
+// --- Camera rail (design-staircase.md §6.1; r18a) --------------------------------------------
+// The pure rail core (src/camera/rail.ts) owns the path, the glide/cut motion, the look
+// limits and the seed law; this host owns the DOM inputs (wheel/drag/arrows), the three.js
+// camera and the re-seed on every node change. Seed precedence: ?stop= > ?cam= > entry;
+// a backward entry (through an airlock whose home side is the node being entered) seeds the
+// far stop so the journey continues in the direction of travel unless the URL pins a seed.
+const railFor = (node: NodeHandle): Rail =>
+  node === 'square' ? SQUARE_RAIL : roomEntryOf(node).contract.rail;
+
+let railNode: NodeHandle = 'square';
+let rail: Rail = SQUARE_RAIL;
+let railState: RailState = seedState(rail, { stop: requestedStop, cam: requestedCam }).state;
+let seedAtFarStop = false; // beginTransitTo sets this for backward entries
+
+const seedRail = (node: NodeHandle): void => {
+  const next = railFor(node);
+  if (requestedStop !== null && !next.stops.some((s) => s.id === requestedStop)) {
+    console.warn(`zimny: stop issue — ${node} has no stop ${requestedStop}`);
+  }
+  railNode = node;
+  rail = next;
+  railState = seedState(next, {
+    stop: requestedStop,
+    cam: requestedCam ?? (seedAtFarStop ? 1 : null),
+  }).state;
+};
+
+// The square's default gaze is its authored framing, not the room pose law: S0 up at the
+// cornice line is what the noon and white-night goldens pin (§6.1 «exists today»), and S1
+// gazes into the arch — resolved at runtime to the gallery's entry stop (no room data copied).
+const galleryEntry = roomEntryOf('rastrelli-gallery').contract.rail.stops[0];
+if (galleryEntry === undefined) throw new Error('zimny: gallery has no entry stop');
+const SQUARE_GAZE: readonly Vec3[] = [SQUARE_S0_GAZE, galleryEntry.position];
+
+const UP_AXIS = new THREE.Vector3(0, 1, 0);
+const RIGHT_AXIS = new THREE.Vector3(1, 0, 0);
+const applyRailPose = (): void => {
+  const pose = samplePose(rail, railState, railNode === 'square' ? SQUARE_GAZE : undefined);
+  camera.position.set(pose.position[0], pose.position[1], pose.position[2]);
+  camera.lookAt(pose.target[0], pose.target[1], pose.target[2]);
+  // User look offsets compose on top of the default gaze: yaw around world up (yaw > 0 turns
+  // right, a negative rotation about +Y), pitch around the camera's right (pitch > 0 up).
+  if (pose.look.yaw !== 0) {
+    camera.rotateOnWorldAxis(UP_AXIS, -pose.look.yaw * THREE.MathUtils.DEG2RAD);
+  }
+  if (pose.look.pitch !== 0) {
+    camera.rotateOnAxis(RIGHT_AXIS, pose.look.pitch * THREE.MathUtils.DEG2RAD);
+  }
+};
+
 const applySwap = (to: NodeHandle | null): void => {
   if (to === 'square') {
     indoor = false;
@@ -390,8 +459,7 @@ const applySwap = (to: NodeHandle | null): void => {
     rig.mesh.visible = true;
     camera.near = 0.5;
     camera.far = 2000;
-    camera.position.set(0, 1.7, 230); // S0 — the r16 stopgap snap (rail is r18)
-    camera.lookAt(0, 11, 0);
+    seedRail('square');
   } else if (to !== null) {
     indoor = true;
     sun.visible = false;
@@ -400,26 +468,7 @@ const applySwap = (to: NodeHandle | null): void => {
     renderer.toneMappingExposure = INTERIOR_EXPOSURE;
     camera.near = 0.05; // §6.2 interior near/far, swapped in the hold
     camera.far = interiorFar(to);
-    const stops = roomEntryOf(to).contract.rail.stops;
-    const entry = stops[0];
-    if (entry === undefined) throw new Error(`zimny: room ${to} has no entry stop`);
-    // `?stop=` resolves by id in this room; unknown ids fall back to the entry stop, warned once.
-    let index = 0;
-    if (requestedStop !== null) {
-      const found = stops.findIndex((s) => s.id === requestedStop);
-      if (found === -1) console.warn(`zimny: stop issue — ${to} has no stop ${requestedStop}`);
-      else index = found;
-    }
-    const stop = stops[index] ?? entry;
-    camera.position.set(...stop.position);
-    const next = stops[index + 1];
-    if (next) camera.lookAt(next.position[0], next.position[1], next.position[2]);
-    else {
-      // A last stop has no next-stop look target; look back at the previous stop instead
-      // (a same-position +y lookAt would point the camera straight up with arbitrary roll).
-      const previous = stops[index - 1] ?? entry;
-      camera.lookAt(previous.position[0], previous.position[1], previous.position[2]);
-    }
+    seedRail(to);
   }
 };
 
@@ -447,6 +496,9 @@ const beginTransitTo = (target: NodeHandle): void => {
     return;
   }
   const state = beginTransit({ airlock: def, from: activeNode, reducedMotion });
+  // Entering through the airlock's home side (gallery ← jordan, square ← gallery) seeds the
+  // far stop: the journey continues in the direction of travel (§6.1 seed law).
+  seedAtFarStop = def.from === target;
   transit = { state, target };
   ready = state.to === 'square'; // the resident is always ready
   if (state.to !== null && state.to !== 'square') {
@@ -699,6 +751,60 @@ scrub.addEventListener('keydown', (event) => {
 });
 scrub.addEventListener('focusout', cancelGesture);
 
+// --- Rail inputs (§6.1: scroll travels, drag looks, arrows step) -----------------------------
+// The pure core owns every law; these listeners only translate DOM events into intents.
+// Gates: the arrival beats own the pre-settle frames and an open airlock owns the camera
+// (its swap re-seeds the rail), so inputs act only when settled and transit-free.
+const railInputReady = (): boolean => arrival.phase === 'settled' && transit === null;
+canvas.addEventListener(
+  'wheel',
+  (event) => {
+    if (!railInputReady()) return;
+    event.preventDefault(); // the rail owns travel; no page scroll or pinch-zoom leaks through
+    railState = scroll(rail, railState, event.deltaY, reducedMotion);
+  },
+  { passive: false },
+);
+let dragActive = false;
+canvas.addEventListener('pointerdown', (event) => {
+  if (!railInputReady()) return;
+  dragActive = true;
+  canvas.setPointerCapture(event.pointerId);
+});
+canvas.addEventListener('pointermove', (event) => {
+  if (!dragActive) return;
+  // Grab-the-world sign law: drag right looks left, drag down looks up (§6.1 look offsets).
+  railState = drag(rail, railState, -event.movementX, event.movementY);
+});
+const endDrag = (event: PointerEvent): void => {
+  if (!dragActive) return;
+  dragActive = false;
+  if (canvas.hasPointerCapture(event.pointerId)) canvas.releasePointerCapture(event.pointerId);
+};
+canvas.addEventListener('pointerup', endDrag);
+canvas.addEventListener('pointercancel', endDrag);
+// The rail graph is the linear chain of §1.1, so a boundary intent past an end stop IS the
+// keyboard's airlock: forward from the square is the gallery, backward from it is the square;
+// the landing's far end is inert (the dead end has no neighbor to transit to).
+const RAIL_CHAIN: readonly NodeHandle[] = ['square', 'rastrelli-gallery', 'jordan'];
+document.addEventListener('keydown', (event) => {
+  if (event.target === scrub) return; // the scrub owns its keys
+  const direction =
+    event.key === 'ArrowRight' || event.key === 'ArrowUp'
+      ? 1
+      : event.key === 'ArrowLeft' || event.key === 'ArrowDown'
+        ? -1
+        : 0;
+  if (direction === 0 || !railInputReady()) return;
+  event.preventDefault();
+  const result = stepStop(rail, railState, direction, reducedMotion);
+  railState = result.state;
+  if (result.boundary === null) return;
+  const at = RAIL_CHAIN.indexOf(railNode);
+  const next = result.boundary === 'forward' ? RAIL_CHAIN[at + 1] : RAIL_CHAIN[at - 1];
+  if (next !== undefined) beginTransitTo(next);
+});
+
 function returnToNow(): void {
   cancelGesture();
   const now = Date.now();
@@ -737,10 +843,14 @@ window.addEventListener('hashchange', () => {
   const lmNext = parseLmParam(new URLSearchParams(queryOf(location.hash)));
   for (const issue of lmNext.issues) console.warn(`zimny: lm issue — ${issue}`);
   roomCtx = { ...roomCtx, lmMode: lmNext.mode };
-  // The ?stop= switch re-parses per navigation (ephemeral, like the HUD and ?lm=).
+  // The ?stop=/?cam= switches re-parse per navigation (ephemeral, like the HUD and ?lm=);
+  // they apply on the next rail seed (node change), never retroactively mid-travel.
   const stopNext = parseStopParam(new URLSearchParams(queryOf(location.hash)));
   for (const issue of stopNext.issues) console.warn(`zimny: stop issue — ${issue}`);
   requestedStop = stopNext.stop;
+  const camNext = parseCamParam(new URLSearchParams(queryOf(location.hash)));
+  for (const issue of camNext.issues) console.warn(`zimny: cam issue — ${issue}`);
+  requestedCam = camNext.cam;
   // Room route: adjacent-or-cold target transits start once the tier settled; mid-transit
   // navigation re-targets after the current transit completes (the departing room always
   // disposes first — §2.4).
@@ -848,6 +958,11 @@ const tick = (timeMs: number): void => {
     applyEpoch(Date.now());
   }
 
+  // Camera rail (§6.1): advance the glide (a cut already settled) and apply the pose — the
+  // rail owns position and gaze every frame; the inputs below mutate its state in listeners.
+  railState = advance(rail, railState, deltaMs);
+  applyRailPose();
+
   // §11 permits camera-ray uniforms per visible frame; cheap and rotation-correct.
   rig.updateCamera(camera);
   renderer.render(scene, camera);
@@ -863,6 +978,7 @@ const tick = (timeMs: number): void => {
         frameTriangles: renderer.info.render.triangles,
         medianFrameMs: rollingMedianFrameMs(hudIntervals),
         room: hudRoom(),
+        stop: rail.stops[nearestStopIndex(rail, railState.u)]?.id ?? '—',
         holdMs: hudHoldMs(),
         ledgerBytes: ledger.snapshot().total,
       };

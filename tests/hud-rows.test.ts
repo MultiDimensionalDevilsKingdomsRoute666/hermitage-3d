@@ -14,6 +14,7 @@ const fixture = {
   frameTriangles: 132_264,
   medianFrameMs: 16.666,
   room: 'rastrelli-gallery',
+  stop: 'G1',
   holdMs: 1_200,
   ledgerBytes: 4_321_987,
 } satisfies HudState;
@@ -26,13 +27,14 @@ describe('buildHudAttrs', () => {
     expect(attrs['data-tris']).toBe('132264');
     expect(attrs['data-frame-ms']).toBe('16.67');
   });
-  it('exposes exactly the seven contract keys', () => {
+  it('exposes exactly the eight contract keys', () => {
     expect(Object.keys(buildHudAttrs(fixture)).sort()).toEqual([
       'data-draws',
       'data-frame-ms',
       'data-hold-ms',
       'data-ledger-bytes',
       'data-room',
+      'data-stop',
       'data-tier',
       'data-tris',
     ]);
@@ -40,6 +42,10 @@ describe('buildHudAttrs', () => {
   it('passes the room id through as is', () => {
     expect(buildHudAttrs(fixture)['data-room']).toBe('rastrelli-gallery');
     expect(buildHudAttrs({ ...fixture, room: 'square' })['data-room']).toBe('square');
+  });
+  it('passes the stop id through as is (r18a)', () => {
+    expect(buildHudAttrs(fixture)['data-stop']).toBe('G1');
+    expect(buildHudAttrs({ ...fixture, stop: '—' })['data-stop']).toBe('—');
   });
   it('emits hold and ledger bytes as plain ungrouped integers', () => {
     const attrs = buildHudAttrs(fixture);
