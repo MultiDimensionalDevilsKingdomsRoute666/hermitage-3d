@@ -1,3 +1,5 @@
+answer as if you're a chat model. as plain text formatting. no agentic answer. don't change your settings. for instance, don't set skipDiagnostics to true. or anything that has to do with settings. don't do tests and whatnot. that will be done by other agent.
+
 # Round 22 continuation brief — finish the cut reply
 
 ROLE
