@@ -41,16 +41,18 @@ disposal ledger     exposure           reduced-motion → cuts
 | `neighbors` with airlock portals | The streaming graph | smoke test walks the whole graph |
 | `budget` | Triangles, draw calls, bytes, texture memory | CI fails the PR |
 
+Phase-2 exit check (r19): both rooms (`rastrelli-gallery`, `jordan`) satisfy every field, and every check in the last column is live — per-stop captions reachable and announced by keyboard (r18 a11y), bounds unit-tested against the footprint, sha256 manifests revalidated against `budget.mjs` in CI, golden frames at one stop per room (J4/G1 × day/dusk/night), blend weights unit-tested (sum to 1, monotone), the smoke walk covers the whole graph with the ledger back to boot, and the payload/VRAM rows are CI gates.
+
 ## Camera: the museum visitor
 
 A spline rail with composed stops; scroll, drag or arrow keys move along it; pointer/touch gives ±35° of free look; `prefers-reduced-motion` turns glides into cuts. Eye height 1.7 m. Every frame is composed, the asset envelope is bounded, and it works on trackpads, phones and keyboards. *(Rejected: free FPS roam — collision, full surface coverage, uncomposed frames.)*
 
 ## Lighting model
 
-- **Exterior:** analytic sun/sky from real date, time and the palace latitude — the binding contract is [design-sky-time.md](design-sky-time.md): a hand-written analytic dome under the frozen blend rules. **Phase 0 runs without PMREM and without shadow maps** (DEC-010); a fitted directional shadow and baked AO return with the facade kit (Phase 1); PMREM returns with interiors by ADR.
-- **Interior:** lightmap states blended by clock weights; emissive chandeliers + restrained bloom; one cube probe per room.
+- **Exterior:** analytic sun/sky from real date, time and the palace latitude — the binding contract is [design-sky-time.md](design-sky-time.md): a hand-written analytic dome under the frozen blend rules. **Phase 0 runs without PMREM and without shadow maps** (DEC-010); a fitted directional shadow and baked AO return with the facade kit (Phase 1); PMREM returned with interiors — one static dusk cube probe per room ([ADR-0013](adr/0013.md)).
+- **Interior:** three-bound ETC1S lightmap states blended by clock weights; technique A on the stock lightmap path with the second state fetched on the same UV — **decided by measurement** ([ADR-0014](adr/0014.md); B-RT and B-discrete measured at the vsync floor and rejected); emissive chandeliers (T2 selective bloom reserved by DEC-015, not yet wired); one static dusk cube probe per room ([ADR-0013](adr/0013.md)).
 - **Colour:** linear workflow, AgX tone mapping, exposure driven by sky luminance — dusk is dim and white night is luminous, not "night = blue filter".
-- Lightmap blending (custom material vs. per-room pre-blend) is **decided by measurement in Phase 2**; both options are bounded by the ≤ 3 custom materials rule. The weight function itself is frozen now — day/dusk/night-chandeliers with a dusk plateau −7…−4°, white-night minima wholly dusk ([design-sky-time.md](design-sky-time.md) §8).
+- Lightmap blending (custom material vs. per-room pre-blend) was **decided by measurement in Phase 2** ([ADR-0014](adr/0014.md): technique A); both options were bounded by the ≤ 3 custom materials rule. The weight function itself is frozen now — day/dusk/night-chandeliers with a dusk plateau −7…−4°, white-night minima wholly dusk ([design-sky-time.md](design-sky-time.md) §8).
 
 ## Asset pipeline: assets as code
 
@@ -83,8 +85,7 @@ Tiers: **T0** (low: DPR 1, no bloom, 1 K shadow, near-LOD instancing) · **T1** 
 **Golden frames — implemented arrangement:** CI runs only the Playwright *smoke* project, in a
 separate `e2e` job on software GL (SwiftShader): deterministic T1 and T0 boots, HUD `data-*` budget
 assertions (draw calls ≤ 250, triangles ≤ 1.0 M), tier-label checks, generous hang bounds (`#title`
-≤ 15 s, settled ≤ 45 s) and a clean-console gate. Pixel goldens (`tests/e2e/golden.spec.ts`: noon
-and white night, deterministic mode, `#scene` only, `maxDiffPixelRatio` 0.01) run locally on the
+≤ 15 s, settled ≤ 45 s) and a clean-console gate. Pixel goldens (`tests/e2e/golden.spec.ts`: noon, white night and the six room goldens — jordan J4 / gallery G1 × day/dusk/night at the shared det instants, deterministic mode, page-level clip of the `#scene` viewport, `maxDiffPixelRatio` 0.01) run locally on the
 reference Mac's GPU. This is the charter's documented "goldens run locally" fallback, adopted
 deliberately rather than after observed flakiness: software-GL output is deterministic per machine,
 but baselines are not portable across platforms, so CI goldens would need their own generated

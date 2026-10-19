@@ -4,8 +4,9 @@
  * + public/assets/<id>/ + one line here; never a change under src/engine/ or src/world/
  * (DEC-013; AGENTS.md rule 8). Contracts are static data; modules load behind their thunks
  * (lazy chunks). Portal boxes are true coordinates (§2.4); holdMs beats are
- * orchestrator-declared (docs/STATE.md live state); the landing airlock's far portal is
- * declared, [verify r18 against the rail].
+ * orchestrator-declared (docs/STATE.md live state); the landing airlock's far portal stays
+ * declared until the phase-3 position portals. Verified against the rail at r18: the keyboard
+ * walk observed every airlock firing through its portal box, forward and backward.
  */
 import type { AirlockDef, RegistryEntry } from '../src/world/registry';
 import { contract as jordanContract } from './jordan/contract';

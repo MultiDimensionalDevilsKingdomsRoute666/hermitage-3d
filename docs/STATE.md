@@ -8,7 +8,8 @@ file in the same session.
 
 ## Live state
 
-- Updated: 2026-10-19 · measured on the round-18b close commit.
+- Updated: 2026-10-19 · measured on the round-19 close.
+- **Round 19 CLOSED — the phase-2 exit** (orchestrator docs round, no relay — owner-approved mode; the payloads are number-dense, exactly what the transport masks): all §9 rows re-marked measured and the round-19 device gate green. Headed device pass (Chromium 156, det, T1 1280×720, 10-s HUD median windows, 20 samples): medians 16.5–16.8 ms on ten scenes (six room goldens + J1 + the square-noon re-check at 31 draws / 49 807 tris — byte-identical to the phase-1 pass, so the r18 rail/caption DOM costs nothing measurable), T0 floor at the same medians, zero post-settle long tasks. The §9 first-frame device gate on deep links: dark card 454–617 ms warm (first page after browser launch 1 018 ms = cold process start, recorded honestly, gate scoped to the warm browser), first frame 1 713–1 867 ms unthrottled · 2 860 ms (jordan) / 1 869 ms (gallery) under a 10 Mbps + 40 ms CDP profile — the fetch finishes inside the declared 1 500 ms hold beat, so the gate is hold-dominated, not network-dominated. Ledger walk: 0 → 4 708 151 (gallery) → 7 044 854 (jordan) → peak 11 753 005 during the gallery→jordan hold (exactly the two mounts' sum) → 0 back home; the CI smoke asserts the same contract. §9 re-marks: draws row measured 114/96/27/31 vs ≤250 (the ≈60 estimate was low); texture VRAM row measured (ledger totals; ETC1S stays compressed on the GPU); payload 228 982 / 1 172 871 / basis 584 862 — **basis is the tight line now**; initial JS 243,239 of 350,000. architecture.md synced (ADR-0014 verdict inline, T2 bloom reserved-not-wired, 8 goldens, the phase-2 room-contract check line — both rooms satisfy every field, every check live). ROADMAP Phase 2 marked complete 2026-10-19; devlog #0002 written with the hero = the jordan-day golden baseline (owner-chosen); ATTRIBUTIONS gained the two phase-2 sources (saint-petersburg.com + the hermitagemuseum.org 1917 virtual visit); artistic-license gained the baked-opaque-windows line + the portal-niche vases and closed the r18 portal-box verify marker; design §2's «[verify r15 against a plan]» orientation marker closed by attestation (the enfilade runs west from the staircase ⇒ the staircase at the east end of the north wing's Neva front — the derivation stood; a measured plan remains a scan target); rooms/index.ts marker resolved (comment-only edit, zero behavior). README status → Phase 2 shipped.
 - Round 17 **closed** (gate met): the interior light pipeline, three relay slices. **17a**
   (`60ef9b4`, `7b8399c`): the bake pipeline (Cycles CPU per state, compositor-OIDN denoise, toktx
   ETC1S linear, sha256 gates, all-or-nothing publish) + both rooms fully baked, byte-identity
@@ -61,12 +62,7 @@ file in the same session.
 - Room manifest budgets: gallery tris ≤110,000 / draws ≤25 / tex ≤1,000,000 B · jordan
   tris ≤380,000 / draws ≤60 / tex ≤4,000,000 B. Measured r15: gallery 2,106 drawn (6 unique
   prims), jordan 15,110 (12 unique prims).
-- Next: **r19** — §9 re-marks + architecture.md + ROADMAP (the facade nits stay parked
-  there: the surrounds-vs-columns rhythm, the afar no-MSAA blur by design); the round-18
-  exit gate is fully green. Open r18 observations for r19 disposition: scroll-only travel
-  clamps at the rail ends (arrows own the airlocks) — a scroll-past-end affordance, if the
-  owner wants one, is a product decision; the landing lit «to be continued» card waits for
-  phase-3 position portals.
+- Next: **Phase 2b** — DEC-019's lit night facade (one emissive pane per window hashed into three stock levels, intensity = kLevel × wNight imported from §8; `hemi.groundColor` warm lerp; night goldens re-baselined once, day/dusk bit-identical; +≤3 draws, +≤~4k tris). Then Phase 3 planning (the Military Gallery). Parked, owner-accepted, not blockers: scroll-only travel clamps at the rail ends (a scroll-past-end affordance is an owner product call); the landing lit «to be continued» card waits for phase-3 position portals; J0's dark entry framing; interior pane glow (DEC-019, Phase 2b); the 64² lightmap cell structure (an art call on the re-bake menu — the manifest intensity record stays the single source of truth for rebakes: edit manifest, then `tools/reencode.mjs`). The shared basis row is tight (584,862 of 600,000) — never add anything to `/basis/`.
 - **Round 18b delivered** (this commit): captions + a11y — the pure presentation core
   `src/ui/captions.ts` (precedence dwell > suppressed > gliding > rest; the glide fades out
   holding the departure text and swaps only on landing — CAPTION_FADE_MS 240 < the

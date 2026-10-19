@@ -14,7 +14,9 @@ Rule: every source gets exactly one line here. No line, no use.
 
 ## Data
 
-- Wikipedia, "Winter Palace" — principal facade 215 m × 30 m (incl. roofline statuary), 1500 rooms / 1945 windows: https://en.wikipedia.org/wiki/Winter_Palace
+- Wikipedia, "Winter Palace" — principal facade 215 m × 30 m (incl. roofline statuary), 1500 rooms / 1945 windows; two tiers of windows on the Neva side (via Budberg 1969 p. 198): https://en.wikipedia.org/wiki/Winter_Palace
+- Hermitage Museum, "The Winter Palace and the Hermitage in 1917" virtual visit — the Neva Enfilade room order (Jordan Gallery on the ground floor → Small Dining-Room on the main floor), placing the Jordan Staircase at the enfilade's east end (design-staircase §2 orientation): https://hermitagemuseum.org/panorama/pano_14/?floorNum=2&lng=en
+- saint-petersburg.com, "State Rooms of the Hermitage Museum" — «The rooms of the Neva Enfilade, which runs west from the Jordan Staircase» (design-staircase §2 orientation): http://www.saint-petersburg.com/museums/hermitage-museum/state-rooms/
 - Википедия, «Зимний дворец» — 1084 комнаты / 1476 окон / 117 лестниц; Нева 210 м, Адмиралтейство 175 м, высота 23,5 м; трёхчастное деление ризалитами, три въездные арки главного ризалита (приём Стрельны), 29 углов, пучки колонн на углах; система проёмов: 3 модуля ширины, 12 типов окон, 22 типа обрамлений, 32 типа скульптурного декора, 5 капителей, 4 картуши (Алексеева, 1977, через статью): https://ru.wikipedia.org/wiki/Зимний_дворец
 - Visit Petersburg (официальный туристический портал), «Зимний дворец» — характеры четырёх фасадов (южный: три арки проезда + парные колонны; северный: сплошная колоннада; западный: усадебная композиция; восточный: массивные корпуса): https://www.visit-petersburg.ru/leisure/places/zimniy-dvorets-gosudarstvennyy-ermitazh/
 - Peterburg.Center, «Зимний дворец в Санкт-Петербурге» — 176 скульптур на кровле, чередующихся с вазами; двухъярусные колонны с разным шагом: https://peterburg.center/maps/zimniy-dvorec-v-sankt-peterburge.html

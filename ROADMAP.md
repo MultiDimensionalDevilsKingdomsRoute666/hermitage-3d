@@ -32,7 +32,7 @@ Pure modules complete and gate-green: solar (NOAA, four contract vectors at 1e-5
 - **Builds underneath:** facade grammar + solver + kit of parts (~25 scripted pieces); instancing; shadows; quality tiers + boot microbenchmark; debug HUD; golden-frame tests; `/notes` page v1 with the facade spec viewer.
 - **Exit:** budgets met on the reference device · grammar documented and tested.
 
-### Phase 2 · The Staircase — **not started**
+### Phase 2 · The Staircase — **complete 2026-10-19** — exit: room meets its contract · disposal verified · devlog ([docs/devlog/0002.md](docs/devlog/0002.md) holds the device-pass numbers and the §9 re-marks)
 
 - **Ships:** enter through the arches, pass the dim compressed Rastrelli Gallery, ascend the Jordan Staircase while light changes with the hour.
 - **Builds underneath:** Blender → glTF → KTX2 pipeline; baked lightmap states + runtime blend; interior kit; first airlock; camera rail; post stack; resource disposal ledger (asserted).
