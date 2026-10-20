@@ -333,22 +333,44 @@ semantics are verified against the committed data (see §7).
 
 ## 6. Implementation plan (rounds 23–26; the file names map to the repo's real ones at integration)
 
-- **r23 — Inventory freeze (docs only).** This doc carries the table, the glossary, the D/E decisions, the placeholder rule; a DEC line for the locale strategy (RU default; `?lang=`/persisted/toggle; the HUD EN-only; display maps; the RU chunk's budget rule). Exit: every string keyed + translated; the owner settles §7's forks; zero invented rows.
-- **r24 — Extraction, EN only (behaviour-preserving).** `src/i18n/keys.ts` (the typed key union), `src/i18n/en.ts`, `src/i18n/format.ts` ({n} interpolation, the Intl number/date wrappers, the unit map); the view-model and the stops switch to keys; the static HTML strings via keys; a literals fence test + a DOM snapshot test byte-identical to the pre-refactor. Exit: the snapshot identical; the solver outputs unchanged; the gzip delta within noise.
-- **r25 — RU runtime.** `src/i18n/ru.ts` (this column), `src/i18n/locale.ts` (the resolution law, the lazy import, `<html lang>`), the ru-RU Intl formatters; the a11y RU test; the CI budget job measuring the EN bundle + the RU chunk. Exit: no EN leak on the RU pages (the HUD, the citations and the identifiers excepted); the parity test (equal key sets, equal placeholder sets per key); the crease callout renders both parts in RU.
-- **r26 — Native review and layout.** The RU fixes from the owner's read-through; the 360 px wrapping; the screenshot fixtures en/ru × 360/768/1280; the doc frozen. Exit: the owner signs the copy; no clipping at the three widths; the gates in CI.
-- **The travel hint (added 2026-10-20, the owner's discoverability report: «I didn't know at first how to move closer»):** the only movement help today is sr-only — a VISIBLE hint (one line, auto-fade, dismissed by the first travel) is added to the r23–r26 scope; the SPECIALIST decides its text (RU+EN), design and fade law in the r23 freeze; implemented with r25. The full touch-travel gesture stays Phase 4 (mobile tier + touch rail).
+- **r23 — Inventory freeze — CLOSED 2026-10-20.** The dispositions are RULED by the specialist
+  (§7; the owner's delegation): D1–D7 confirm the defaults, D8 = KEEP, D9 = overruled; the
+  travel hint is spec'd in full (§9). The locale strategy is DEC-020. Zero invented rows
+  (the D7 flag names the only new inventory: the EN short labels, to arrive with the RU column).
+- **r24 — Extraction, EN only (behaviour-preserving).** **r24a CLOSED 2026-10-20**: `src/i18n/keys.ts`
+  (the typed key union), `src/i18n/en.ts` (the EN column, the corpus byte-for-byte),
+  `src/i18n/format.ts` ({name} interpolation, the number/date law with every later RU choice
+  isolated in a named constant), the purity fence extended to `i18n/*`, the formatters
+  cross-checked against `formatPetersburg`. **r24b** (the switch) is orchestrator-direct:
+  the view-model and the stops switch to keys; the static HTML strings marked via keys;
+  the literals fence test + a DOM snapshot test byte-identical to the pre-refactor; the
+  solver outputs unchanged; the gzip delta within noise. (Diff-heavy mechanical work is
+  exactly what the transport masks — the r3/r13 orchestrator-direct precedent.)
+- **r24t — The type slice (D9's overrule: its own round between extraction and RU).** The three
+  woff2 files, `@font-face`, preloads, metric-override fallbacks, the cmap-coverage gate
+  (§2 — nothing Cyrillic to bite on until the RU column arrives). The EN screenshot fixtures
+  re-baseline on the real face so the RU round's diff is text-only.
+- **r25 — RU runtime + the travel hint.** `src/i18n/ru.ts` (the RU column), `src/i18n/locale.ts`
+  (the resolution law, the lazy import, `<html lang>`), the ru-RU Intl formatters; the a11y RU
+  test; the CI budget job measuring the EN bundle + the RU chunk; the hint implemented per §9
+  (its key `chrome.travelHint` reserved in the r23 freeze). Exit: no EN leak on the RU pages
+  (the HUD, the citations and the identifiers excepted); the parity test (equal key sets, equal
+  placeholder sets per key); the crease callout renders both parts in RU.
+- **r26 — Native review and layout.** The RU fixes from the owner's read-through; the 360 px
+  wrapping; the screenshot fixtures en/ru × 360/768/1280; the doc frozen. Exit: the owner signs
+  the copy; no clipping at the three widths; the gates in CI.
 
-## 7. Owner dispositions (the forks, each with a default)
+## 7. Dispositions — RULED by the specialist 2026-10-20 (the owner's delegation; one combined relay)
 
-1. **прясло vs участок стены** (D1, stretch) — default: **прясло** (precise; the alt if it reads too specialist).
-2. **резерв vs поправка** (allowance) — default: **резерв**.
-3. **Б vs B** (the units) — default: **Б** (R4; the RU page keeps Б, the identifiers stay Latin).
-4. **C86/C87 RU vs EN** (the failure strings) — default: **RU** (they render; the grep-ability loss is acceptable).
-5. **The /notes full RU vs EN-only** (the CHALLENGE's credible alternative) — default: **full RU** (the owner's original ask; the mixed-script caveat accepted).
-6. **E1 the genitive month via Intl vs ISO** — default: **Intl ru-RU** (supersedes the fragment's §1.4; no hand table).
-7. **The facade characters' short labels** — default: **парадный · речной · усадебный · служебный** (the sourced «усадебная композиция» resolves the west; «служебный» takes the east).
-8. **The T1 dpr-2 raise** (ADR-0015's open part — not r22's, pending in parallel) — the numbers: jordan 16.8–16.9 idle; the owner picks sharp-always vs `?q=2`-on-demand.
+1. **прясло vs участок стены** → **прясло** (confirmed): the display map exists to render raw tokens in domain vocabulary; /notes is a sourced ledger, so the precise term fits its register; «участок стены» loses the risalit-to-risalit meaning.
+2. **резерв vs поправка** → **резерв** (confirmed): "allowance" is a budgeted reserve for frame cost, which «резерв» names exactly; «поправка» means a correction to a measured figure and would mislabel declared estimates.
+3. **Б vs B** → **Б** (confirmed): GOST-style units in RU prose match the decimal-comma/«ё» register; identifiers, source tags and the byte-unit MAP stay Latin in code — the swap is one constant.
+4. **C86/C87 RU vs EN** → **RU** (confirmed): they render inside the user-facing ledger D5 makes fully RU-capable; grep-ability survives — the raw `<id>` token is the grep handle and stays raw, the EN key name is the other.
+5. **/notes full RU vs EN-only** → **full RU** (confirmed): the owner's original ask; mixed-script citations (wiki-en, Budberg, РГИА) are the normal shape of a Russian scholarly ledger, not a defect.
+6. **E1 the genitive month** → **Intl ru-RU** (confirmed): `Intl.DateTimeFormat('ru-RU', {day:'numeric', month:'long', year:'numeric', timeZone:'UTC'})` over the +3h-shifted epoch — the same offset constant governs both clocks, no Date construction, the purity gate intact; EN keeps today's ISO bytes; ISO stays the fallback if the formatter throws or yields a digits-only string; the RU bytes get snapshot-pinned.
+7. **The short labels** → **парадный · речной · усадебный · служебный** (confirmed) — each a one-word adjective lifted from the sourced phrase and agreeing with «фасад». FLAG: the corpus has no EN short labels, so the identical-key-set rule adds `data.characterShort{South,North,West,East}` keys with EN values when the RU column lands (new inventory, named loudly here).
+8. **The T1 dpr-2 raise** → **KEEP T1 at dpr 1 / ~1 MP; `?q=2` stays the sharp mode.** A margin of 0.1–0.2 ms measured idle is what glides, airlock transits, the shadow pass under motion and thermal throttling on a 2017 Iris Plus part consume first; a four-megapixel T1 also collapses the buffer distinction the boot probe grades at (a device the probe demoted from T2 would receive T2's pixel count anyway). The device holding 4 MP idle while graded T1 points at PROBE CALIBRATION as the proper vehicle for sharpness-by-default — a separate ADR question (parking lot). The MASKED restore satisfied the ruling's own re-rule condition (re-rule if the margin were ≥ ⅓ of the floor; it is ≈ 1%). ADR-0015 resolved.
+9. **D9 the type slice** → **OVERRULED: its own round between the extraction and the RU runtime.** The face changes metrics and head markup, the RU round changes text; landing them together makes any 360 px wrapping or screenshot diff unattributable. Type-first lets the EN fixtures re-baseline on the real face so the RU round's diff is text-only; the cmap gate ships then and simply has nothing Cyrillic to bite on until the RU column arrives.
 
 Verified against the committed data (the specialist's R11): `Total height with roof band` is the ~24 m HEIGHT (the roof band over the ~22 m cornice), `Principal facade incl. roofline statuary` is the 215 m LENGTH — both labels sit next to metre values and the translations read correctly for those dimensions.
 
@@ -358,3 +380,55 @@ Verified against the committed data (the specialist's R11): `Total height with r
 - The credible alternative «/notes stays EN» was weighed (§7.5) and rejected by the owner's original ask.
 - The data keys stay raw; the render-time maps keep the spec hashes stable (R8).
 - The digits arrived unmasked and plausibility-cross-checked (210 m = the ru tradition; 7+20+8+20+7 = 62 axes).
+
+## 9. The travel hint — the specialist's spec (ruled in the r23 freeze; implemented with r25)
+
+- **Text** (key `chrome.travelHint`, reserved in the freeze — emitted with the RU round; no
+  terminal period, the captions' register): RU «Потяните, чтобы подойти ближе» ·
+  EN "Drag to move closer". Drag only: the one gesture that works identically with mouse,
+  trackpad and touch; the RU line is 29 characters — one line in the caption column at 360 px
+  (the two-gesture variant would wrap). "Closer" is the owner's own word and is accurate
+  because the hint shows only at S0. Keyboard users keep the sr-only #scene-help; the hint is
+  for sighted first-timers.
+- **Placement/style**: bottom-right corner, on the notes link's baseline and bottom inset
+  (above the 32 px scrub hit area), right inset equal to the title's left inset — the four
+  corners hold one element each (title / HUD-dev-only / notes link / hint) and the caption
+  keeps the bottom-center axis alone. Not top-right: it collides with ?hud=1 during the very
+  debugging sessions where the hint is tuned. 12 px (the notes link's step), the notes link's
+  faint-white opacity, the caption's text shadow, right-aligned, `white-space: nowrap`, no box
+  (a box would read as a control next to the scrub hairline). Narrow fallback (< 600 px CSS):
+  the hint moves into the caption column, centered, stacked directly above #caption with one
+  line-gap; the 360 fixture covers this branch, 768/1280 cover the corner.
+- **Show law**: main page only; shown only when the initial stop of the load is S0 (the rail's
+  start — the only place a visitor lands without a shared link); deep links into any other
+  stop never show it. Appears at the arrival-settle beat together with the notes link (after
+  the title's hold+fade), so the chrome settles as one reveal. Every load, no persistence:
+  persisted "seen" state is hidden state the URL cannot reproduce, breaks e2e/screenshot
+  determinism, and buys nothing — a returning visitor travels within a second. Time scrubbing
+  is not travel and does not dismiss it. Once gone it never returns for the page lifetime.
+- **Fade/dismiss law**: HINT_HOLD_MS = 6000 (visible after the settle reveal) · HINT_FADE_MS =
+  1200 (unprompted timeout fade — slower than the caption's 240 because nothing happened to
+  cause it) · HINT_DISMISS_MS = 240 (the caption's fade, reused for dismissal because it
+  answers a user action). Dismiss on the FIRST travel intent of any kind — wheel, pointer drag
+  start (any pointerType, touch included), arrow-key step (incl. boundary steps that fire
+  airlocks) — subscribed to the rail's own travel-intent entry point, not raw DOM events, so
+  "what counts as travel" has one definition. Reduced motion: no transitions at all — appear
+  with the settle, cut at HINT_HOLD_MS, cut on travel. det/golden: identical hiding path to
+  #caption — data-visible never set true, no timers scheduled in det boots, pixels frozen.
+- **DOM/a11y**: `<p id="travel-hint" aria-hidden="true" data-visible="false"
+  data-dismissed="none|travel|timeout">` with pointer-events: none; aria-hidden because
+  #scene-help already serves AT (a visible live hint would double-announce and an aria-live
+  region would re-announce on language switch).
+- **e2e contract** (every navigation pins ?lang= explicitly): (a) ?lang=en at S0 → after
+  settle, #travel-hint[data-visible="true"] with "Drag to move closer"; (b) ?lang=ru →
+  «Потяните, чтобы подойти ближе»; (c) appear → wheel / touch-pointer drag / ArrowRight →
+  data-visible="false" & data-dismissed="travel" within HINT_DISMISS_MS; (d) appear → mocked
+  clock past HINT_HOLD_MS + HINT_FADE_MS → data-dismissed="timeout"; (e) ?det=1 → data-visible
+  stays "false" across frames, golden pixels unchanged; (f) deep links to G0/J4 → never
+  visible; (g) prefers-reduced-motion emulated → computed transition-duration 0s; (h) the
+  screenshot fixtures capture the settled-with-hint moment at en/ru × 360/768/1280.
+- **Failure cases**: travel before the show beat → the intent sets data-dismissed="travel"
+  immediately and the show step checks the flag first, so the hint never flashes; 360 px
+  collision → the stacked fallback; the caption's glide fade and the hint's dismiss coincide
+  on first travel (intended); scrub interaction → the hint stays; language toggle while
+  visible → the text swaps in place, timers untouched.
