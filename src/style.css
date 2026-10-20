@@ -117,10 +117,7 @@ body {
 }
 /* Quiet in-app route to the facade-spec viewer (DEC-004's in-app engineering signal) with
    the language toggle (§1.2) — one bottom row spanning the viewport: the notes link left,
-   the caption centered in the middle slot, the toggle right. The r26.1 owner law: the
-   caption rides the SAME line as the notes link (it used to float above and read as
-   disconnected), centered, with real gaps — nothing touches. §2.2: sans 500 14, tracking
-   +0.02em, underline on hover/focus. */
+   the toggle right. §2.2: sans 500 14, tracking +0.02em, underline on hover/focus. */
 #chrome-row {
   position: fixed;
   left: 24px;
@@ -164,22 +161,21 @@ body {
   color: #fff;
   text-decoration: underline;
 }
-/* §9 travel hint — the r26.1 law: one line above the bottom row, centered on the caption's
-   axis (the caption lives in the row now, so the old corner spot is the toggle's). 12 px
-   (the notes link's step), the notes link's faint-white opacity, the caption's text shadow,
-   nowrap, no box. The host rewrites transition-duration per exit (240 travel / 1200 timeout
-   / 0 reduced motion). bottom 92 = the row's 40 + a 2-line beat (42) + one 10 px gap — the
-   tallest S0 row (the EN beat wraps to two lines at 360 px) stays clear. */
+/* §9 travel hint — the r26.1 law: one line above the bottom-right toggle, right-aligned
+   (the caption moved to the top-right corner, so the hint keeps the bottom-right side).
+   12 px (the notes link's step), the notes link's faint-white opacity, the caption's text
+   shadow, nowrap, no box. The host rewrites transition-duration per exit (240 travel /
+   1200 timeout / 0 reduced motion). bottom 81 = one 14px/1.5 line + one 8 px gap above
+   the toggle's line. */
 #travel-hint {
   position: fixed;
-  left: 50%;
-  transform: translateX(-50%);
-  bottom: 92px;
+  right: 24px;
+  bottom: 81px;
   margin: 0;
   color: rgba(255, 255, 255, 0.55);
   font-size: 12px;
   line-height: 1.5;
-  text-align: center;
+  text-align: right;
   white-space: nowrap;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
   opacity: 1;
@@ -198,19 +194,22 @@ body {
 /* Caption overlay — design-staircase.md §6.1 beats: visible at a rest stop, faded while
    gliding, the dark-card caption during an airlock dwell (§8.4). Write-on-change from the
    pure core (src/ui/captions.ts); --caption-fade must stay equal to CAPTION_FADE_MS there.
-   r26.1 (the owner's law): the caption lives IN the bottom chrome row — the middle slot
-   between the notes link and the toggle, center-aligned on their shared baseline. In flow,
-   so a 2-line beat grows the row upward instead of floating over anything. */
+   r26.1 (the owner's law): the caption anchors to the TOP-RIGHT corner, right-aligned —
+   opposite the wordmark. It tried the bottom row (centered and right-aligned: touches the
+   chrome at 360 px, reads messy) — the top line is where the eye starts. Long beats grow
+   downward on their own side, clear of the wordmark. */
 .caption {
   --caption-fade: 240ms;
-  flex: 1;
-  min-width: 0;
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  max-width: min(32rem, 60vw);
   margin: 0;
   padding: 0;
   font-size: 14px; /* the timeline's size — one quieter step than the 20px wordmark */
   line-height: 1.5;
   letter-spacing: 0.02em;
-  text-align: center;
+  text-align: right;
   text-wrap: balance;
   color: rgba(255, 255, 255, 0.85);
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
