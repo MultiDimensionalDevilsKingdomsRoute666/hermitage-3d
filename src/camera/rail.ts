@@ -60,7 +60,10 @@ export type SeedResult = Readonly<{ state: RailState; source: SeedSource }>;
 
 export const STEP_GLIDE_MS = 1400;
 export const SCROLL_GLIDE_MS = 320;
-export const SCROLL_PX_PER_SEGMENT = 900;
+/** Declared tuning target (the r26.1 owner report: «scrolling in is too fast — around 25%
+ * slower»): wheel pixels per rail segment. 900 → 1200 = the same gesture travels 75% of the
+ * distance it used to. */
+export const SCROLL_PX_PER_SEGMENT = 1200;
 
 const STOP_EPS = 1e-9;
 const KNOT_EPS = 1e-6;

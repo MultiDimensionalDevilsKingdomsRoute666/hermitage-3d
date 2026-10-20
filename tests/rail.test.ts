@@ -169,8 +169,9 @@ describe('scroll', () => {
     expect(scroll(LINE, restingAt(0), -10_000, true).u).toBe(0);
   });
   it('extends a scroll glide in flight', () => {
-    const first = scroll(LINE, restingAt(0), 90, false);
-    const second = scroll(LINE, advance(LINE, first, 50), 90, false);
+    // 120 px = 0.1 segment at SCROLL_PX_PER_SEGMENT 1200 over one segment (the two-stop LINE).
+    const first = scroll(LINE, restingAt(0), 120, false);
+    const second = scroll(LINE, advance(LINE, first, 50), 120, false);
     expect(second.glide?.to).toBeCloseTo(0.2);
     expect(second.glide?.from).toBe(0);
   });

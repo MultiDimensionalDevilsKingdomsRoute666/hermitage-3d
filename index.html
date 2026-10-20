@@ -55,20 +55,22 @@
     <!-- Caption overlay (§6.1): the stop's beat text; hidden from AT because #caption-live
          mirrors it. Visible at a rest stop, faded while gliding, the dark-card caption
          during an airlock dwell. data-stop/data-visible are e2e contract rows. -->
-    <p id="caption" class="caption" aria-hidden="true" data-visible="false" data-stop=""></p>
+    <!-- §1.2 the bottom chrome row; the r26.1 owner law: the caption rides the SAME bottom
+         line, centered between the notes link (left) and the language toggle (right) — one
+         baseline, nothing touches. The caption is the rail-driven overlay (captions.ts):
+         hidden until settle, opacity-driven, mirrored by #caption-live. -->
+    <div id="chrome-row">
+      <a id="notes-link" href="/notes.html" hidden>Как это устроено →</a>
+      <p id="caption" class="caption" aria-hidden="true" data-visible="false" data-stop=""></p>
+      <button id="lang-toggle" type="button" lang="en" aria-label="Русский">RU</button>
+    </div>
     <!-- Live region: «<stop id> · <caption>», rewritten only when it changes (§1.2: stops
          are named in a11y text). -->
     <div id="caption-live" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
-    <!-- §9 travel hint: bottom-right corner, S0-only at the settle beat; the host owns the
-         state machine (src/ui/hint.ts); data-visible/data-dismissed are e2e contract rows. -->
+    <!-- §9 travel hint (r26.1): one line above the bottom row, centered on the caption's
+         axis; S0-only at the settle beat; the host owns the state machine (src/ui/hint.ts);
+         data-visible/data-dismissed are e2e contract rows. -->
     <p id="travel-hint" aria-hidden="true" data-visible="false" data-dismissed="none"></p>
-    <!-- §1.2: the bottom-left chrome row — the notes link first, the language toggle last;
-         the toggle shows the TARGET language in its own script, lang set for the screen
-         readers. Static text is the pre-JS RU state; the runtime binds from the dictionary. -->
-    <div id="chrome-row">
-      <a id="notes-link" href="/notes.html" hidden>Как это устроено →</a>
-      <button id="lang-toggle" type="button" lang="en" aria-label="Русский">RU</button>
-    </div>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

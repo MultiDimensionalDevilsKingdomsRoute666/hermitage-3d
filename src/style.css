@@ -116,15 +116,20 @@ body {
   display: none;
 }
 /* Quiet in-app route to the facade-spec viewer (DEC-004's in-app engineering signal) with
-   the language toggle after it (§1.2) — one bottom-left chrome row. §2.2: sans 500 14,
-   tracking +0.02em, underline on hover/focus. */
+   the language toggle (§1.2) — one bottom row spanning the viewport: the notes link left,
+   the caption centered in the middle slot, the toggle right. The r26.1 owner law: the
+   caption rides the SAME line as the notes link (it used to float above and read as
+   disconnected), centered, with real gaps — nothing touches. §2.2: sans 500 14, tracking
+   +0.02em, underline on hover/focus. */
 #chrome-row {
   position: fixed;
   left: 24px;
+  right: 24px;
   bottom: 40px;
   display: flex;
   align-items: baseline;
-  gap: 16px;
+  justify-content: space-between;
+  gap: 12px;
 }
 #notes-link {
   color: rgba(255, 255, 255, 0.55);
@@ -159,21 +164,22 @@ body {
   color: #fff;
   text-decoration: underline;
 }
-/* §9 travel hint — the r26 amendment (the owner's instruction): the caption anchors to the
-   bottom-RIGHT corner, so the hint stacks one caption line above it; the corner's former
-   sole-tenant law and the <600 px stacked fallback die together. 12 px (the notes link's
-   step), the notes link's faint-white opacity, the caption's text shadow, nowrap, no box.
-   The host rewrites transition-duration per exit (240 travel / 1200 timeout / 0 reduced
-   motion). */
+/* §9 travel hint — the r26.1 law: one line above the bottom row, centered on the caption's
+   axis (the caption lives in the row now, so the old corner spot is the toggle's). 12 px
+   (the notes link's step), the notes link's faint-white opacity, the caption's text shadow,
+   nowrap, no box. The host rewrites transition-duration per exit (240 travel / 1200 timeout
+   / 0 reduced motion). bottom 92 = the row's 40 + a 2-line beat (42) + one 10 px gap — the
+   tallest S0 row (the EN beat wraps to two lines at 360 px) stays clear. */
 #travel-hint {
   position: fixed;
-  right: 24px;
-  bottom: 81px;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 92px;
   margin: 0;
   color: rgba(255, 255, 255, 0.55);
   font-size: 12px;
   line-height: 1.5;
-  text-align: right;
+  text-align: center;
   white-space: nowrap;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
   opacity: 1;
@@ -192,21 +198,19 @@ body {
 /* Caption overlay — design-staircase.md §6.1 beats: visible at a rest stop, faded while
    gliding, the dark-card caption during an airlock dwell (§8.4). Write-on-change from the
    pure core (src/ui/captions.ts); --caption-fade must stay equal to CAPTION_FADE_MS there.
-   r26 (the owner's instruction): the caption anchors to the bottom-RIGHT corner,
-   right-aligned — the bottom-center axis touched the EN/RU toggle in the bottom-left chrome
-   row at 360 px; the corner clears it at every width. */
+   r26.1 (the owner's law): the caption lives IN the bottom chrome row — the middle slot
+   between the notes link and the toggle, center-aligned on their shared baseline. In flow,
+   so a 2-line beat grows the row upward instead of floating over anything. */
 .caption {
   --caption-fade: 240ms;
-  position: fixed;
-  right: 24px;
-  bottom: 52px; /* above the 32px hairline scrub */
-  max-width: min(32rem, 80vw);
+  flex: 1;
+  min-width: 0;
   margin: 0;
   padding: 0;
   font-size: 14px; /* the timeline's size — one quieter step than the 20px wordmark */
   line-height: 1.5;
   letter-spacing: 0.02em;
-  text-align: right;
+  text-align: center;
   text-wrap: balance;
   color: rgba(255, 255, 255, 0.85);
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
@@ -217,17 +221,6 @@ body {
 }
 .caption[data-visible="false"] {
   opacity: 0;
-}
-/* Narrow widths: the caption box can reach the chrome row's line (2-line beats, 80vw box),
-   so the caption steps above it and the hint follows one line up. The S0 beat the hint
-   accompanies is a single line at every width — the stack never self-collides. */
-@media (max-width: 719px) {
-  .caption {
-    bottom: 81px;
-  }
-  #travel-hint {
-    bottom: 110px;
-  }
 }
 @media (prefers-reduced-motion: reduce) {
   .caption {

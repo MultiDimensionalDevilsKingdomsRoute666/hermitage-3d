@@ -28,9 +28,11 @@ export type LookState = Readonly<{ look: LookOffset; lookTarget: LookOffset }>;
 export const NO_LOOK = { yaw: 0, pitch: 0 } satisfies LookOffset;
 /**
  * Declared tuning target. Degrees of look a drag spanning the full viewport height traverses.
- * Calibrated to the §6.1 yaw limit (35°): a half-height drag covers about half the limit.
+ * 35 was calibrated to the §6.1 yaw limit (a half-height drag covered about half of it); the
+ * r26.1 owner report («looking around via click and moving mouse is a bit fast — around 15%
+ * slower») lowers it to 30: a half-height drag now covers ~43% of the yaw limit.
  */
-export const DRAG_SPAN_DEG = 35;
+export const DRAG_SPAN_DEG = 30;
 /**
  * Declared tuning target. Damping time constant: 63% of the remaining offset closes per TAU and
  * the ease is visually settled after ~5 TAU. Shorter is snappier, longer floatier (80–200 ms).

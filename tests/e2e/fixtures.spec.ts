@@ -39,8 +39,10 @@ for (const viewport of VIEWPORTS) {
         // Hide the canvas: visibility keeps layout, the dithering pixels leave the gate.
         await page.addStyleTag({ content: '#scene { visibility: hidden !important; }' });
         await page.waitForTimeout(300); // one settle margin: the fade transitions finish
+        // Strict threshold: the overlays are deterministic DOM (the canvas is hidden), and a
+        // loose ratio would swallow a whole layout change — text is <1% of the viewport.
         await expect(page).toHaveScreenshot(`fixtures-main-${viewport.name}-${lang}.png`, {
-          maxDiffPixelRatio: 0.01,
+          maxDiffPixelRatio: 0,
           timeout: 60_000,
         });
       });
@@ -57,9 +59,11 @@ for (const viewport of VIEWPORTS) {
         await page.goto(`/notes.html#?lang=${lang}`);
         await expect(page.locator('h1')).toHaveText(NOTES_TITLE[lang], { timeout: 30_000 });
         await page.evaluate(() => document.fonts.ready);
+        // Pure DOM, no canvas — deterministic, so the gate is pixel-strict (a loose ratio
+        // would swallow a whole layout change).
         await expect(page).toHaveScreenshot(`fixtures-notes-${viewport.name}-${lang}.png`, {
           fullPage: true,
-          maxDiffPixelRatio: 0.01,
+          maxDiffPixelRatio: 0,
           timeout: 60_000,
         });
       });

@@ -4,7 +4,7 @@ import { expect, type Page, test } from '@playwright/test';
 // ?lang= explicitly (§1.1's e2e rule); a fresh page per configuration (the round-17c trap:
 // same-base goto is a fragment navigation, and the hint's law is once-per-page-lifetime).
 const SETTLE_TIMEOUT_MS = 45_000;
-const AT = 'at=2026-06-21T12:00:00Z';
+const AT = 'at=2026-06-21T12:00:00Z&q=t1'; // q pinned: no tier probe, no post-settle compile jank — the 6 s hold is real time
 const HINT = '#travel-hint';
 
 async function settled(page: Page, query: string): Promise<void> {
@@ -36,10 +36,15 @@ test('(c) the first travel intent dismisses with data-dismissed=travel', async (
     await expect(fresh.locator('#scrub')).toBeVisible({ timeout: SETTLE_TIMEOUT_MS });
     return fresh;
   };
+  // The intent is dispatched the moment the row settles — the hint may already be shown
+  // (the settle beat fired: shown → gone, the hold is cancelled) or still armed (armed →
+  // gone, it never flashes); §9 makes the FIRST travel intent the dismissal either way.
+  // Waiting for data-visible=true here would race the 6 s hold against a janked main
+  // thread (the watch: a slow protocol round-trip pushed the wheel past the hold and the
+  // unprompted timeout won).
   // Wheel:
   let p = await freshSettled(`${AT}&lang=en`);
   const hint = p.locator(HINT);
-  await expect(hint).toHaveAttribute('data-visible', 'true', { timeout: 10_000 });
   await p.mouse.move(640, 360);
   await p.mouse.wheel(0, 120);
   await expect(hint).toHaveAttribute('data-visible', 'false');
@@ -48,7 +53,6 @@ test('(c) the first travel intent dismisses with data-dismissed=travel', async (
 
   // Arrow step:
   p = await freshSettled(`${AT}&lang=en`);
-  await expect(p.locator(HINT)).toHaveAttribute('data-visible', 'true', { timeout: 10_000 });
   await p.locator('#scene').focus();
   await p.keyboard.press('ArrowRight');
   await expect(p.locator(HINT)).toHaveAttribute('data-visible', 'false');
@@ -57,7 +61,6 @@ test('(c) the first travel intent dismisses with data-dismissed=travel', async (
 
   // A pointer drag start, any pointer type (the pointerdown path, touch included):
   p = await freshSettled(`${AT}&lang=en`);
-  await expect(p.locator(HINT)).toHaveAttribute('data-visible', 'true', { timeout: 10_000 });
   await p.mouse.move(640, 360);
   await p.mouse.down();
   await p.mouse.up();
