@@ -1,365 +1,606 @@
-/* /notes — the ledger face (design-i18n-notes.md §3, round 26): light paper derived from
-   the scene (the white-night sky, the pale-green walls, the ochre dressing), one 880 px
-   column, hairline rules, tabular numerals. Colour is spent only on provenance — the
-   page's one load-bearing distinction. Typography: §2 — the WP Sans/Serif stacks
-   (src/fonts.css). Contrast verified ≥ 4.5:1 (§3.2; the ochre deepened one step for it). */
+/* /notes — the quiet annex of the Zimny scene. What this implements: one paper column in
+   daylight tints lifted from the facade (pale-green wall, ochre dressing, white-night sky);
+   hairline rules carry all structure and every rule spans the same content width; the serif
+   is reserved for the front matter (H1, lede, section titles) and the sans for everything
+   read as data; each number ledger is one subgrid — label | value | unit | note |
+   provenance — so columns align across rows; colour is spent on exactly one thing,
+   provenance: sourced = green fill, declared = ochre fill, derived = outlined (hue AND shape
+   differ). Contrast on --paper (WCAG, computed): ink 15.6:1, ink-2 5.9:1, green 7.0:1
+   (6.1:1 on its tint), ochre 6.0:1 (5.2:1 on its tint), error 6.7:1. Fonts: src/fonts.css
+   defines --font-sans (WP Sans 400/500) and --font-serif (WP Serif 400); no other faces are
+   used. Single breakpoint: 768 px, declared once at the end; it only re-tokens and lays out
+   the desktop ledger. No state, no runtime styles, no !important. */
 :root {
   color-scheme: light;
-  /* §3.2 palette tokens. */
+  /* paper and ink */
   --paper: #f7f8f7;
   --ink: #1b1f1d;
-  --muted: #646b67;
-  --rule: #d8dcd9;
-  --green: #3c6a4e;
-  --green-tint: #e4eee7;
-  --ochre: #86641c;
-  --ochre-tint: #f4ead2;
-  --derived-tint: #eceeec;
-  --error: #a33d2e;
-  font-family: var(--font-sans, system-ui, sans-serif);
+  --ink-2: #5b625e;
+  --rule: #d9ddda;
+  --rule-strong: var(--ink);
+  /* provenance — the only chromatic tokens on the page */
+  --sourced: #2f5f43;
+  --sourced-tint: #e3ece6;
+  --declared: #7a5a14;
+  --declared-tint: #f3e8cf;
+  --error: #9b3626;
+  /* type */
+  --sans: var(--font-sans, system-ui, sans-serif);
+  --serif: var(--font-serif, Georgia, serif);
+  --fs-label: 12px;
+  --lh-label: 16px;
+  --fs-small: 13px;
+  --lh-small: 20px;
+  --fs-data: 15px;
+  --lh-data: 22px;
+  --fs-body: 16px;
+  --lh-body: 26px;
+  --fs-lede: 19px;
+  --lh-lede: 30px;
+  --fs-h2: 21px;
+  --lh-h2: 28px;
+  --fs-h1: 28px;
+  --lh-h1: 34px;
+  --w-regular: 400;
+  --w-medium: 500;
+  --track-label: 0.06em;
+  --track-chip: 0.01em;
+  --track-title: -0.01em;
+  --underline-offset: 0.15em;
+  --measure: 64ch;
+  /* space — a 4 px scale */
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 16px;
+  --s-5: 24px;
+  --s-6: 32px;
+  --s-7: 48px;
+  --s-8: 64px;
+  --s-9: 96px;
+  --gutter: var(--s-5);
+  --section-gap: var(--s-7);
+  --column: 784px;
+  /* lines, corners, motion */
+  --hair: 1px;
+  --ring: 2px;
+  --radius: 2px;
+  --dur: 160ms;
 }
+
+/* ---- base ------------------------------------------------------------------------------ */
+
 *,
 *::before,
 *::after {
   box-sizing: border-box;
 }
-html,
+
+html {
+  background: var(--paper);
+  -webkit-text-size-adjust: 100%;
+}
+
 body {
   margin: 0;
   min-height: 100%;
-  background: var(--paper);
   color: var(--ink);
+  background: var(--paper);
+  font-family: var(--sans);
+  font-size: var(--fs-body);
+  line-height: var(--lh-body);
 }
-/* §3.1: one column, 880 px container, page padding 24 px (48 px from 768 px); the header
-   is in flow — no sidebar, no sticky elements. */
-.page-head,
-main {
-  max-width: 880px;
-  margin: 0 auto;
-  padding-inline: 24px;
+
+:focus-visible {
+  outline: var(--ring) solid var(--ink);
+  outline-offset: var(--ring);
 }
-.page-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: 16px;
-  padding-top: 24px;
+
+a,
+button {
+  transition:
+    color var(--dur),
+    border-color var(--dur),
+    text-decoration-color var(--dur);
 }
-main {
-  padding-top: 24px;
-  padding-bottom: 96px;
-  line-height: 1.55;
-}
-@media (min-width: 768px) {
-  .page-head,
-  main {
-    padding-inline: 48px;
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --dur: 0ms;
   }
 }
-/* §1.2: the language toggle — a text button in the target language's script; the back
-   link's quieter register, underline on hover/focus. */
-#lang-toggle {
-  appearance: none;
-  background: none;
-  border: 0;
-  padding: 0;
-  cursor: pointer;
-  font-family: inherit;
-  color: var(--muted);
-  font-size: 14px;
-  font-weight: 500;
-  letter-spacing: 0.02em;
+
+/* The column: width, not padding, so every rule drawn by a block spans exactly the content. */
+.page-head,
+main,
+body > noscript {
+  width: min(100% - 2 * var(--gutter), var(--column));
+  margin-inline: auto;
 }
-#lang-toggle:hover,
-#lang-toggle:focus-visible {
+
+/* ---- header ---------------------------------------------------------------------------- */
+
+.page-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-4);
+  padding-block: var(--s-4);
+  border-bottom: var(--hair) solid var(--rule);
+  font-size: var(--fs-small);
+  line-height: var(--lh-small);
+}
+
+.back {
+  color: var(--ink-2);
+  text-decoration: none;
+}
+
+.back:hover {
   color: var(--ink);
   text-decoration: underline;
+  text-underline-offset: var(--underline-offset);
 }
-.back {
-  color: var(--muted);
-  text-decoration: none;
-  font-size: 13px;
+
+#lang-toggle {
+  appearance: none;
+  margin: 0;
+  padding: var(--s-1) var(--s-2);
+  border: var(--hair) solid var(--rule);
+  border-radius: var(--radius);
+  background: none;
+  cursor: pointer;
+  font: inherit;
+  font-weight: var(--w-medium);
+  letter-spacing: var(--track-label);
+  color: var(--ink-2);
 }
-.back:hover,
-.back:focus-visible {
+
+#lang-toggle:hover {
   color: var(--ink);
+  border-color: var(--ink);
 }
-/* §2.2: H1 serif 400 40/44 (30/34 mobile); H2 serif 400 26/32 (22/28). The 8 px rhythm:
-   72 px between sections, 20 px after a heading. */
-h1 {
-  margin: 0 0 20px;
-  font-family: var(--font-serif, Georgia, serif);
-  font-size: 40px;
-  line-height: 44px;
-  font-weight: 400;
-}
+
+/* ---- type ------------------------------------------------------------------------------ */
+
+h1,
 h2 {
-  margin: 72px 0 20px;
-  font-family: var(--font-serif, Georgia, serif);
-  font-size: 26px;
-  line-height: 32px;
-  font-weight: 400;
+  margin: 0;
+  font-family: var(--serif);
+  font-weight: var(--w-regular);
+  letter-spacing: var(--track-title);
+  text-wrap: balance;
 }
-/* §2.2: body sans 400 17/26, measure 68ch; hyphens: auto on prose only — never in tables
-   or labels. */
-p,
-li {
-  max-width: 68ch;
-  font-size: 17px;
-  line-height: 26px;
-  color: var(--ink);
-  hyphens: auto;
+
+h1 {
+  font-size: var(--fs-h1);
+  line-height: var(--lh-h1);
 }
+
+h2 {
+  padding-top: var(--s-5);
+  border-top: var(--hair) solid var(--rule);
+  font-size: var(--fs-h2);
+  line-height: var(--lh-h2);
+  scroll-margin-top: var(--s-5);
+}
+
 p {
-  margin: 0 0 20px;
+  margin: 0;
+  max-width: var(--measure);
+  hyphens: auto;
+  text-wrap: pretty;
 }
+
+/* The lede: the one paragraph set in the serif — the intro opens the article, right under
+   the title (the anchors strip sits between them in the DOM; :first-child is the intro). */
+.notes-article > p:first-child {
+  font-family: var(--serif);
+  font-size: var(--fs-lede);
+  line-height: var(--lh-lede);
+}
+
 a {
-  color: var(--green);
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-thickness: var(--hair);
+  text-decoration-color: var(--ink-2);
+  text-underline-offset: var(--underline-offset);
 }
-a:hover,
-a:focus-visible {
-  color: var(--ink);
+
+a:hover {
+  text-decoration-color: currentColor;
 }
-/* §3.1: the one-line anchor list of the section headings — navigation, not decoration. */
+
+/* ---- anchors --------------------------------------------------------------------------- */
+
+nav.anchors {
+  padding-top: var(--s-3);
+  border-top: var(--hair) solid var(--rule);
+}
+
 nav.anchors ul {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px 10px;
+  gap: var(--s-1) var(--s-5);
   margin: 0;
   padding: 0;
   list-style: none;
-  font-size: 13px;
-  line-height: 20px;
+  font-size: var(--fs-small);
+  line-height: var(--lh-small);
 }
-nav.anchors li {
-  color: var(--muted);
-  font-size: 13px;
-  line-height: 20px;
+
+nav.anchors a {
+  color: var(--ink-2);
+  text-decoration: none;
 }
-nav.anchors li + li::before {
-  content: "·";
-  margin-right: 10px;
+
+nav.anchors a:hover {
+  color: var(--ink);
+  text-decoration: underline;
 }
-/* §3.1: the three-kind legend — each item opens with its chip. */
+
+/* ---- main flow ------------------------------------------------------------------------- */
+
+main {
+  padding-block: var(--s-7) var(--s-9);
+}
+
+.notes-article > * + * {
+  margin-top: var(--s-5);
+}
+
+.notes-article > p + p {
+  margin-top: var(--s-4);
+}
+
+.notes-article > nav.anchors {
+  margin-top: var(--s-6);
+}
+
+.notes-article > h2 {
+  margin-top: var(--section-gap);
+}
+
+.notes-article > h2 + * {
+  margin-top: var(--s-4);
+}
+
+/* ---- legend ---------------------------------------------------------------------------- */
+
 ul.legend {
-  margin: 0 0 20px;
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  column-gap: var(--s-3);
+  row-gap: var(--s-2);
+  margin: 0;
   padding: 0;
   list-style: none;
+  font-size: var(--fs-data);
+  line-height: var(--lh-data);
 }
+
 ul.legend li {
-  display: flex;
-  align-items: baseline;
-  gap: 10px;
-  margin: 0 0 8px;
-}
-/* Numbers: label left, value right, chip last, hairline separators. §3.3: grid
-   label | value | chip with the value right-aligned; on narrow screens the label takes
-   the line and value+chip drop below. §2.2: sans 400 15/22 with tabular numerals. */
-dl.numbers {
-  margin: 0;
-}
-dl.numbers div {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto auto;
-  column-gap: 16px;
+  grid-column: 1 / -1;
+  grid-template-columns: max-content minmax(0, 1fr);
+  column-gap: var(--s-3);
   align-items: baseline;
-  padding: 10px 0;
-  border-bottom: 1px solid var(--rule);
-  font-size: 15px;
-  line-height: 22px;
-  font-variant-numeric: tabular-nums;
 }
-dl.numbers dt {
-  min-width: 0;
-  overflow-wrap: break-word;
-}
-dl.numbers dd {
-  display: flex;
-  align-items: baseline;
-  gap: 6px;
-  justify-self: end;
-  margin: 0;
-  text-align: right;
-}
-.value {
-  font-size: 15px;
-}
-.unit {
-  font-size: 12px;
-  color: var(--muted);
-}
-/* §3.4: the muted row suffix — the budget margin, the pending-measurement note. */
-.note {
-  font-size: 13px;
-  color: var(--muted);
-  white-space: nowrap;
-}
-@media (max-width: 719px) {
-  dl.numbers div {
-    grid-template-columns: auto auto;
-    grid-template-areas:
-      "label label"
-      "value chip";
-  }
-  dl.numbers dt {
-    grid-area: label;
-  }
-  dl.numbers dd {
-    grid-area: value;
-    justify-self: start;
-    text-align: left;
-  }
-  dl.numbers div > span.chip {
-    grid-area: chip;
-    justify-self: end;
+
+/* Subgrid aligns the legend's chip column across items (the fallback above stands alone). */
+@supports (grid-template-columns: subgrid) {
+  ul.legend li {
+    grid-template-columns: subgrid;
   }
 }
-/* Provenance chips — the lowercase kind word in its tint, 2 px radius, no icon, no border
-   (§3.3); declared chips carry the register line as quiet text after the kind. §2.2: sans
-   500 12/16 lowercase. */
+
+/* ---- provenance chips ------------------------------------------------------------------ */
+
 .chip {
   display: inline-block;
-  padding: 0 6px;
-  border-radius: 2px;
-  font-size: 12px;
-  line-height: 16px;
-  font-weight: 500;
-  text-transform: lowercase;
-  letter-spacing: 0.04em;
+  max-width: 100%;
+  padding: 0 var(--s-2);
+  border: var(--hair) solid transparent;
+  border-radius: var(--radius);
+  font-family: var(--sans);
+  font-size: var(--fs-label);
+  line-height: var(--lh-label);
+  font-weight: var(--w-medium);
+  letter-spacing: var(--track-chip);
+  white-space: normal;
+  text-align: left;
   vertical-align: baseline;
 }
+
 .chip[data-provenance="sourced"] {
-  background: var(--green-tint);
-  color: var(--green);
+  color: var(--sourced);
+  background: var(--sourced-tint);
+  border-color: var(--sourced-tint);
 }
+
 .chip[data-provenance="declared"] {
-  background: var(--ochre-tint);
-  color: var(--ochre);
+  color: var(--declared);
+  background: var(--declared-tint);
+  border-color: var(--declared-tint);
 }
+
 .chip[data-provenance="derived"] {
-  background: var(--derived-tint);
-  color: var(--ink);
+  color: var(--ink-2);
+  border-color: currentColor;
 }
-/* Tables: §3.3 — the caption is the small uppercase label above, numeric columns
-   right-align tabular, hairline row rules only; the scroll container is keyboard-focusable.
-   §3.1: 8×12 px table cells, flush page edges. §2.2: sans 400 15/22 with tnum. */
+
+/* ---- number ledger (mobile-first: label line, then value left / chip right) ------------ */
+
+dl.numbers {
+  margin: 0;
+  border-top: var(--hair) solid var(--rule-strong);
+  font-size: var(--fs-data);
+  line-height: var(--lh-data);
+  font-variant-numeric: tabular-nums;
+}
+
+dl.numbers > div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, max-content);
+  grid-template-areas:
+    "label label"
+    "value chip";
+  column-gap: var(--s-4);
+  row-gap: var(--s-1);
+  align-items: baseline;
+  padding-block: var(--s-3);
+  border-bottom: var(--hair) solid var(--rule);
+}
+
+dl.numbers dt {
+  grid-area: label;
+  min-width: 0;
+  overflow-wrap: break-word;
+  hyphens: auto;
+}
+
+dl.numbers dd {
+  grid-area: value;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--s-1);
+  margin: 0;
+  min-width: 0;
+}
+
+dl.numbers > div > .chip {
+  grid-area: chip;
+  justify-self: end;
+}
+
+.unit,
+.note {
+  font-size: var(--fs-small);
+  line-height: var(--lh-small);
+  color: var(--ink-2);
+}
+
+.note {
+  padding-left: var(--s-1);
+}
+
+/* ---- tables ---------------------------------------------------------------------------- */
+
 .table-scroll {
   overflow-x: auto;
 }
+
 table {
   width: 100%;
+  margin: 0;
   border-collapse: collapse;
-  margin: 0 0 8px;
-  font-size: 15px;
-  line-height: 22px;
+  font-size: var(--fs-data);
+  line-height: var(--lh-data);
   font-variant-numeric: tabular-nums;
 }
+
 caption {
+  padding-bottom: var(--s-2);
   text-align: left;
-  font-size: 13px;
-  line-height: 16px;
-  font-weight: 500;
+  font-size: var(--fs-label);
+  line-height: var(--lh-label);
+  font-weight: var(--w-medium);
+  letter-spacing: var(--track-label);
   text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--muted);
-  padding-bottom: 6px;
+  color: var(--ink);
 }
+
 th,
 td {
-  border-bottom: 1px solid var(--rule);
-  padding: 8px 12px;
+  padding: var(--s-2) var(--s-3);
+  border-bottom: var(--hair) solid var(--rule);
   text-align: left;
   vertical-align: top;
 }
+
 th:first-child,
 td:first-child {
   padding-left: 0;
 }
+
 th:last-child,
 td:last-child {
   padding-right: 0;
 }
-td.num,
-th.num {
-  text-align: right;
-  font-variant-numeric: tabular-nums;
-}
+
 thead th {
-  font-size: 13px;
-  line-height: 16px;
+  vertical-align: bottom;
+  border-bottom-color: var(--rule-strong);
+  font-size: var(--fs-label);
+  line-height: var(--lh-label);
+  font-weight: var(--w-medium);
+  letter-spacing: var(--track-label);
   text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--muted);
-  font-weight: 500;
-  border-bottom-color: var(--ink);
+  color: var(--ink-2);
 }
+
 tbody th {
-  font-weight: 500;
+  font-weight: var(--w-medium);
   white-space: nowrap;
 }
-tbody tr.total td,
-tbody tr.total th {
+
+.num {
+  text-align: right;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+tbody tr.total th,
+tbody tr.total td {
+  border-top: var(--hair) solid var(--rule-strong);
   border-bottom: 0;
-  border-top: 1px solid var(--ink);
-  font-weight: 600;
+  font-weight: var(--w-medium);
 }
-/* §3.3: no box — the warning callout is the ochre uppercase label above the paragraph,
-   indented to the ledger's value column; the budget policy takes the same treatment in
-   muted. The error card stays boxed: the loud contract failure. */
-.callout {
-  margin: 16px 0 0 40%;
+
+/* ---- callouts -------------------------------------------------------------------------- */
+
+aside.callout {
+  max-width: var(--measure);
+  padding-block: var(--s-4);
+  border-top: var(--hair) solid var(--rule);
+  border-bottom: var(--hair) solid var(--rule);
 }
-.callout .callout-label {
-  margin: 0 0 4px;
-  font-size: 13px;
-  line-height: 16px;
-  font-weight: 500;
+
+.callout-label {
+  margin: 0 0 var(--s-1);
+  font-size: var(--fs-label);
+  line-height: var(--lh-label);
+  font-weight: var(--w-medium);
+  letter-spacing: var(--track-label);
   text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--ochre);
+  color: var(--declared);
 }
-.callout .callout-text {
+
+.callout-text {
   margin: 0;
-  font-size: 13px;
-  line-height: 20px;
-  color: var(--ink);
+  font-size: var(--fs-data);
+  line-height: var(--lh-data);
 }
-.callout[data-level="note"] .callout-text {
-  color: var(--muted);
+
+aside.callout[data-level="note"] {
+  padding-block: 0;
+  border: 0;
 }
-.callout[data-level="error"] {
-  margin: 16px 0;
-  padding: 12px 16px;
-  border: 1px solid var(--error);
+
+aside.callout[data-level="note"] .callout-text {
+  color: var(--ink-2);
 }
-.callout[data-level="error"] .callout-label {
+
+aside.callout[data-level="error"] {
+  border-color: var(--error);
+}
+
+aside.callout[data-level="error"] .callout-label {
   color: var(--error);
 }
-/* §3.3: the footer links block — a plain 15 px list. */
+
+/* ---- sources --------------------------------------------------------------------------- */
+
 nav.links ul {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
+  display: grid;
+  gap: var(--s-2);
   margin: 0;
   padding: 0;
   list-style: none;
-  font-size: 15px;
-  line-height: 22px;
+  font-size: var(--fs-data);
+  line-height: var(--lh-data);
 }
-@media (max-width: 719px) {
-  /* §2.2 mobile heading sizes; the callout indent unwinds with the stacked ledger. */
-  h1 {
-    font-size: 30px;
-    line-height: 34px;
+
+/* ---- noscript -------------------------------------------------------------------------- */
+
+body > noscript {
+  display: block;
+  padding-block: var(--s-6);
+  color: var(--ink-2);
+}
+
+/* ---- the one breakpoint ---------------------------------------------------------------- */
+
+@media (min-width: 768px) {
+  :root {
+    --gutter: var(--s-7);
+    --section-gap: var(--s-8);
+    --fs-h1: 36px;
+    --lh-h1: 42px;
+    --fs-h2: 24px;
+    --lh-h2: 32px;
   }
-  h2 {
-    font-size: 22px;
-    line-height: 28px;
+
+  /* The ledger becomes one grid: label | value | unit | note | provenance. */
+  dl.numbers {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) max-content max-content max-content minmax(0, max-content);
   }
-  .callout {
-    margin-left: 0;
+
+  /* Fallback row (no subgrid): three independent columns per row. */
+  dl.numbers > div {
+    grid-column: 1 / -1;
+    grid-template-columns: minmax(0, 1fr) max-content minmax(0, max-content);
+    grid-template-areas: none;
+    column-gap: var(--s-2);
+    row-gap: 0;
   }
-  .note {
-    white-space: normal;
+
+  dl.numbers dt,
+  dl.numbers dd,
+  dl.numbers > div > .chip {
+    grid-area: auto;
+  }
+
+  dl.numbers dt {
+    padding-right: var(--s-4);
+  }
+
+  dl.numbers dd {
+    justify-self: end;
+    flex-wrap: nowrap;
+  }
+
+  dl.numbers > div > .chip {
+    justify-self: start;
+    margin-left: var(--s-3);
+  }
+
+  @supports (grid-template-columns: subgrid) {
+    dl.numbers > div {
+      grid-template-columns: subgrid;
+    }
+
+    dl.numbers dt {
+      grid-column: 1;
+    }
+
+    dl.numbers dd {
+      grid-column: 2 / 5;
+      display: grid;
+      grid-template-columns: subgrid;
+      column-gap: var(--s-1);
+      align-items: baseline;
+      justify-self: stretch;
+    }
+
+    dl.numbers .value {
+      grid-column: 1;
+      justify-self: end;
+    }
+
+    dl.numbers .unit {
+      grid-column: 2;
+    }
+
+    dl.numbers .note {
+      grid-column: 3;
+    }
+
+    dl.numbers > div > .chip {
+      grid-column: 5;
+    }
   }
 }

@@ -146,8 +146,10 @@ function renderBlock(block: NotesBlock, container: HTMLElement): void {
       container.append(singleton('p', block.text));
       break;
     case 'legend': {
-      // §3.1: the chip legend — each item opens with its chip.
+      // §3.1: the chip legend — each item opens with its chip. role="list": list-style:none
+      // drops the list semantics in VoiceOver — restore it explicitly.
       const ul = hinge('ul', 'legend');
+      ul.setAttribute('role', 'list');
       for (const item of block.items) {
         const li = hinge('li');
         li.append(legendChip(item.provenance), singleton('span', item.text));
@@ -211,6 +213,7 @@ function renderBlock(block: NotesBlock, container: HTMLElement): void {
     case 'links': {
       const nav = hinge('nav', 'links');
       const ul = hinge('ul');
+      ul.setAttribute('role', 'list'); // list-style:none drops the semantics — restore it
       for (const item of block.items) {
         const li = hinge('li');
         const a = document.createElement('a');
@@ -240,6 +243,7 @@ function render(model: NotesModel): void {
   // §3.1: the one-line anchor list of the section headings — navigation, not decoration.
   const anchors = hinge('nav', 'anchors');
   const anchorList = hinge('ul');
+  anchorList.setAttribute('role', 'list'); // list-style:none drops the semantics — restore it
   for (const block of model.blocks) {
     if (block.kind !== 'heading' || block.level !== 2 || block.id === undefined) continue;
     const li = hinge('li');
