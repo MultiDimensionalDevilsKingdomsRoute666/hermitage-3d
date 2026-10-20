@@ -185,6 +185,7 @@ export const en = {
   'notes.siblingsSectionCell': '{id} ({kind}) {axes}',
   'notes.siblingsAxesCell': '{axes} (±1 per section)',
 
+  'notes.formulaWindowAxes': 'Σ declaredAxes over the five sections',
   'notes.formulaCreaseLine':
     'main line + inner risalit creases from the declared protrusions (solver)',
   'notes.formulaPitch': '{length} m / {axes} axes',
@@ -206,6 +207,8 @@ export const en = {
   'notes.failUnregistered': 'unregistered: {id}',
   'notes.failNoProvenance': "displayed number '{id}' has no provenance register entry",
 
+  'data.titleGallery': 'Rastrelli Gallery — the way in',
+  'data.titleJordan': 'Jordan Staircase — the ascent',
   'data.kindCornerRisalit': 'cornerRisalit',
   'data.kindStretch': 'stretch',
   'data.kindCentralPortal': 'centralPortal',

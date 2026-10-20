@@ -132,6 +132,7 @@ export type NotesKey =
   | 'notes.siblingsColCharacter'
   | 'notes.siblingsSectionCell'
   | 'notes.siblingsAxesCell'
+  | 'notes.formulaWindowAxes'
   | 'notes.formulaCreaseLine'
   | 'notes.formulaPitch'
   | 'notes.formulaSlots'
@@ -152,6 +153,8 @@ export type NotesKey =
   | 'notes.failNoProvenance';
 
 export type DataKey =
+  | 'data.titleGallery'
+  | 'data.titleJordan'
   | 'data.kindCornerRisalit'
   | 'data.kindStretch'
   | 'data.kindCentralPortal'
