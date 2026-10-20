@@ -2,6 +2,12 @@
 // Pure: turns the frozen facade spec plus a fresh solve into a JSON-serializable page
 // model. No three.js, no DOM, no clocks, no randomness — node tests build the page as-is.
 // The DOM binding beside notes.html renders this model and adds no numbers of its own.
+// Round-24b: every user-facing string comes from the i18n dictionary (design-i18n-notes.md
+// §1.3, the round-24 extraction) — the EN column IS the pre-refactor tree, byte for byte
+// (tests/notes-model-fixture.test.ts pins it). Data keys stay raw tokens (R8): section
+// kinds, arrangement tokens, the wall-colour note and the section notes flow from the spec
+// untouched; the per-language display maps render them in a later round. The spec-audit
+// Issue messages stay EN (developer diagnostics, the literals-fence allowlist).
 import {
   DECLARED_BAY_PITCH_M,
   DECOR_SYSTEM,
@@ -23,6 +29,8 @@ import {
   resolveProvenance,
   SPEC_PROVENANCE,
 } from '../content/provenance';
+import { type Key, t } from '../i18n';
+import { format, formatInt, formatNumber } from '../i18n/format';
 import {
   type BudgetProjection,
   type Issue,
@@ -90,7 +98,7 @@ export type NotesResult =
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
-export const NOTES_TITLE = 'How the south facade is built';
+export const NOTES_TITLE = t('notes.title');
 /** Contract ceilings enforced by CI (AGENTS.md). */
 export const BUDGET_CEILINGS = {
   frameDrawCalls: 250,
@@ -111,24 +119,17 @@ export const NOTES_ALLOWANCE: SceneAllowance = {
 };
 /** ±0.3 m around the declared pitch is ±1 axis per section over five sections. */
 export const PITCH_TOLERANCE_M = 0.3;
-export const PENDING_MEASUREMENT = 'pending CI measurement';
-const FACADE_CHARACTER: Readonly<Record<FacadeId, string>> = {
-  south: 'Palace Square front: three risalits, triple-arch gateway (wiki-ru, visit-petersburg).',
-  north: 'Continuous colonnade to the Neva (visit-petersburg).',
-  west: 'Country-palace composition toward the Admiralty (visit-petersburg).',
-  east: 'Massive flanks around the service court (visit-petersburg).',
+export const PENDING_MEASUREMENT = t('notes.pending');
+/** The facade characters' display keys (D7: the one-word RU labels arrive with the RU map). */
+const FACADE_CHARACTER: Readonly<Record<FacadeId, Key>> = {
+  south: 'data.characterSouth',
+  north: 'data.characterNorth',
+  west: 'data.characterWest',
+  east: 'data.characterEast',
 };
 // ---------------------------------------------------------------------------
 // Formatting
 // ---------------------------------------------------------------------------
-function formatInt(value: number): string {
-  const digits = String(Math.trunc(Math.abs(value)));
-  const grouped = digits.replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
-  return value < 0 ? `-${grouped}` : grouped;
-}
-function formatNumber(value: number): string {
-  return Number.isInteger(value) ? formatInt(value) : String(Number(value.toFixed(2)));
-}
 const prose = (...parts: readonly string[]): string =>
   parts.filter((part) => part !== '').join(' ');
 const derived = (formula: string): RowProvenance => ({ kind: 'derived', formula });
@@ -154,7 +155,7 @@ function createResolver(tree: ProvenanceTree): Resolver {
     const entry = resolveProvenance(tree, id);
     if (entry === undefined) {
       missing.push(id);
-      return { kind: 'derived', formula: `unregistered: ${id}` };
+      return { kind: 'derived', formula: format(t('notes.failUnregistered'), { id }) };
     }
     if (entry.kind === 'sourced') {
       return { kind: 'sourced', id, keys: entry.keys };
@@ -243,28 +244,10 @@ type Ctx = Readonly<{
 function introBlocks(): readonly NotesBlock[] {
   return [
     { kind: 'heading', level: 1, text: NOTES_TITLE },
-    {
-      kind: 'paragraph',
-      text: prose(
-        'Every number on this page is produced at load by the same pure solver the app runs',
-        'over its frozen facade specification (decisions.md, DEC-004). It is not a survey.',
-        'Three kinds of numbers are kept apart by the type system and labelled here:',
-      ),
-    },
+    { kind: 'paragraph', text: t('notes.intro') },
     {
       kind: 'list',
-      items: [
-        'Sourced — carries an attribution key into ATTRIBUTIONS.md ("No line, no use").',
-        prose(
-          'Declared — a photo-derived working target registered in docs/artistic-license.md;',
-          'checked against measured elevation drawings during Phase 1 and corrected in both',
-          'places if the record differs.',
-        ),
-        prose(
-          'Derived — solver arithmetic over sourced and declared inputs',
-          '(docs/design-facade-grammar.md); recomputed on every load, never registered.',
-        ),
-      ],
+      items: [t('notes.kindSourced'), t('notes.kindDeclared'), t('notes.kindDerived')],
     },
     {
       kind: 'links',
@@ -280,129 +263,131 @@ function introBlocks(): readonly NotesBlock[] {
 }
 function shellBlocks({ cited }: Ctx): readonly NotesBlock[] {
   return [
-    { kind: 'heading', level: 2, text: 'Shell' },
-    {
-      kind: 'paragraph',
-      text: prose(
-        'Quadrangle numbers as the sources give them. Where two sources disagree both',
-        'counts are kept, each under its own key.',
-      ),
-    },
+    { kind: 'heading', level: 2, text: t('notes.shellHeading') },
+    { kind: 'paragraph', text: t('notes.shellIntro') },
     {
       kind: 'numbers',
       id: 'shell',
       rows: [
         cited(
           'shell.northFacadeLengthM',
-          'North (Neva) facade length',
+          t('notes.shellNorthLength'),
           SHELL.northFacadeLengthM,
           'm',
         ),
-        cited(
-          'shell.westFacadeLengthM',
-          'West (Admiralty) facade length',
-          SHELL.westFacadeLengthM,
-          'm',
-        ),
+        cited('shell.westFacadeLengthM', t('notes.shellWestLength'), SHELL.westFacadeLengthM, 'm'),
         cited(
           'shell.windowsTotal.conservative',
-          'Windows, conservative count',
+          t('notes.shellWindowsConservative'),
           SHELL.windowsTotal.conservative,
           '',
         ),
         cited(
           'shell.windowsTotal.generous',
-          'Windows, generous count',
+          t('notes.shellWindowsGenerous'),
           SHELL.windowsTotal.generous,
           '',
         ),
         cited(
           'shell.roomsTotal.conservative',
-          'Rooms, conservative count',
+          t('notes.shellRoomsConservative'),
           SHELL.roomsTotal.conservative,
           '',
         ),
-        cited('shell.roomsTotal.generous', 'Rooms, generous count', SHELL.roomsTotal.generous, ''),
-        cited('shell.staircasesTotal', 'Staircases', SHELL.staircasesTotal, ''),
-        cited('shell.corniceHeightM', 'Height to the cornice', SHELL.corniceHeightM, 'm'),
-        cited('shell.totalHeightM', 'Total height with roof band', SHELL.totalHeightM, 'm'),
+        cited(
+          'shell.roomsTotal.generous',
+          t('notes.shellRoomsGenerous'),
+          SHELL.roomsTotal.generous,
+          '',
+        ),
+        cited('shell.staircasesTotal', t('notes.shellStaircases'), SHELL.staircasesTotal, ''),
+        cited('shell.corniceHeightM', t('notes.shellCorniceHeight'), SHELL.corniceHeightM, 'm'),
+        cited('shell.totalHeightM', t('notes.shellTotalHeight'), SHELL.totalHeightM, 'm'),
         cited(
           'shell.rooflineStatuaryHeightM',
-          'Principal facade incl. roofline statuary',
+          t('notes.shellPrincipalFacade'),
           SHELL.rooflineStatuaryHeightM,
           'm',
         ),
-        cited('shell.cornersTotal', 'Corners incl. every projection', SHELL.cornersTotal, ''),
-        cited('shell.roofStatues', 'Roof statuary figures', SHELL.roofStatues, ''),
+        cited('shell.cornersTotal', t('notes.shellCorners'), SHELL.cornersTotal, ''),
+        cited('shell.roofStatues', t('notes.shellRoofStatuary'), SHELL.roofStatues, ''),
       ],
     },
   ];
 }
 function systemBlocks({ rows, cite, cited }: Ctx): readonly NotesBlock[] {
   return [
-    { kind: 'heading', level: 2, text: 'Window, decor and order system' },
-    {
-      kind: 'paragraph',
-      text: prose(
-        'The sourced catalogue (Alekseeva via wiki-ru) is reproduced as a module system and a',
-        'column rhythm, not one-for-one: the counts below are catalogued, the kit models a',
-        'smaller stylized set (artistic-license register, "Window/decor catalogue").',
-      ),
-    },
+    { kind: 'heading', level: 2, text: t('notes.decorHeading') },
+    { kind: 'paragraph', text: t('notes.decorIntro') },
     {
       kind: 'numbers',
       id: 'decor',
       rows: [
         cited(
           'decor.windowWidthModules',
-          'Window width modules',
+          t('notes.decorWidthModules'),
           DECOR_SYSTEM.windowWidthModules,
           '',
         ),
-        cited('decor.windowTypes', 'Window types', DECOR_SYSTEM.windowTypes, ''),
-        cited('decor.surroundTypes', 'Surround types', DECOR_SYSTEM.surroundTypes, ''),
+        cited('decor.windowTypes', t('notes.decorWindowTypes'), DECOR_SYSTEM.windowTypes, ''),
+        cited('decor.surroundTypes', t('notes.decorSurroundTypes'), DECOR_SYSTEM.surroundTypes, ''),
         cited(
           'decor.sculpturalDecorTypes',
-          'Sculptural decor types',
+          t('notes.decorSculpturalTypes'),
           DECOR_SYSTEM.sculpturalDecorTypes,
           '',
         ),
-        cited('decor.capitalVarieties', 'Capital varieties', DECOR_SYSTEM.capitalVarieties, ''),
-        cited('decor.cartoucheKinds', 'Cartouche kinds', DECOR_SYSTEM.cartoucheKinds, ''),
+        cited(
+          'decor.capitalVarieties',
+          t('notes.decorCapitalVarieties'),
+          DECOR_SYSTEM.capitalVarieties,
+          '',
+        ),
+        cited(
+          'decor.cartoucheKinds',
+          t('notes.decorCartoucheKinds'),
+          DECOR_SYSTEM.cartoucheKinds,
+          '',
+        ),
       ],
     },
     {
       kind: 'table',
       id: 'order',
-      caption: 'Order system',
-      columns: ['Fact', 'Value'],
+      caption: t('notes.orderCaption'),
+      columns: [t('notes.orderColFact'), t('notes.orderColValue')],
       rows: [
         {
           id: 'order.tiers',
-          cells: ['Engaged colonnade tiers', String(ORDER_SYSTEM.tiers)],
+          cells: [t('notes.orderColonnadeTiers'), String(ORDER_SYSTEM.tiers)],
           provenance: [cite('order.tiers')],
         },
         {
           id: 'order.columnArrangement',
-          cells: ['Column arrangement', ORDER_SYSTEM.columnArrangement.join(' · ')],
+          cells: [t('notes.orderArrangement'), ORDER_SYSTEM.columnArrangement.join(' · ')],
           provenance: [cite('order.columnArrangement')],
         },
         {
           id: 'order.capitalFamily',
-          cells: ['Capital family', ORDER_SYSTEM.capitalFamily],
+          cells: [t('notes.orderCapitalFamily'), ORDER_SYSTEM.capitalFamily],
           provenance: [cite('order.capitalFamily')],
         },
         {
           id: 'order.wallColor',
-          cells: ['Wall colour', ORDER_SYSTEM.wallColorNote],
+          cells: [t('notes.orderWallColour'), ORDER_SYSTEM.wallColorNote],
         },
       ],
     },
     {
       kind: 'table',
       id: 'rows',
-      caption: 'Window rows, bottom to top',
-      columns: ['Row', 'Tier', 'Module', 'Declared head height'],
+      caption: t('notes.windowRowsCaption'),
+      columns: [
+        t('notes.windowRowsColRow'),
+        t('notes.windowRowsColTier'),
+        t('notes.windowRowsColModule'),
+        t('notes.windowRowsColHeadHeight'),
+      ],
       rows: rows.map((row) => ({
         id: `rows.${row.id}`,
         cells: [row.id, row.tier, row.module, `${formatNumber(row.declaredHeadHeightM)} m`],
@@ -413,23 +398,18 @@ function systemBlocks({ rows, cite, cited }: Ctx): readonly NotesBlock[] {
 }
 function creaseCallout({ spec, solved, warnings }: Ctx): NotesBlock {
   const creaseWarnings = warnings.filter((warning) => warning.code === 'crease');
-  const solverSays = creaseWarnings.map((warning) => `Solver: ${warning.message}`).join(' ');
+  const solverSays = creaseWarnings
+    .map((warning) => format(t('notes.solverWarning'), { message: warning.message }))
+    .join(' ');
   return {
     kind: 'callout',
     id: 'south.crease',
     level: creaseWarnings.length > 0 ? 'warning' : 'note',
     text: prose(
-      `Crease line: the spec carries ${formatNumber(spec.creaseLineLengthM)} m (sourced —`,
-      'wiki-en "principal facade", citing Budberg, Great Palaces: The Winter Palace, 1969; the',
-      'ru tradition reads the same edge as 210 m); the solver derives',
-      `${formatNumber(solved.derivedCreaseM)} m from the main line and the declared risalit`,
-      'protrusions. The two sourced lengths most likely measure one street edge under different',
-      'source conventions, not a plan line against a crease line; the declared axis rhythm',
-      '(7 + 20 + 8 + 20 + 7) and the derived figure have no digitized attestation (literature',
-      'hunt closed 2026-10-17). Settling it takes measured drawings — РГИА ф. 485, an Albertina',
-      'scan, or Pilyavsky via НЭБ — so this warning stays live until then, with the spec and',
-      'the artistic-license register ("Dimension approximations") corrected if the record',
-      'differs.',
+      format(t('notes.creaseCallout'), {
+        specCrease: formatNumber(spec.creaseLineLengthM),
+        derivedCrease: formatNumber(solved.derivedCreaseM),
+      }),
       solverSays,
     ),
   };
@@ -438,40 +418,44 @@ function southBlocks(ctx: Ctx): readonly NotesBlock[] {
   const { spec, rows, solved, cite, cited } = ctx;
   const { counts } = solved;
   return [
-    { kind: 'heading', level: 2, text: 'South elevation — Palace Square, west → east' },
+    { kind: 'heading', level: 2, text: t('notes.southHeading') },
     {
       kind: 'numbers',
       id: 'south.lines',
       rows: [
-        cited('south.mainLineLengthM', 'Main facade line', spec.mainLineLengthM, 'm'),
-        cited(
-          'south.creaseLineLengthM',
-          'Crease line incl. risalit creases',
-          spec.creaseLineLengthM,
-          'm',
-        ),
-        cited('south.declaredBayPitchM', 'Declared working bay pitch', DECLARED_BAY_PITCH_M, 'm'),
+        cited('south.mainLineLengthM', t('notes.southMainLine'), spec.mainLineLengthM, 'm'),
+        cited('south.creaseLineLengthM', t('notes.southCreaseLine'), spec.creaseLineLengthM, 'm'),
+        cited('south.declaredBayPitchM', t('notes.southDeclaredPitch'), DECLARED_BAY_PITCH_M, 'm'),
         derivedRow(
           'south.derivedPitchM',
-          'Derived bay pitch',
+          t('notes.southDerivedPitch'),
           solved.pitchM,
           'm',
-          `${formatNumber(spec.mainLineLengthM)} m / ${counts.axes} axes`,
+          format(t('notes.formulaPitch'), {
+            length: formatNumber(spec.mainLineLengthM),
+            axes: String(counts.axes),
+          }),
         ),
         derivedRow(
           'south.derivedCreaseM',
-          'Derived crease line',
+          t('notes.southDerivedCrease'),
           solved.derivedCreaseM,
           'm',
-          'main line + inner risalit creases from the declared protrusions (solver)',
+          t('notes.formulaCreaseLine'),
         ),
       ],
     },
     {
       kind: 'table',
       id: 'south.sections',
-      caption: 'Sections, west → east; notes verbatim from the frozen spec',
-      columns: ['Section', 'Kind', 'Declared axes', 'Declared protrusion', 'Note'],
+      caption: t('notes.sectionsCaption'),
+      columns: [
+        t('notes.sectionsColSection'),
+        t('notes.sectionsColKind'),
+        t('notes.sectionsColAxes'),
+        t('notes.sectionsColProtrusion'),
+        t('notes.sectionsColNote'),
+      ],
       rows: spec.sections.map((section) => ({
         id: `south.sections.${section.id}`,
         cells: [
@@ -493,38 +477,38 @@ function southBlocks(ctx: Ctx): readonly NotesBlock[] {
       rows: [
         derivedRow(
           'south.counts.axes',
-          'Window axes',
+          t('notes.countWindowAxes'),
           counts.axes,
           '',
-          'Σ declaredAxes over the five sections',
+          t('notes.formulaWindowAxes'),
         ),
         derivedRow(
           'south.counts.windowSlots',
-          'Window slots',
+          t('notes.countWindowSlots'),
           counts.windowSlots,
           '',
-          `${counts.axes} axes × ${rows.length} rows`,
+          format(t('notes.formulaSlots'), { axes: String(counts.axes), rows: String(rows.length) }),
         ),
         derivedRow(
           'south.counts.windows',
-          'Windows',
+          t('notes.countWindows'),
           counts.windows,
           '',
-          'windowSlots − portalVoidCells',
+          t('notes.formulaWindows'),
         ),
         derivedRow(
           'south.counts.portalVoidCells',
-          'Portal void cells',
+          t('notes.countPortalVoidCells'),
           counts.portalVoidCells,
           '',
-          'slots displaced by the entrance and portal arches (solver)',
+          t('notes.formulaVoidCells'),
         ),
         derivedRow(
           'south.counts.columnShafts',
-          'Column shafts',
+          t('notes.countColumnShafts'),
           counts.columnShafts,
           '',
-          'Σ KIT.shaftCount × instances over column parts (solver)',
+          t('notes.formulaShafts'),
         ),
       ],
     },
@@ -543,34 +527,32 @@ function kitBlocks({ solved }: Ctx): readonly NotesBlock[] {
   const totalInstances = placed.reduce((sum, row) => sum + row.instances, 0);
   const totalTriangles = placed.reduce((sum, row) => sum + row.total, 0);
   return [
-    { kind: 'heading', level: 2, text: 'Instanced kit' },
-    {
-      kind: 'paragraph',
-      text: prose(
-        'Parts the solver placed on the south facade; kit slots with no placements are',
-        'omitted. Triangle ceilings are per-instance kit maxima, so part totals are ceilings,',
-        'not measured counts.',
-      ),
-    },
+    { kind: 'heading', level: 2, text: t('notes.kitHeading') },
+    { kind: 'paragraph', text: t('notes.kitIntro') },
     {
       kind: 'table',
       id: 'kit.parts',
-      columns: ['Part', 'Instances', 'Triangle ceiling per instance', 'Part total'],
+      columns: [
+        t('notes.kitColPart'),
+        t('notes.kitColInstances'),
+        t('notes.kitColCeilingPerInstance'),
+        t('notes.kitColPartTotal'),
+      ],
       rows: [
         ...placed.map((row) => ({
           id: `kit.${row.part}`,
           cells: [row.part, formatInt(row.instances), formatInt(row.ceiling), formatInt(row.total)],
-          provenance: [derived('counts.byPart × KIT.triangleCeiling')],
+          provenance: [derived(t('notes.formulaPartTotal'))],
         })),
         {
           id: 'kit.total',
           cells: [
-            `Total — ${placed.length} active parts`,
+            format(t('notes.kitTotalRow'), { activeParts: String(placed.length) }),
             formatInt(totalInstances),
             '—',
             formatInt(totalTriangles),
           ],
-          provenance: [derived('Σ over placed parts')],
+          provenance: [derived(t('notes.formulaKitCeiling'))],
         },
       ],
     },
@@ -578,20 +560,26 @@ function kitBlocks({ solved }: Ctx): readonly NotesBlock[] {
       kind: 'numbers',
       id: 'kit.totals',
       rows: [
-        derivedRow('kit.instances', 'Instances', solved.counts.instances, '', 'Σ counts.byPart'),
+        derivedRow(
+          'kit.instances',
+          t('notes.kitTotalsInstances'),
+          solved.counts.instances,
+          '',
+          t('notes.formulaInstances'),
+        ),
         derivedRow(
           'kit.activeParts',
-          'Active parts',
+          t('notes.kitTotalsActiveParts'),
           solved.counts.activeParts,
           '',
-          'parts with ≥ 1 instance',
+          t('notes.formulaActiveParts'),
         ),
         derivedRow(
           'kit.triangles',
-          'Kit triangle ceiling',
+          t('notes.kitTotalsCeiling'),
           solved.counts.triangles,
           '',
-          'Σ instances × triangleCeiling',
+          t('notes.formulaKitTotal'),
         ),
       ],
     },
@@ -602,22 +590,27 @@ function budgetCallout({ projection }: Ctx): NotesBlock {
   const triangleMargin = BUDGET_CEILINGS.frustumTriangles - projection.frustumTriangles;
   const gzip = projection.jsGzipBytes;
   const gzipOver = gzip !== null && gzip > BUDGET_CEILINGS.jsGzipBytes;
-  const gzipText =
+  const gzipTail =
     gzip === null
-      ? `JS gzip measured: ${PENDING_MEASUREMENT}`
-      : `${formatInt(gzip)} B JS gzip (margin ${formatInt(BUDGET_CEILINGS.jsGzipBytes - gzip)} B)`;
+      ? format(t('notes.gzipTailUnmeasured'), { pending: PENDING_MEASUREMENT })
+      : format(t('notes.gzipTailMeasured'), {
+          gzipBytes: formatInt(gzip),
+          gzipMargin: formatInt(BUDGET_CEILINGS.jsGzipBytes - gzip),
+        });
   return {
     kind: 'callout',
     id: 'budget.contract',
     level: drawMargin < 0 || triangleMargin < 0 || gzipOver ? 'error' : 'note',
-    text: prose(
-      `Contract ceilings enforced in CI: ≤ ${formatInt(BUDGET_CEILINGS.frameDrawCalls)} draw`,
-      `calls per frame, ≤ ${formatInt(BUDGET_CEILINGS.frustumTriangles)} frustum triangles,`,
-      `≤ ${formatInt(BUDGET_CEILINGS.jsGzipBytes)} B JavaScript gzip. Projected:`,
-      `${formatInt(projection.frameDrawCalls)} draws (margin ${formatInt(drawMargin)}),`,
-      `${formatInt(projection.frustumTriangles)} triangles (margin ${formatInt(triangleMargin)}),`,
-      `${gzipText}. An overrun is removed by changing art or level of detail, never the number.`,
-    ),
+    text: format(t('notes.budgetCallout'), {
+      frameDraws: formatInt(BUDGET_CEILINGS.frameDrawCalls),
+      frustumTriangles: formatInt(BUDGET_CEILINGS.frustumTriangles),
+      gzipBytes: formatInt(BUDGET_CEILINGS.jsGzipBytes),
+      projectedDraws: formatInt(projection.frameDrawCalls),
+      drawMargin: formatInt(drawMargin),
+      projectedTriangles: formatInt(projection.frustumTriangles),
+      triangleMargin: formatInt(triangleMargin),
+      gzipTail,
+    }),
   };
 }
 function budgetBlocks(ctx: Ctx): readonly NotesBlock[] {
@@ -625,81 +618,87 @@ function budgetBlocks(ctx: Ctx): readonly NotesBlock[] {
   const gzip = projection.jsGzipBytes;
   const gzipRow: NumberRow = {
     id: 'budget.jsGzipBytes',
-    label: 'JavaScript gzip',
+    label: t('notes.budgetJsGzip'),
     value: gzip,
     unit: 'B',
-    display: gzip === null ? `measured: ${PENDING_MEASUREMENT}` : formatInt(gzip),
-    provenance: derived('CI gzip measurement passed through allowance.measuredJsGzipBytes'),
+    display:
+      gzip === null
+        ? format(t('notes.gzipRowUnmeasured'), { pending: PENDING_MEASUREMENT })
+        : formatInt(gzip),
+    provenance: derived(t('notes.formulaGzip')),
   };
   const allowanceRows: readonly { id: string; label: string; value: number }[] = [
-    { id: 'budget.allowance.shadowPasses', label: 'Shadow passes', value: allowance.shadowPasses },
+    {
+      id: 'budget.allowance.shadowPasses',
+      label: t('notes.allowanceShadowPasses'),
+      value: allowance.shadowPasses,
+    },
     {
       id: 'budget.allowance.otherFrameDrawCalls',
-      label: 'Other frame draw calls',
+      label: t('notes.allowanceOtherDraws'),
       value: allowance.otherFrameDrawCalls,
     },
     {
       id: 'budget.allowance.massingTriangles',
-      label: 'Massing triangles',
+      label: t('notes.allowanceMassingTriangles'),
       value: allowance.massingTriangles,
     },
     {
       id: 'budget.allowance.skyTriangles',
-      label: 'Sky triangles',
+      label: t('notes.allowanceSkyTriangles'),
       value: allowance.skyTriangles,
     },
   ];
   return [
-    { kind: 'heading', level: 2, text: 'Budget projection' },
+    { kind: 'heading', level: 2, text: t('notes.budgetHeading') },
     {
       kind: 'numbers',
       id: 'budget.projection',
       rows: [
         derivedRow(
           'budget.facadeDrawCalls',
-          'Facade draw calls',
+          t('notes.budgetFacadeDraws'),
           projection.facadeDrawCalls,
           '',
-          'projectBudget: instanced draws of the active parts over all passes',
+          t('notes.formulaFacadeDraws'),
         ),
         derivedRow(
           'budget.frameDrawCalls',
-          'Frame draw calls',
+          t('notes.budgetFrameDraws'),
           projection.frameDrawCalls,
           '',
-          `facadeDrawCalls + ${allowance.otherFrameDrawCalls} other draw calls`,
+          format(t('notes.formulaFrameDraws'), {
+            otherDraws: String(allowance.otherFrameDrawCalls),
+          }),
         ),
         derivedRow(
           'budget.frustumTriangles',
-          'Frustum triangles',
+          t('notes.budgetFrustumTriangles'),
           projection.frustumTriangles,
           '',
-          `kit ${formatInt(solved.counts.triangles)} + massing ${formatInt(allowance.massingTriangles)} + sky ${formatInt(allowance.skyTriangles)}`,
+          format(t('notes.formulaFrustum'), {
+            kit: formatInt(solved.counts.triangles),
+            massing: formatInt(allowance.massingTriangles),
+            sky: formatInt(allowance.skyTriangles),
+          }),
         ),
         derivedRow(
           'budget.submittedTriangleCeiling',
-          'Submitted triangle ceiling',
+          t('notes.budgetSubmittedCeiling'),
           projection.submittedTriangleCeiling,
           '',
-          `frustumTriangles × (1 + ${allowance.shadowPasses} shadow pass)`,
+          format(t('notes.formulaSubmitted'), { shadowPasses: String(allowance.shadowPasses) }),
         ),
         gzipRow,
       ],
     },
     budgetCallout(ctx),
-    {
-      kind: 'paragraph',
-      text: prose(
-        'Scene allowance — declared working estimates of what the rest of the frame costs',
-        '(Round 7 massing: 12 boxes + ground plane; sky dome; one shadow pass; other draw',
-        'calls). They are inputs to the projection, not measurements.',
-      ),
-    },
+    { kind: 'paragraph', text: t('notes.allowanceIntro') },
     {
       kind: 'table',
       id: 'budget.allowance',
-      caption: 'Scene allowance',
-      columns: ['Allowance', 'Value'],
+      caption: t('notes.allowanceCaption'),
+      columns: [t('notes.allowanceColAllowance'), t('notes.allowanceColValue')],
       rows: allowanceRows.map(({ id, label, value }) => {
         const row = cited(id, label, value, '');
         return { id: row.id, cells: [row.label, row.display], provenance: [row.provenance] };
@@ -709,19 +708,17 @@ function budgetBlocks(ctx: Ctx): readonly NotesBlock[] {
 }
 function siblingBlocks({ cite }: Ctx): readonly NotesBlock[] {
   return [
-    { kind: 'heading', level: 2, text: 'Sibling facades — not shipped in Phase 1' },
-    {
-      kind: 'paragraph',
-      text: prose(
-        'North, west and east reuse the kit later. Their axis counts are declared only',
-        '(artistic-license register, "Facade axis counts"), kept so the plan arithmetic closes',
-        'in tests; main-line lengths are the shell numbers above.',
-      ),
-    },
+    { kind: 'heading', level: 2, text: t('notes.siblingsHeading') },
+    { kind: 'paragraph', text: t('notes.siblingsIntro') },
     {
       kind: 'table',
       id: 'siblings',
-      columns: ['Facade', 'Sections — kind · declared axes', 'Declared axes', 'Character'],
+      columns: [
+        t('notes.siblingsColFacade'),
+        t('notes.siblingsColSections'),
+        t('notes.siblingsColAxes'),
+        t('notes.siblingsColCharacter'),
+      ],
       rows: SIBLING_FACADES.map((facade) => {
         const axes = facade.sections.reduce((sum, section) => sum + section.declaredAxes, 0);
         return {
@@ -729,10 +726,16 @@ function siblingBlocks({ cite }: Ctx): readonly NotesBlock[] {
           cells: [
             facade.id,
             facade.sections
-              .map((section) => `${section.id} (${section.kind}) ${section.declaredAxes}`)
+              .map((section) =>
+                format(t('notes.siblingsSectionCell'), {
+                  id: section.id,
+                  kind: section.kind,
+                  axes: String(section.declaredAxes),
+                }),
+              )
               .join(' · '),
-            `${axes} (±1 per section)`,
-            FACADE_CHARACTER[facade.id],
+            format(t('notes.siblingsAxesCell'), { axes: String(axes) }),
+            t(FACADE_CHARACTER[facade.id]),
           ],
           provenance: [cite(`siblings.${facade.id}.declaredAxes`)],
         };
@@ -793,7 +796,7 @@ export function buildSouthNotesModel(input: NotesInput = {}): NotesResult {
     return {
       ok: false,
       issues: missing.map((id) =>
-        specError(`provenance.${id}`, `displayed number '${id}' has no provenance register entry`),
+        specError(`provenance.${id}`, format(t('notes.failNoProvenance'), { id })),
       ),
     };
   }

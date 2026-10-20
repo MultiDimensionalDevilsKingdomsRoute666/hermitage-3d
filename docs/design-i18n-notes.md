@@ -341,11 +341,15 @@ semantics are verified against the committed data (see §7).
   (the typed key union), `src/i18n/en.ts` (the EN column, the corpus byte-for-byte),
   `src/i18n/format.ts` ({name} interpolation, the number/date law with every later RU choice
   isolated in a named constant), the purity fence extended to `i18n/*`, the formatters
-  cross-checked against `formatPetersburg`. **r24b** (the switch) is orchestrator-direct:
-  the view-model and the stops switch to keys; the static HTML strings marked via keys;
-  the literals fence test + a DOM snapshot test byte-identical to the pre-refactor; the
-  solver outputs unchanged; the gzip delta within noise. (Diff-heavy mechanical work is
-  exactly what the transport masks — the r3/r13 orchestrator-direct precedent.)
+  cross-checked against `formatPetersburg`. **r24b CLOSED 2026-10-20 (orchestrator-direct)**:
+  the view-model and the stops switched to keys behind the byte-identical model fixture
+  (captured pre-switch; matched on the first post-switch run). The fence CAUGHT two inventory
+  gaps and both were keyed: the room contract titles ('Jordan Staircase — the ascent' /
+  'Rastrelli Gallery — the way in' — stored, never rendered in phase 2) and the
+  'Σ declaredAxes over the five sections' formula (dropped from the r24a corpus by mistake).
+  FLAG for r25's inventory: the DOM binding's chip/title templates ('register line: …',
+  'sourced · …', 'declared · …') in `src/ui/notes-main.ts` are user-facing and unkeyed —
+  they join the RU round. The static HTML marking rides r25's flip.
 - **r24t — The type slice (D9's overrule: its own round between extraction and RU).** The three
   woff2 files, `@font-face`, preloads, metric-override fallbacks, the cmap-coverage gate
   (§2 — nothing Cyrillic to bite on until the RU column arrives). The EN screenshot fixtures

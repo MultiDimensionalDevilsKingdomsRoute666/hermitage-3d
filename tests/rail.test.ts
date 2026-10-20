@@ -13,13 +13,14 @@ import {
   stopParameter,
 } from '../src/camera/rail';
 import { SQUARE_RAIL, SQUARE_S0_GAZE } from '../src/camera/square-rail';
+import { t } from '../src/i18n';
 import type { Rail, Stop, Vec3 } from '../src/world/registry';
 
 const stop = (id: string, position: Vec3, yaw = 30, pitchUp = 20, pitchDown = 10): Stop => ({
   id,
   position,
   look: { yaw, pitchUp, pitchDown },
-  caption: id,
+  caption: 'caption.s0', // fixtures never resolve captions; the key just has to typecheck
 });
 
 const STAIR: Rail = {
@@ -199,10 +200,10 @@ describe('square rail (design §6.1, declared data)', () => {
     expect(SQUARE_RAIL.stops.map((s) => s.id)).toEqual(['S0', 'S1']);
     expect(SQUARE_RAIL.stops[0]?.position).toEqual([0, 1.7, 230]);
     expect(SQUARE_RAIL.stops[0]?.look).toEqual({ yaw: 35, pitchUp: 35, pitchDown: 35 });
-    expect(SQUARE_RAIL.stops[0]?.caption).toBe('the facade and the hour');
+    expect(t(SQUARE_RAIL.stops[0]?.caption ?? 'caption.s0')).toBe('the facade and the hour');
     expect(SQUARE_RAIL.stops[1]?.position).toEqual([0, 1.7, 100]);
     expect(SQUARE_RAIL.stops[1]?.look).toEqual({ yaw: 25, pitchUp: 20, pitchDown: 10 });
-    expect(SQUARE_RAIL.stops[1]?.caption).toBe('the arch opens');
+    expect(t(SQUARE_RAIL.stops[1]?.caption ?? 'caption.s1')).toBe('the arch opens');
   });
   it('keeps the authored S0 gaze and a level approach gaze at S1', () => {
     const gaze: readonly Vec3[] = [SQUARE_S0_GAZE, [0, 1.7, 86]];

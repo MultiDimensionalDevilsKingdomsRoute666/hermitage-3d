@@ -192,6 +192,64 @@ describe('en dictionary', () => {
 });
 
 // ---------------------------------------------------------------------------
+// The literals fence (round-24 exit): the switched string-source modules hold no
+// user-facing prose literals — every whitespace-bearing literal is either an allowlisted
+// spec-audit Issue message (developer diagnostics, EN by D4's ruling) or a key/id fragment.
+// ---------------------------------------------------------------------------
+describe('literals fence', () => {
+  const sources = import.meta.glob(
+    [
+      '../src/ui/notes-view.ts',
+      '../src/camera/square-rail.ts',
+      '../rooms/jordan/contract.ts',
+      '../rooms/rastrelli-gallery/contract.ts',
+    ],
+    { query: '?raw', import: 'default', eager: true },
+  ) as Record<string, string>;
+  const ALLOWED_PREFIXES = [
+    'the /notes page renders', // spec-audit issues stay EN (developer diagnostics)
+    'at least one window row is required',
+    'duplicate section id',
+    'declared axes must total more than zero',
+    '${axes} declared axes over', // the pitch-audit prose parts
+    '${formatNumber(', // number+unit cells: "N m" (format law, not keys)
+    '${section.declaredAxes} (±1)', // the axes cell: "N (±1)" (format law, not keys)
+    'pitch of ',
+    '(±',
+  ];
+  const stripComments = (src: string): string =>
+    src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '');
+  const literals = (src: string): readonly string[] => {
+    const code = stripComments(src);
+    const single = code.match(/'[^'\\\n]*'/g) ?? [];
+    const backtick = code.match(/`[^`\\]*`/g) ?? [];
+    return [...single, ...backtick].map((s) => s.slice(1, -1));
+  };
+  it('holds no user-facing prose outside the audit allowlist', () => {
+    for (const [file, src] of Object.entries(sources)) {
+      for (const literal of literals(src)) {
+        if (!/\s/.test(literal)) continue;
+        // Separators are code law, not prose: ' ' (join), ' · ' (token joins), '—'.
+        if (/^[\s·—-]+$/.test(literal)) continue;
+        expect(
+          ALLOWED_PREFIXES.some((prefix) => literal.startsWith(prefix)),
+          `${file}: '${literal.slice(0, 60)}'`,
+        ).toBe(true);
+      }
+    }
+  });
+  it('sources every stop caption from the dictionary', () => {
+    for (const [file, src] of Object.entries(sources)) {
+      if (!file.includes('square-rail') && !file.includes('contract')) continue;
+      for (const literal of literals(src)) {
+        if (!literal.startsWith('caption.')) continue;
+        expect(en[literal as keyof typeof en], `${file} ${literal}`).toBeDefined();
+      }
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Round-trip against the real /notes model: today's rendered display bytes must be
 // reproducible by the new formatters, and the grouped non-integer branch must stay
 // unreachable on the page (no rendered non-integer >= 1000).

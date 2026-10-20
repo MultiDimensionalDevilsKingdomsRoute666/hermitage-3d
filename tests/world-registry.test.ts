@@ -24,7 +24,7 @@ const stop: Stop = {
   id: 's0',
   position: [0, 1.6, 0],
   look: { yaw: 45, pitchUp: 20, pitchDown: 15 },
-  caption: 'fixture',
+  caption: 'caption.s0', // fixtures never resolve captions; the key just has to typecheck
 };
 const budget: RoomBudget = { trianglesMax: 1, drawsMax: 1, textureBytesMax: 1, payloadBytesMax: 1 };
 const thunk = (): Promise<RoomModule> => Promise.reject(new Error('fixture thunk'));
@@ -34,7 +34,7 @@ const contract = (
   stops = [stop],
 ): RoomContract => ({
   id,
-  title: id,
+  title: 'data.titleGallery', // fixtures never resolve titles; the key just has to typecheck
   bounds: box,
   rail: { stops },
   lighting: { states: ['day'], blend: 'lightmapBlend' },

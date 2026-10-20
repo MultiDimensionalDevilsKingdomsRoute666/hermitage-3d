@@ -12,6 +12,7 @@
  * (DEC-013) and the whole graph fences at boot.
  */
 import type { RoomLedger } from '../engine/ledger';
+import type { CaptionKey, Key } from '../i18n/keys';
 
 export type { RoomLedger } from '../engine/ledger';
 export type RoomId = 'rastrelli-gallery' | 'jordan';
@@ -29,7 +30,8 @@ export type Stop = Readonly<{
   id: string;
   position: Vec3;
   look: Readonly<{ yaw: number; pitchUp: number; pitchDown: number }>;
-  caption: string;
+  /** The caption's i18n key; the host resolves it to text at the dictionary boundary. */
+  caption: CaptionKey;
 }>;
 export type Rail = Readonly<{ stops: readonly Stop[] }>;
 export type AirlockTransit = 'doorway' | 'cut';
@@ -73,7 +75,8 @@ export type RoomManifest = Readonly<{
 }>;
 export type RoomContract = Readonly<{
   id: RoomId;
-  title: string;
+  /** The room's display title, carried as an i18n key (stored, not rendered, in phase 2). */
+  title: Key;
   bounds: Bounds;
   rail: Rail;
   lighting: RoomLighting;

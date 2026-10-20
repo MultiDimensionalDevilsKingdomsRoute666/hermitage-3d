@@ -17,13 +17,13 @@ export const SQUARE_RAIL = {
       id: 'S0',
       position: [0, 1.7, 230],
       look: { yaw: 35, pitchUp: 35, pitchDown: 35 },
-      caption: 'the facade and the hour',
+      caption: 'caption.s0',
     },
     {
       id: 'S1',
       position: [0, 1.7, 100],
       look: { yaw: 25, pitchUp: 20, pitchDown: 10 },
-      caption: 'the arch opens',
+      caption: 'caption.s1',
     },
   ],
 } satisfies Rail;

@@ -34,6 +34,7 @@ import {
   resolveQualityScale,
   TIERS,
 } from './engine/tier';
+import { t } from './i18n';
 import { buildFacade } from './procedural/facade-builder';
 import { solveSouthFacade } from './procedural/facade-solver';
 import { buildNightLattice } from './procedural/night-lattice';
@@ -467,7 +468,7 @@ const seedRail = (node: NodeHandle): void => {
   railNode = node;
   rail = next;
   railState = seedState(next, seedInputs()).state;
-  captionStops = next.stops.map((s) => ({ id: s.id, caption: s.caption }));
+  captionStops = next.stops.map((s) => ({ id: s.id, caption: t(s.caption) }));
 };
 
 // The dark-card caption (§8.4, §1.2): while a transit dwells, the DESTINATION's seed stop —
@@ -478,7 +479,7 @@ const dwellStop = (): CaptionStop | null => {
   const dest = railFor(st.to);
   const seeded = seedState(dest, seedInputs()).state;
   const stop = dest.stops[nearestStopIndex(dest, seeded.u)];
-  return stop === undefined ? null : { id: stop.id, caption: stop.caption };
+  return stop === undefined ? null : { id: stop.id, caption: t(stop.caption) };
 };
 
 // The square's default gaze is its authored framing, not the room pose law: S0 up at the
@@ -489,7 +490,7 @@ if (galleryEntry === undefined) throw new Error('zimny: gallery has no entry sto
 const SQUARE_GAZE: readonly Vec3[] = [SQUARE_S0_GAZE, galleryEntry.position];
 let captionStops: readonly CaptionStop[] = rail.stops.map((s) => ({
   id: s.id,
-  caption: s.caption,
+  caption: t(s.caption),
 }));
 let captionView: CaptionView = EMPTY_CAPTION;
 

@@ -8,7 +8,7 @@ import type { RoomContract } from '../../src/world/registry';
 
 export const contract: RoomContract = {
   id: 'jordan',
-  title: 'Jordan Staircase — the ascent',
+  title: 'data.titleJordan',
   bounds: { min: [66, 0, -86], max: [92, 20, -62] },
   rail: {
     stops: [
@@ -16,31 +16,31 @@ export const contract: RoomContract = {
         id: 'J0',
         position: [79, 1.7, -64],
         look: { yaw: 35, pitchUp: 35, pitchDown: 10 },
-        caption: 'looking up into light',
+        caption: 'caption.j0',
       },
       {
         id: 'J1',
         position: [79, 5.2, -70],
         look: { yaw: 35, pitchUp: 35, pitchDown: 35 },
-        caption: 'the flight',
+        caption: 'caption.j1',
       },
       {
         id: 'J2',
         position: [79, 6.7, -80],
         look: { yaw: 35, pitchUp: 35, pitchDown: 35 },
-        caption: 'portholes mirror the windows',
+        caption: 'caption.j2',
       },
       {
         id: 'J3',
         position: [73, 9.7, -76],
         look: { yaw: 35, pitchUp: 30, pitchDown: 30 },
-        caption: 'the gallery above',
+        caption: 'caption.j3',
       },
       {
         id: 'J4',
         position: [73, 11.7, -66],
         look: { yaw: 35, pitchUp: 30, pitchDown: 30 },
-        caption: 'arrival; the portal (landing airlock)',
+        caption: 'caption.j4',
       },
     ],
   },
