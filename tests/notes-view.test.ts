@@ -7,6 +7,7 @@ import {
   LICENSE_LINES,
   SPEC_PROVENANCE,
 } from '../src/content/provenance';
+import { activateLang } from '../src/i18n/locale';
 import type { PartId } from '../src/procedural/facade-solver';
 import { KIT } from '../src/procedural/facade-solver';
 import type { NotesBlock, NotesModel, NotesResult, NumberRow } from '../src/ui/notes-view';
@@ -257,8 +258,8 @@ describe('pinned derived numbers', () => {
     expect(callout.level).toBe('note');
     expect(callout.text).toContain(PENDING_MEASUREMENT);
     expect(callout.text).toContain('250');
-    expect(callout.text).toContain('1 000 000');
-    expect(callout.text).toContain('350 000');
+    expect(callout.text).toContain('1\u2009000\u2009000');
+    expect(callout.text).toContain('350\u2009000');
   });
   it('a measured gzip size replaces the pending note', () => {
     const { model: measured } = expectOk(
@@ -274,7 +275,7 @@ describe('pinned derived numbers', () => {
     );
     const gzip = numberRow(measured, 'budget.jsGzipBytes');
     expect(gzip.value).toBe(155_026);
-    expect(gzip.display).toBe('155 026');
+    expect(gzip.display).toBe('155\u2009026');
     expect(calloutBlock(measured, 'budget.contract').text).not.toContain(PENDING_MEASUREMENT);
   });
 });
@@ -408,5 +409,27 @@ describe('frozen inputs', () => {
     expect(SOUTH_FACADE).toEqual(specBefore);
     expect(WINDOW_ROWS).toEqual(rowsBefore);
     expect(SPEC_PROVENANCE).toEqual(provenanceBefore);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// The RU model snapshot (§1.3: "node tests snapshot both languages"). The labels come
+// from the ACTIVE dictionary (the test activates ru first, en afterwards); the numbers,
+// units and data maps take the lang argument. The data keys and tokens stay raw (R8).
+// ---------------------------------------------------------------------------
+describe('the RU model', () => {
+  it('builds the localized model on the activated dictionary', async () => {
+    await activateLang('ru');
+    try {
+      const result = buildSouthNotesModel({ lang: 'ru' });
+      expect(result.ok).toBe(true);
+      if (!result.ok) return;
+      expect(result.model.title).toBe('Как устроен южный фасад');
+      await expect(JSON.stringify(result.model, null, 2)).toMatchFileSnapshot(
+        'fixtures/notes-model-ru.json',
+      );
+    } finally {
+      await activateLang('en');
+    }
   });
 });

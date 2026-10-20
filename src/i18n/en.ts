@@ -15,6 +15,12 @@ export const en = {
     'real Petersburg sky.',
   'chrome.wordmark': 'Winter Palace',
   'chrome.notesLink': 'How it’s built →',
+  // The travel hint (design §9, ruled in the r23 freeze) and the language toggle (§1.2):
+  // the toggle shows the TARGET language in its own script; the accessible name is the
+  // target language's name.
+  'chrome.travelHint': 'Drag to move closer',
+  'chrome.toggleLabel': 'RU',
+  'chrome.toggleAria': 'Русский',
   'chrome.scrubLabel': 'Petersburg time, ±24 hours around the scene time',
   'chrome.scrubHelp':
     'Arrow keys step a minute; PageUp and PageDown step an hour; Home and End pick the ' +
@@ -128,6 +134,9 @@ export const en = {
     'an Albertina scan, or Pilyavsky via НЭБ — so this warning stays live until then, with the ' +
     'spec and the artistic-license register ("Dimension approximations") corrected if the ' +
     'record differs.',
+  // The solver's crease warning, rendered: the display-map law — the view formats the key
+  // from the solved numbers (the solver's own message string stays a console diagnostic).
+  'notes.creaseWarning': 'derived crease length {derived} m differs from declared {declared} m',
   'notes.solverWarning': 'Solver: {message}',
 
   'notes.kitHeading': 'Instanced kit',
@@ -206,6 +215,15 @@ export const en = {
 
   'notes.failUnregistered': 'unregistered: {id}',
   'notes.failNoProvenance': "displayed number '{id}' has no provenance register entry",
+  // The binding's chip/title templates (the r24b flag) and the error card — new inventory
+  // of the RU round; the EN short labels are the D7-flagged additions (§7.7).
+  'notes.chipSourced': 'sourced · {keys}',
+  'notes.chipDeclared': 'declared · {licenseTitle}',
+  'notes.chipDerived': 'derived',
+  'notes.chipTitleKeys': 'keys: {keys}',
+  'notes.chipTitleRegister': 'register line: {licenseTitle}',
+  'notes.errorTitle': 'Facade notes unavailable',
+  'notes.errorIntro': 'The facade spec does not close. {issues}',
 
   'data.titleGallery': 'Rastrelli Gallery — the way in',
   'data.titleJordan': 'Jordan Staircase — the ascent',
@@ -223,6 +241,10 @@ export const en = {
   'data.characterNorth': 'Continuous colonnade to the Neva (visit-petersburg).',
   'data.characterWest': 'Country-palace composition toward the Admiralty (visit-petersburg).',
   'data.characterEast': 'Massive flanks around the service court (visit-petersburg).',
+  'data.characterShortSouth': 'ceremonial',
+  'data.characterShortNorth': 'riverside',
+  'data.characterShortWest': 'country',
+  'data.characterShortEast': 'service',
   'data.southNoteSwCorner':
     'SW corner mass: its own arched portal with giant columns and balcony, corner column ' +
     'bunches; protrudes toward the square.',

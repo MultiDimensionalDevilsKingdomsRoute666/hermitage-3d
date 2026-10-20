@@ -36,6 +36,8 @@ import {
   TIERS,
 } from './engine/tier';
 import { t } from './i18n';
+import { formatDate, formatTime, PETERSBURG_OFFSET_LABEL } from './i18n/format';
+import { activateLang, activeLang, onLangChange, resolveLang } from './i18n/locale';
 import { buildFacade } from './procedural/facade-builder';
 import { solveSouthFacade } from './procedural/facade-solver';
 import { buildNightLattice } from './procedural/night-lattice';
@@ -44,14 +46,7 @@ import type { ArrivalState } from './sky/arrival';
 import { advanceArrival, initialArrival, presentationForArrival } from './sky/arrival';
 import { lightmapWeights } from './sky/lightmap-weights';
 import { createSkyRig } from './sky/rig';
-import {
-  canonicalAt,
-  formatPetersburg,
-  parseTime,
-  queryOf,
-  scrubEpoch,
-  type TimeState,
-} from './sky/time';
+import { canonicalAt, parseTime, queryOf, scrubEpoch, type TimeState } from './sky/time';
 import {
   type CaptionStop,
   type CaptionView,
@@ -60,6 +55,16 @@ import {
   presentCaption,
 } from './ui/captions';
 import {
+  createHintState,
+  HINT_HOLD_MS,
+  type HintState,
+  hintHoldElapsed,
+  hintReducedMotion,
+  hintSettled,
+  hintTravelIntent,
+  hintView,
+} from './ui/hint';
+import {
   buildHudAttrs,
   buildHudLines,
   type HudState,
@@ -67,6 +72,14 @@ import {
   pushFrameInterval,
   rollingMedianFrameMs,
 } from './ui/hud';
+import {
+  bindLangToggle,
+  clearStoredLang,
+  currentQueryLang,
+  readStoredLang,
+  setLangParam,
+  writeStoredLang,
+} from './ui/lang-host';
 import { advanceTransit, beginTransit, finishTransit, type TransitState } from './world/airlock';
 import { parseLmParam } from './world/lm-mode';
 import { WINDOW_WARM_LINEAR, warmGround } from './world/night-facade';
@@ -106,6 +119,8 @@ const captionLive = document.querySelector('#caption-live');
 if (!(captionLive instanceof HTMLElement)) throw new Error('#caption-live missing');
 const notesLink = document.querySelector('#notes-link');
 if (!(notesLink instanceof HTMLAnchorElement)) throw new Error('#notes-link missing');
+const travelHint = document.querySelector('#travel-hint');
+if (!(travelHint instanceof HTMLElement)) throw new Error('#travel-hint missing');
 
 const isDeterministic = (state: TimeState): boolean =>
   state.mode === 'fixed' ? state.deterministic : false;
@@ -118,6 +133,44 @@ for (const issue of parsed.issues) console.warn(`zimny: time issue — ${issue}`
 let timeState: TimeState = parsed.state;
 let epochMs = parsed.initialEpochMs;
 let sample: SkySample = sampleSky(epochMs);
+
+// --- Language law, host side (design-i18n-notes.md §1.1/§1.2; DEC-020) ----------------------
+// Resolution: ?lang= → the persisted zimny:lang → RU; det ignores the override (neither
+// read nor written). RU is the default and the static shell already speaks it: the chunk
+// installs before the settle beat, so nothing flashes. The chrome re-binds on every switch.
+const langResolution = resolveLang({
+  queryLang: currentQueryLang(),
+  storedLang: readStoredLang(),
+  det: isDeterministic(timeState),
+  navigation: false,
+});
+if (langResolution.override.kind === 'write') writeStoredLang(langResolution.override.lang);
+if (langResolution.override.kind === 'clear') clearStoredLang();
+
+// The overlay chrome the page owns, bound from the active dictionary on every switch
+// (§1.2: <html lang>, <title>, the meta description, every overlay string). The static
+// shell is RU — this bind is the only EN path, and it runs before the overlays show.
+const bindChrome = (): void => {
+  document.documentElement.lang = activeLang();
+  document.title = t('chrome.titleMain');
+  const description = document.querySelector('meta[name="description"]');
+  if (description !== null) description.setAttribute('content', t('chrome.descriptionMain'));
+  const wordmark = title.querySelector('#wordmark');
+  if (wordmark !== null) wordmark.textContent = t('chrome.wordmark');
+  scrub.setAttribute('aria-label', t('chrome.scrubLabel'));
+  const scrubHelp = document.querySelector('#scrub-help');
+  if (scrubHelp !== null) scrubHelp.textContent = t('chrome.scrubHelp');
+  const sceneHelp = document.querySelector('#scene-help');
+  if (sceneHelp !== null) sceneHelp.textContent = t('chrome.sceneHelp');
+  canvas.setAttribute('aria-label', t('chrome.canvasLabel'));
+  notesLink.textContent = t('chrome.notesLink');
+  travelHint.textContent = t('chrome.travelHint'); // §9: swaps in place, timers untouched
+  // The clock labels bind per minute-change; a fixed ?at= boot has no live resample, so
+  // the language switch re-applies the epoch itself (idempotent: the same instant, the
+  // new language's day line).
+  lastLabelEpochMs = -1;
+  applyEpoch(epochMs);
+};
 
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true }); // r22 experiment: MSAA on — the far-field aliasing fix; the budgets decide keep/revert
 renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -342,14 +395,17 @@ const applyEpoch = (nextEpochMs: number): void => {
   // Label churn guard: the DOM text only changes when the minute actually changes.
   if (nextEpochMs !== lastLabelEpochMs) {
     lastLabelEpochMs = nextEpochMs;
-    const formatted = formatPetersburg(nextEpochMs);
-    clock.textContent = formatted.time;
-    clock.dateTime = `${formatted.date}T${formatted.time}:00+03:00`;
-    clockDate.textContent = formatted.date;
-    scrub.setAttribute(
-      'aria-valuetext',
-      `${formatted.date} ${formatted.time} (${formatted.offset})`,
-    );
+    // The i18n formatters carry the clock law (the r24a cross-check proved them equal to
+    // formatPetersburg on civil time); the date display is the only language-dependent
+    // byte (EN keeps the frozen ISO bytes, RU gets the ru-RU calendar line — D6). The
+    // <time> element's dateTime attribute stays machine-format ISO in both languages.
+    const lang = activeLang();
+    const time = formatTime(nextEpochMs);
+    const date = formatDate(nextEpochMs, lang);
+    clock.textContent = time;
+    clock.dateTime = `${formatDate(nextEpochMs, 'en')}T${time}:00+03:00`;
+    clockDate.textContent = date;
+    scrub.setAttribute('aria-valuetext', `${date} ${time} (${PETERSBURG_OFFSET_LABEL})`);
   }
 };
 applyEpoch(epochMs);
@@ -494,6 +550,67 @@ let captionStops: readonly CaptionStop[] = rail.stops.map((s) => ({
   caption: t(s.caption),
 }));
 let captionView: CaptionView = EMPTY_CAPTION;
+
+// --- The travel hint (design-i18n-notes.md §9; the state law lives in src/ui/hint.ts) -------
+// Eligible only when this load's initial stop is the square's S0 — the one place a visitor
+// lands without a shared link; det boots are ineligible (no timers, pixels frozen). The
+// timers and the DOM are the host's; every state change flows through applyHintView.
+let hintState: HintState = createHintState({
+  mainPage: true,
+  initialStopIsStart: railNode === 'square' && nearestStopIndex(rail, railState.u) === 0,
+  det: isDeterministic(timeState),
+  reducedMotion,
+});
+let hintHoldTimer: ReturnType<typeof setTimeout> | null = null;
+let hintSettleFired = false;
+const applyHintView = (): void => {
+  const view = hintView(hintState);
+  travelHint.dataset.visible = view.visible ? 'true' : 'false';
+  travelHint.dataset.dismissed = view.dismissed;
+  travelHint.style.transitionDuration = `${view.exitMs}ms`;
+};
+const applyHintStep = (timer: 'schedule-hold' | 'cancel-hold' | null): void => {
+  if (timer === 'schedule-hold' && hintHoldTimer === null) {
+    hintHoldTimer = setTimeout(() => {
+      hintHoldTimer = null;
+      const step = hintHoldElapsed(hintState);
+      hintState = step.state;
+      applyHintStep(step.timer);
+      applyHintView(); // the hold's dismissal must reach the DOM (the (d) e2e contract)
+    }, HINT_HOLD_MS);
+  }
+  if (timer === 'cancel-hold' && hintHoldTimer !== null) {
+    clearTimeout(hintHoldTimer);
+    hintHoldTimer = null;
+  }
+};
+/** The ONE travel definition (§9): every rail intent entry — wheel, drag start of any
+ * pointer type, arrow step — lands here, even when the rail drops the input (the hint
+ * dismisses on the FIRST intent; travel before the show beat means it never flashes). */
+const hintTravel = (): void => {
+  const step = hintTravelIntent(hintState);
+  hintState = step.state;
+  applyHintStep(step.timer);
+  applyHintView();
+};
+// §9: a reduced-motion change mid-session makes the next hint view cut (exitMs 0).
+window.matchMedia('(prefers-reduced-motion: reduce)').addEventListener('change', (event) => {
+  hintState = hintReducedMotion(hintState, event.matches);
+  applyHintView();
+});
+// The language switch re-seeds the caption strings and re-binds the chrome; the hint's
+// text swaps in place and its timers are untouched (§9's failure-case law). The toggle
+// binds ONCE — its label re-syncs internally on every switch.
+onLangChange(() => {
+  bindChrome();
+  seedRail(railNode);
+});
+void activateLang(langResolution.lang).then(() => bindChrome());
+bindLangToggle((target) => {
+  setLangParam(target);
+  writeStoredLang(target);
+  void activateLang(target);
+});
 
 const UP_AXIS = new THREE.Vector3(0, 1, 0);
 const RIGHT_AXIS = new THREE.Vector3(1, 0, 0);
@@ -719,6 +836,28 @@ const applyPresentation = (): void => {
   }
   scrub.hidden = arrival.phase !== 'settled';
   notesLink.hidden = arrival.phase !== 'settled'; // DEC-004's in-app route to /notes
+  // §9: the hint's show beat IS the settle — the chrome settles as one reveal. The step
+  // fires once; a travel intent that landed before the beat already owns the dismissal
+  // (the armed→gone transition makes the settled step a no-op). The beat RE-CHECKS the
+  // landing too: a deep link carries ?stop=/?cam= (a shared link pins the stop — never a
+  // first-timer), a room route is in transit or queued behind the tier probe (the arrival
+  // can settle BEFORE beginTransitTo fires), and only the square's S0 with no pinned
+  // parameters is the place a visitor lands without a shared link.
+  if (
+    arrival.phase === 'settled' &&
+    !hintSettleFired &&
+    requestedStop === null &&
+    requestedCam === null &&
+    transit === null &&
+    railNode === 'square' &&
+    nearestStopIndex(rail, railState.u) === 0
+  ) {
+    hintSettleFired = true;
+    const step = hintSettled(hintState);
+    hintState = step.state;
+    applyHintStep(step.timer);
+    applyHintView();
+  }
   if (arrival.phase === 'settled' && resizePending) {
     resizePending = false;
     applyViewport();
@@ -820,6 +959,7 @@ const railInputReady = (): boolean => arrival.phase === 'settled' && transit ===
 canvas.addEventListener(
   'wheel',
   (event) => {
+    hintTravel(); // §9: the wheel IS travel — the first intent dismisses the hint
     if (!railInputReady()) return;
     event.preventDefault(); // the rail owns travel; no page scroll or pinch-zoom leaks through
     railState = scroll(rail, railState, event.deltaY, reducedMotion);
@@ -828,6 +968,7 @@ canvas.addEventListener(
 );
 let dragAnchor: Readonly<{ pointerId: number; x: number; y: number }> | null = null;
 canvas.addEventListener('pointerdown', (event) => {
+  hintTravel(); // §9: a pointer drag start of ANY pointerType (touch included) is travel
   if (!railInputReady()) return;
   dragAnchor = { pointerId: event.pointerId, x: event.clientX, y: event.clientY };
   canvas.setPointerCapture(event.pointerId);
@@ -872,7 +1013,9 @@ document.addEventListener('keydown', (event) => {
       : event.key === 'ArrowLeft' || event.key === 'ArrowDown'
         ? -1
         : 0;
-  if (direction === 0 || !railInputReady()) return;
+  if (direction === 0) return;
+  hintTravel(); // §9: an arrow step (incl. a boundary step that fires an airlock) is travel
+  if (!railInputReady()) return;
   event.preventDefault();
   const result = stepStop(rail, railState, direction, reducedMotion);
   railState = result.state;
@@ -910,6 +1053,17 @@ window.addEventListener('hashchange', () => {
   const quality = parseQualityUpdate(new URLSearchParams(queryOf(location.hash)));
   persistTier(quality.tier);
   if (quality.tier !== 'auto') settleTier(TIERS[quality.tier]);
+  // The language mirrors the ?q= lifecycle verbatim: a navigation without lang= resets to
+  // the default and clears the override; one with it re-applies and persists (§1.1).
+  const langNext = resolveLang({
+    queryLang: currentQueryLang(),
+    storedLang: readStoredLang(),
+    det: isDeterministic(timeState),
+    navigation: true,
+  });
+  if (langNext.override.kind === 'write') writeStoredLang(langNext.override.lang);
+  if (langNext.override.kind === 'clear') clearStoredLang();
+  void activateLang(langNext.lang);
   // The HUD is ephemeral URL state: a navigation that drops ?hud=1 closes it, one that
   // carries it re-opens (data-* values re-bound on the next ≤ 500 ms tick).
   const hudNext = parseHudParam(new URLSearchParams(queryOf(location.hash)));

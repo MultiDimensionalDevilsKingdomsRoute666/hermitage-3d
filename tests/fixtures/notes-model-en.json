@@ -93,7 +93,7 @@
           "label": "Windows, conservative count",
           "value": 1476,
           "unit": "",
-          "display": "1 476",
+          "display": "1 476",
           "provenance": {
             "kind": "sourced",
             "id": "shell.windowsTotal.conservative",
@@ -107,7 +107,7 @@
           "label": "Windows, generous count",
           "value": 1945,
           "unit": "",
-          "display": "1 945",
+          "display": "1 945",
           "provenance": {
             "kind": "sourced",
             "id": "shell.windowsTotal.generous",
@@ -121,7 +121,7 @@
           "label": "Rooms, conservative count",
           "value": 1084,
           "unit": "",
-          "display": "1 084",
+          "display": "1 084",
           "provenance": {
             "kind": "sourced",
             "id": "shell.roomsTotal.conservative",
@@ -135,7 +135,7 @@
           "label": "Rooms, generous count",
           "value": 1500,
           "unit": "",
-          "display": "1 500",
+          "display": "1 500",
           "provenance": {
             "kind": "sourced",
             "id": "shell.roomsTotal.generous",
@@ -808,7 +808,7 @@
             "surround-row1-small",
             "56",
             "192",
-            "10 752"
+            "10 752"
           ],
           "provenance": [
             {
@@ -823,7 +823,7 @@
             "surround-row2-large",
             "56",
             "288",
-            "16 128"
+            "16 128"
           ],
           "provenance": [
             {
@@ -838,7 +838,7 @@
             "surround-row3-large",
             "62",
             "256",
-            "15 872"
+            "15 872"
           ],
           "provenance": [
             {
@@ -853,7 +853,7 @@
             "surround-row4-small",
             "62",
             "224",
-            "13 888"
+            "13 888"
           ],
           "provenance": [
             {
@@ -868,7 +868,7 @@
             "sill",
             "236",
             "40",
-            "9 440"
+            "9 440"
           ],
           "provenance": [
             {
@@ -883,7 +883,7 @@
             "paired-column",
             "20",
             "480",
-            "9 600"
+            "9 600"
           ],
           "provenance": [
             {
@@ -898,7 +898,7 @@
             "corner-bunch",
             "8",
             "720",
-            "5 760"
+            "5 760"
           ],
           "provenance": [
             {
@@ -943,7 +943,7 @@
             "giant-column",
             "4",
             "320",
-            "1 280"
+            "1 280"
           ],
           "provenance": [
             {
@@ -988,7 +988,7 @@
             "cornice-run",
             "17",
             "104",
-            "1 768"
+            "1 768"
           ],
           "provenance": [
             {
@@ -1003,7 +1003,7 @@
             "order-junction",
             "20",
             "96",
-            "1 920"
+            "1 920"
           ],
           "provenance": [
             {
@@ -1018,7 +1018,7 @@
             "balustrade",
             "62",
             "384",
-            "23 808"
+            "23 808"
           ],
           "provenance": [
             {
@@ -1033,7 +1033,7 @@
             "vase",
             "24",
             "192",
-            "4 608"
+            "4 608"
           ],
           "provenance": [
             {
@@ -1048,7 +1048,7 @@
             "statue",
             "24",
             "640",
-            "15 360"
+            "15 360"
           ],
           "provenance": [
             {
@@ -1063,7 +1063,7 @@
             "Total — 17 active parts",
             "659",
             "—",
-            "132 264"
+            "132 264"
           ],
           "provenance": [
             {
@@ -1105,7 +1105,7 @@
           "label": "Kit triangle ceiling",
           "value": 132264,
           "unit": "",
-          "display": "132 264",
+          "display": "132 264",
           "provenance": {
             "kind": "derived",
             "formula": "Σ instances × triangleCeiling"
@@ -1149,10 +1149,10 @@
           "label": "Frustum triangles",
           "value": 136506,
           "unit": "",
-          "display": "136 506",
+          "display": "136 506",
           "provenance": {
             "kind": "derived",
-            "formula": "kit 132 264 + massing 146 + sky 4 096"
+            "formula": "kit 132 264 + massing 146 + sky 4 096"
           }
         },
         {
@@ -1160,7 +1160,7 @@
           "label": "Submitted triangle ceiling",
           "value": 273012,
           "unit": "",
-          "display": "273 012",
+          "display": "273 012",
           "provenance": {
             "kind": "derived",
             "formula": "frustumTriangles × (1 + 1 shadow pass)"
@@ -1183,7 +1183,7 @@
       "kind": "callout",
       "id": "budget.contract",
       "level": "note",
-      "text": "Contract ceilings enforced in CI: ≤ 250 draw calls per frame, ≤ 1 000 000 frustum triangles, ≤ 350 000 B JavaScript gzip. Projected: 50 draws (margin 200), 136 506 triangles (margin 863 494), JS gzip measured: pending CI measurement. An overrun is removed by changing art or level of detail, never the number."
+      "text": "Contract ceilings enforced in CI: ≤ 250 draw calls per frame, ≤ 1 000 000 frustum triangles, ≤ 350 000 B JavaScript gzip. Projected: 50 draws (margin 200), 136 506 triangles (margin 863 494), JS gzip measured: pending CI measurement. An overrun is removed by changing art or level of detail, never the number."
     },
     {
       "kind": "paragraph",
@@ -1247,7 +1247,7 @@
           "id": "budget.allowance.skyTriangles",
           "cells": [
             "Sky triangles",
-            "4 096"
+            "4 096"
           ],
           "provenance": [
             {

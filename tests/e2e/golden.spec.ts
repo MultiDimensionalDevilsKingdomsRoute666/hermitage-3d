@@ -15,9 +15,10 @@ const SETTLE_MARGIN_MS = 300;
 const VIEWPORT = { width: 1280, height: 720 };
 
 // An element screenshot is a clip of the composited page, so overlapping DOM overlays would land
-// in the baseline. Hide them (visibility keeps layout, so nothing reflows).
+// in the baseline. Hide them (visibility keeps layout, so nothing reflows). #chrome-row holds
+// the notes link and the language toggle; #travel-hint is the §9 hint — both are overlay chrome.
 const HIDE_OVERLAYS_CSS =
-  '#title, #scrub, #notes-link, #hud, #caption { visibility: hidden !important; }';
+  '#title, #scrub, #chrome-row, #travel-hint, #hud, #caption { visibility: hidden !important; }';
 
 const MAX_DIFF_PIXEL_RATIO = 0.01;
 

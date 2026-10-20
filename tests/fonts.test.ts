@@ -10,6 +10,7 @@ import { fileURLToPath } from 'node:url';
 import { openSync } from 'fontkit';
 import { describe, expect, it } from 'vitest';
 import { en } from '../src/i18n/en';
+import { ru } from '../src/i18n/ru';
 
 // The committed faces and their project-local (post-RFN-rename) names.
 const FONTS = [
@@ -49,9 +50,9 @@ const fontPath = (file: string): string => `${root}${file}`;
 
 const load = (file: string) => openSync(fontPath(file));
 
-// Both dictionaries (r24a: EN only; the round-25 RU column appends here) and the union
-// of their non-whitespace code points — captions and data labels ride inside.
-const DICTIONARIES: readonly Record<string, string>[] = [en];
+// Both dictionaries (the r25 RU column landed — both languages gate together now) and the
+// union of their non-whitespace code points — captions and data labels ride inside.
+const DICTIONARIES: readonly Record<string, string>[] = [en, ru];
 const requiredCodePoints = (): Set<number> => {
   const set = new Set<number>();
   for (const dictionary of DICTIONARIES) {

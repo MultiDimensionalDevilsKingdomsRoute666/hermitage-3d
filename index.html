@@ -1,28 +1,30 @@
 <!doctype html>
-<html lang="en">
+<html lang="ru">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta
       name="description"
-      content="A stylized 3D recreation of the Winter Palace (Hermitage, Saint Petersburg), lit by the real Petersburg sky."
+      content="Стилизованная 3D-реконструкция Зимнего дворца (Эрмитаж, Санкт-Петербург), освещённая настоящим петербургским небом."
     />
-    <title>Winter Palace in the browser</title>
+    <title>Зимний дворец в браузере</title>
     <!-- §2.1: the three self-hosted faces preload on both pages; @font-face in src/fonts.css. -->
     <link rel="preload" href="/fonts/plex-sans-400.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="preload" href="/fonts/plex-sans-500.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="preload" href="/fonts/plex-serif-400.woff2" as="font" type="font/woff2" crossorigin />
   </head>
   <body>
+    <!-- §1.5: the static shell is RU (the default and canonical language); the runtime
+         overwrites for ?lang=en before the overlays are ever shown. -->
     <canvas
       id="scene"
       tabindex="0"
-      aria-label="Winter Palace walkthrough"
+      aria-label="Прогулка по Зимнему дворцу"
       aria-describedby="scene-help caption-live"
     ></canvas>
     <!-- Overlay, design-sky-time.md §9/§10: title on beat 2, hairline scrub only after settling. -->
     <header id="title" hidden>
-      <h1 id="wordmark">Winter Palace</h1>
+      <h1 id="wordmark">Зимний дворец</h1>
       <p id="timeline">
         <time id="clock">--:--</time>
         <span id="clock-date"></span>
@@ -36,15 +38,16 @@
       step="1"
       value="0"
       hidden
-      aria-label="Petersburg time, ±24 hours around the scene time"
+      aria-label="Петербургское время, ±24 часа от времени сцены"
       aria-describedby="scrub-help"
     />
     <span id="scrub-help" class="sr-only"
-      >Arrow keys step a minute; PageUp and PageDown step an hour; Home and End pick the window
-      bounds; Escape cancels; N returns to now.</span
+      >Стрелки — шаг в минуту; PageUp и PageDown — шаг в час; Home и End — границы окна;
+      Escape — отмена; N — вернуться к текущему моменту.</span
     >
     <p id="scene-help" class="sr-only">
-      Scroll, drag, or use the arrow keys to move along the rail from stop to stop.
+      Прокручивайте, перетаскивайте или нажимайте стрелки, чтобы двигаться по маршруту от
+      остановки к остановке.
     </p>
     <!-- Debug HUD (?hud=1 or the H key): client-only overlay per architecture.md delivery
          rules. aria-hidden: a developer tool, repeated state already announced elsewhere. -->
@@ -56,7 +59,16 @@
     <!-- Live region: «<stop id> · <caption>», rewritten only when it changes (§1.2: stops
          are named in a11y text). -->
     <div id="caption-live" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
-    <a id="notes-link" href="/notes.html" hidden>How it’s built →</a>
+    <!-- §9 travel hint: bottom-right corner, S0-only at the settle beat; the host owns the
+         state machine (src/ui/hint.ts); data-visible/data-dismissed are e2e contract rows. -->
+    <p id="travel-hint" aria-hidden="true" data-visible="false" data-dismissed="none"></p>
+    <!-- §1.2: the bottom-left chrome row — the notes link first, the language toggle last;
+         the toggle shows the TARGET language in its own script, lang set for the screen
+         readers. Static text is the pre-JS RU state; the runtime binds from the dictionary. -->
+    <div id="chrome-row">
+      <a id="notes-link" href="/notes.html" hidden>Как это устроено →</a>
+      <button id="lang-toggle" type="button" lang="en" aria-label="Русский">RU</button>
+    </div>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

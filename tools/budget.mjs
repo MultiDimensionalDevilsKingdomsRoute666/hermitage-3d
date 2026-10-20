@@ -10,11 +10,21 @@ const LIMIT_BYTES = 350000;
 const distAssets = join(dirname(fileURLToPath(import.meta.url)), '..', 'dist', 'assets');
 let total = 0;
 let chunks = 0;
+// The RU column rides a lazy chunk (design-i18n-notes.md R2; DEC-020): counted by the
+// total gate above AND measured separately at its own declared ceiling. The marker string
+// is unique to src/i18n/ru.ts (the Jordan staircase title, stored data).
+const RU_CHUNK_MARKER = 'Иорданская лестница';
+const RU_CHUNK_LIMIT = 12000;
+let ruGzip = null;
 try {
   for (const name of readdirSync(distAssets)) {
     if (!name.endsWith('.js')) continue;
-    total += gzipSync(readFileSync(join(distAssets, name)), { level: 9 }).length;
+    const buffer = readFileSync(join(distAssets, name));
+    total += gzipSync(buffer, { level: 9 }).length;
     chunks += 1;
+    if (buffer.includes(RU_CHUNK_MARKER)) {
+      ruGzip = gzipSync(buffer, { level: 9 }).length;
+    }
   }
 } catch {
   console.error('budget: dist/assets missing — run pnpm build first');
@@ -23,6 +33,15 @@ try {
 console.log(`budget: ${chunks} js chunk(s), ${total} gzip bytes of ${LIMIT_BYTES}`);
 if (total > LIMIT_BYTES) {
   console.error('budget: exceeded — failing build stage');
+  process.exit(1);
+}
+if (ruGzip === null) {
+  console.error('budget: the RU lazy chunk not found — the dynamic import must split it out');
+  process.exit(1);
+}
+console.log(`budget: payload ru chunk: ${ruGzip} B of ${RU_CHUNK_LIMIT} B ok`);
+if (ruGzip > RU_CHUNK_LIMIT) {
+  console.error('budget: the RU chunk exceeded its declared ceiling — failing build stage');
   process.exit(1);
 }
 

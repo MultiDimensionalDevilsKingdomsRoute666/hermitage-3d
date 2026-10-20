@@ -1,0 +1,1336 @@
+{
+  "title": "Как устроен южный фасад",
+  "blocks": [
+    {
+      "kind": "heading",
+      "level": 1,
+      "text": "Как устроен южный фасад"
+    },
+    {
+      "kind": "paragraph",
+      "text": "Каждое число на этой странице вычисляется при загрузке тем же чистым решателем, который приложение запускает над своей замороженной спецификацией фасада (decisions.md, DEC-004). Это не обмер. Три рода чисел разведены системой типов и помечены здесь:"
+    },
+    {
+      "kind": "list",
+      "items": [
+        "Источник — число несёт ключ атрибуции в ATTRIBUTIONS.md («нет строки — нет использования»).",
+        "Принято — рабочее целевое значение, снятое с фотографий и зарегистрированное в docs/artistic-license.md; на этапе 1 сверяется с обмерными чертежами фасадов и, если чертежи с ним расходятся, исправляется в обоих местах.",
+        "Расчёт — вычислено решателем из чисел двух предыдущих родов (docs/design-facade-grammar.md); пересчитывается при каждой загрузке, никогда не регистрируется."
+      ]
+    },
+    {
+      "kind": "links",
+      "items": [
+        {
+          "href": "https://github.com/vasyapym/hermitage-3d/blob/main/ATTRIBUTIONS.md",
+          "label": "ATTRIBUTIONS.md"
+        },
+        {
+          "href": "https://github.com/vasyapym/hermitage-3d/blob/main/docs/artistic-license.md",
+          "label": "docs/artistic-license.md"
+        },
+        {
+          "href": "https://github.com/vasyapym/hermitage-3d/blob/main/docs/design-facade-grammar.md",
+          "label": "docs/design-facade-grammar.md"
+        },
+        {
+          "href": "https://github.com/vasyapym/hermitage-3d/blob/main/docs/decisions.md",
+          "label": "docs/decisions.md"
+        },
+        {
+          "href": "https://github.com/vasyapym/hermitage-3d/blob/main/src/content/facade-spec.ts",
+          "label": "src/content/facade-spec.ts"
+        }
+      ]
+    },
+    {
+      "kind": "heading",
+      "level": 2,
+      "text": "Каре"
+    },
+    {
+      "kind": "paragraph",
+      "text": "Числа каре — такими, как их дают источники. Там, где два источника расходятся, сохраняются оба подсчёта, каждый под своим ключом."
+    },
+    {
+      "kind": "numbers",
+      "id": "shell",
+      "rows": [
+        {
+          "id": "shell.northFacadeLengthM",
+          "label": "Длина северного (Невского) фасада",
+          "value": 210,
+          "unit": "м",
+          "display": "210",
+          "provenance": {
+            "kind": "sourced",
+            "id": "shell.northFacadeLengthM",
+            "keys": [
+              "wiki-ru",
+              "studiomatrx",
+              "bravoplanner"
+            ]
+          }
+        },
+        {
+          "id": "shell.westFacadeLengthM",
+          "label": "Длина западного (Адмиралтейского) фасада",
+          "value": 175,
+          "unit": "м",
+          "display": "175",
+          "provenance": {
+            "kind": "sourced",
+            "id": "shell.westFacadeLengthM",
+            "keys": [
+              "wiki-ru",
+              "studiomatrx",
+              "bravoplanner"
+            ]
+          }
+        },
+        {
+          "id": "shell.windowsTotal.conservative",
+          "label": "Окна, нижняя оценка",
+          "value": 1476,
+          "unit": "",
+          "display": "1 476",
+          "provenance": {
+            "kind": "sourced",
+            "id": "shell.windowsTotal.conservative",
+            "keys": [
+              "wiki-ru"
+            ]
+          }
+        },
+        {
+          "id": "shell.windowsTotal.generous",
+          "label": "Окна, верхняя оценка",
+          "value": 1945,
+          "unit": "",
+          "display": "1 945",
+          "provenance": {
+            "kind": "sourced",
+            "id": "shell.windowsTotal.generous",
+            "keys": [
+              "wiki-en"
+            ]
+          }
+        },
+        {
+          "id": "shell.roomsTotal.conservative",
+          "label": "Комнаты, нижняя оценка",
+          "value": 1084,
+          "unit": "",
+          "display": "1 084",
+          "provenance": {
+            "kind": "sourced",
+            "id": "shell.roomsTotal.conservative",
+            "keys": [
+              "wiki-ru"
+            ]
+          }
+        },
+        {
+          "id": "shell.roomsTotal.generous",
+          "label": "Комнаты, верхняя оценка",
+          "value": 1500,
+          "unit": "",
+          "display": "1 500",
+          "provenance": {
+            "kind": "sourced",
+            "id": "shell.roomsTotal.generous",
+            "keys": [
+              "wiki-en"
+            ]
+          }
+        },
+        {
+          "id": "shell.staircasesTotal",
+          "label": "Лестницы",
+          "value": 117,
+          "unit": "",
+          "display": "117",
+          "provenance": {
+            "kind": "sourced",
+            "id": "shell.staircasesTotal",
+            "keys": [
+              "wiki-ru"
+            ]
+          }
+        },
+        {
+          "id": "shell.corniceHeightM",
+          "label": "Высота до карниза",
+          "value": 22,
+          "unit": "м",
+          "display": "22",
+          "provenance": {
+            "kind": "sourced",
+            "id": "shell.corniceHeightM",
+            "keys": [
+              "studiomatrx"
+            ]
+          }
+        },
+        {
+          "id": "shell.totalHeightM",
+          "label": "Полная высота с кровельным поясом",
+          "value": 23.5,
+          "unit": "м",
+          "display": "23,5",
+          "provenance": {
+            "kind": "sourced",
+            "id": "shell.totalHeightM",
+            "keys": [
+              "wiki-ru"
+            ]
+          }
+        },
+        {
+          "id": "shell.rooflineStatuaryHeightM",
+          "label": "Главный фасад, включая скульптуру по линии кровли",
+          "value": 30,
+          "unit": "м",
+          "display": "30",
+          "provenance": {
+            "kind": "sourced",
+            "id": "shell.rooflineStatuaryHeightM",
+            "keys": [
+              "wiki-en"
+            ]
+          }
+        },
+        {
+          "id": "shell.cornersTotal",
+          "label": "Углы, включая все выступы",
+          "value": 29,
+          "unit": "",
+          "display": "29",
+          "provenance": {
+            "kind": "sourced",
+            "id": "shell.cornersTotal",
+            "keys": [
+              "wiki-ru"
+            ]
+          }
+        },
+        {
+          "id": "shell.roofStatues",
+          "label": "Скульптуры на кровле",
+          "value": 176,
+          "unit": "",
+          "display": "176",
+          "provenance": {
+            "kind": "sourced",
+            "id": "shell.roofStatues",
+            "keys": [
+              "peterburg-center"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "kind": "heading",
+      "level": 2,
+      "text": "Окна, декор и ордер"
+    },
+    {
+      "kind": "paragraph",
+      "text": "Каталог из источника (Алексеева через wiki-ru) воспроизведён как система модулей и ритм колонн, а не один к одному: числа ниже — каталожные, а набор деталей моделирует меньшее стилизованное множество (реестр художественных допущений, «Каталог окон и декора»)."
+    },
+    {
+      "kind": "numbers",
+      "id": "decor",
+      "rows": [
+        {
+          "id": "decor.windowWidthModules",
+          "label": "Модули ширины окон",
+          "value": 3,
+          "unit": "",
+          "display": "3",
+          "provenance": {
+            "kind": "sourced",
+            "id": "decor.windowWidthModules",
+            "keys": [
+              "wiki-ru"
+            ]
+          }
+        },
+        {
+          "id": "decor.windowTypes",
+          "label": "Типы окон",
+          "value": 12,
+          "unit": "",
+          "display": "12",
+          "provenance": {
+            "kind": "sourced",
+            "id": "decor.windowTypes",
+            "keys": [
+              "wiki-ru"
+            ]
+          }
+        },
+        {
+          "id": "decor.surroundTypes",
+          "label": "Типы наличников",
+          "value": 22,
+          "unit": "",
+          "display": "22",
+          "provenance": {
+            "kind": "sourced",
+            "id": "decor.surroundTypes",
+            "keys": [
+              "wiki-ru"
+            ]
+          }
+        },
+        {
+          "id": "decor.sculpturalDecorTypes",
+          "label": "Типы скульптурного декора",
+          "value": 32,
+          "unit": "",
+          "display": "32",
+          "provenance": {
+            "kind": "sourced",
+            "id": "decor.sculpturalDecorTypes",
+            "keys": [
+              "wiki-ru"
+            ]
+          }
+        },
+        {
+          "id": "decor.capitalVarieties",
+          "label": "Разновидности капителей",
+          "value": 5,
+          "unit": "",
+          "display": "5",
+          "provenance": {
+            "kind": "sourced",
+            "id": "decor.capitalVarieties",
+            "keys": [
+              "wiki-ru"
+            ]
+          }
+        },
+        {
+          "id": "decor.cartoucheKinds",
+          "label": "Виды картушей",
+          "value": 4,
+          "unit": "",
+          "display": "4",
+          "provenance": {
+            "kind": "sourced",
+            "id": "decor.cartoucheKinds",
+            "keys": [
+              "wiki-ru"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "kind": "table",
+      "id": "order",
+      "caption": "Ордерная система",
+      "columns": [
+        "Факт",
+        "Значение"
+      ],
+      "rows": [
+        {
+          "id": "order.tiers",
+          "cells": [
+            "Ярусы приставной колоннады",
+            "2"
+          ],
+          "provenance": [
+            {
+              "kind": "sourced",
+              "id": "order.tiers",
+              "keys": [
+                "visit-petersburg",
+                "wiki-ru",
+                "peterburg-center"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "order.columnArrangement",
+          "cells": [
+            "Расстановка колонн",
+            "bunch-at-corners · pair-at-portals · pair-piers-between-window-groups"
+          ],
+          "provenance": [
+            {
+              "kind": "sourced",
+              "id": "order.columnArrangement",
+              "keys": [
+                "wiki-ru",
+                "visit-petersburg"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "order.capitalFamily",
+          "cells": [
+            "Семейство капителей",
+            "corinthian-composite (stylized, single archetype)"
+          ],
+          "provenance": [
+            {
+              "kind": "declared",
+              "id": "order.capitalFamily",
+              "license": "window-decor-catalogue",
+              "licenseTitle": "Window/decor catalogue"
+            }
+          ]
+        },
+        {
+          "id": "order.wallColor",
+          "cells": [
+            "Цвет стен",
+            "pale green walls, white order and dressings — owner palette decision (decisions.md)"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "table",
+      "id": "rows",
+      "caption": "Ряды окон, снизу вверх",
+      "columns": [
+        "Ряд",
+        "Ярус",
+        "Модуль",
+        "Принятая отметка верха окна"
+      ],
+      "rows": [
+        {
+          "id": "rows.row1",
+          "cells": [
+            "row1",
+            "lower",
+            "small",
+            "1,8 м"
+          ],
+          "provenance": [
+            {
+              "kind": "sourced",
+              "id": "rows.row1.module",
+              "keys": [
+                "wiki-ru"
+              ]
+            },
+            {
+              "kind": "declared",
+              "id": "rows.row1.declaredHeadHeightM",
+              "license": "dimension-approximations",
+              "licenseTitle": "Dimension approximations"
+            }
+          ]
+        },
+        {
+          "id": "rows.row2",
+          "cells": [
+            "row2",
+            "lower",
+            "large",
+            "3,6 м"
+          ],
+          "provenance": [
+            {
+              "kind": "sourced",
+              "id": "rows.row2.module",
+              "keys": [
+                "wiki-ru"
+              ]
+            },
+            {
+              "kind": "declared",
+              "id": "rows.row2.declaredHeadHeightM",
+              "license": "dimension-approximations",
+              "licenseTitle": "Dimension approximations"
+            }
+          ]
+        },
+        {
+          "id": "rows.row3",
+          "cells": [
+            "row3",
+            "upper",
+            "large",
+            "3,2 м"
+          ],
+          "provenance": [
+            {
+              "kind": "sourced",
+              "id": "rows.row3.module",
+              "keys": [
+                "wiki-ru"
+              ]
+            },
+            {
+              "kind": "declared",
+              "id": "rows.row3.declaredHeadHeightM",
+              "license": "dimension-approximations",
+              "licenseTitle": "Dimension approximations"
+            }
+          ]
+        },
+        {
+          "id": "rows.row4",
+          "cells": [
+            "row4",
+            "upper",
+            "small",
+            "2,2 м"
+          ],
+          "provenance": [
+            {
+              "kind": "sourced",
+              "id": "rows.row4.module",
+              "keys": [
+                "wiki-ru"
+              ]
+            },
+            {
+              "kind": "declared",
+              "id": "rows.row4.declaredHeadHeightM",
+              "license": "dimension-approximations",
+              "licenseTitle": "Dimension approximations"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "heading",
+      "level": 2,
+      "text": "Южный фасад — Дворцовая площадь, запад → восток"
+    },
+    {
+      "kind": "numbers",
+      "id": "south.lines",
+      "rows": [
+        {
+          "id": "south.mainLineLengthM",
+          "label": "Основная линия фасада",
+          "value": 210,
+          "unit": "м",
+          "display": "210",
+          "provenance": {
+            "kind": "sourced",
+            "id": "south.mainLineLengthM",
+            "keys": [
+              "wiki-ru",
+              "studiomatrx",
+              "bravoplanner"
+            ]
+          }
+        },
+        {
+          "id": "south.creaseLineLengthM",
+          "label": "Ломаная линия, включая изломы ризалитов",
+          "value": 215,
+          "unit": "м",
+          "display": "215",
+          "provenance": {
+            "kind": "sourced",
+            "id": "south.creaseLineLengthM",
+            "keys": [
+              "wiki-en"
+            ]
+          }
+        },
+        {
+          "id": "south.declaredBayPitchM",
+          "label": "Принятый рабочий шаг осей",
+          "value": 3.4,
+          "unit": "м",
+          "display": "3,4",
+          "provenance": {
+            "kind": "declared",
+            "id": "south.declaredBayPitchM",
+            "license": "facade-axis-counts",
+            "licenseTitle": "Facade axis counts (Phase 1 spec)"
+          }
+        },
+        {
+          "id": "south.derivedPitchM",
+          "label": "Расчётный шаг осей",
+          "value": 3.3870967741935485,
+          "unit": "м",
+          "display": "3,39",
+          "provenance": {
+            "kind": "derived",
+            "formula": "210 м / 62 осей"
+          }
+        },
+        {
+          "id": "south.derivedCreaseM",
+          "label": "Расчётная ломаная линия",
+          "value": 234,
+          "unit": "м",
+          "display": "234",
+          "provenance": {
+            "kind": "derived",
+            "formula": "основная линия + внутренние изломы ризалитов из принятых выносов (решатель)"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "table",
+      "id": "south.sections",
+      "caption": "Секции, запад → восток; примечания — дословно из замороженной спецификации",
+      "columns": [
+        "Секция",
+        "Тип",
+        "Принятые оси",
+        "Принятый вынос",
+        "Примечание"
+      ],
+      "rows": [
+        {
+          "id": "south.sections.sw-risalit",
+          "cells": [
+            "sw-risalit",
+            "cornerRisalit",
+            "7 (±1)",
+            "6 м",
+            "SW corner mass: its own arched portal with giant columns and balcony, corner column bunches; protrudes toward the square."
+          ],
+          "provenance": [
+            {
+              "kind": "declared",
+              "id": "south.sections.sw-risalit.declaredAxes",
+              "license": "facade-axis-counts",
+              "licenseTitle": "Facade axis counts (Phase 1 spec)"
+            },
+            {
+              "kind": "declared",
+              "id": "south.sections.sw-risalit.declaredProtrusionM",
+              "license": "dimension-approximations",
+              "licenseTitle": "Dimension approximations"
+            }
+          ]
+        },
+        {
+          "id": "south.sections.west-stretch",
+          "cells": [
+            "west-stretch",
+            "stretch",
+            "20 (±1)",
+            "0 м",
+            "Flat run: window axes with paired-column piers every ~4th bay."
+          ],
+          "provenance": [
+            {
+              "kind": "declared",
+              "id": "south.sections.west-stretch.declaredAxes",
+              "license": "facade-axis-counts",
+              "licenseTitle": "Facade axis counts (Phase 1 spec)"
+            },
+            {
+              "kind": "declared",
+              "id": "south.sections.west-stretch.declaredProtrusionM",
+              "license": "dimension-approximations",
+              "licenseTitle": "Dimension approximations"
+            }
+          ]
+        },
+        {
+          "id": "south.sections.central-portal",
+          "cells": [
+            "central-portal",
+            "centralPortal",
+            "8 (±1)",
+            "6 м",
+            "Parade gateway: three entrance arches (courtyard entrance), giant columns, pediment with clock and eagle cartouche — the Strelna device."
+          ],
+          "provenance": [
+            {
+              "kind": "declared",
+              "id": "south.sections.central-portal.declaredAxes",
+              "license": "facade-axis-counts",
+              "licenseTitle": "Facade axis counts (Phase 1 spec)"
+            },
+            {
+              "kind": "declared",
+              "id": "south.sections.central-portal.declaredProtrusionM",
+              "license": "dimension-approximations",
+              "licenseTitle": "Dimension approximations"
+            }
+          ]
+        },
+        {
+          "id": "south.sections.east-stretch",
+          "cells": [
+            "east-stretch",
+            "stretch",
+            "20 (±1)",
+            "0 м",
+            "Mirror of the west stretch."
+          ],
+          "provenance": [
+            {
+              "kind": "declared",
+              "id": "south.sections.east-stretch.declaredAxes",
+              "license": "facade-axis-counts",
+              "licenseTitle": "Facade axis counts (Phase 1 spec)"
+            },
+            {
+              "kind": "declared",
+              "id": "south.sections.east-stretch.declaredProtrusionM",
+              "license": "dimension-approximations",
+              "licenseTitle": "Dimension approximations"
+            }
+          ]
+        },
+        {
+          "id": "south.sections.se-risalit",
+          "cells": [
+            "se-risalit",
+            "cornerRisalit",
+            "7 (±1)",
+            "6 м",
+            "SE corner mass: portal with giant columns and cartouche; palace chapel dome rises behind this end."
+          ],
+          "provenance": [
+            {
+              "kind": "declared",
+              "id": "south.sections.se-risalit.declaredAxes",
+              "license": "facade-axis-counts",
+              "licenseTitle": "Facade axis counts (Phase 1 spec)"
+            },
+            {
+              "kind": "declared",
+              "id": "south.sections.se-risalit.declaredProtrusionM",
+              "license": "dimension-approximations",
+              "licenseTitle": "Dimension approximations"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "numbers",
+      "id": "south.counts",
+      "rows": [
+        {
+          "id": "south.counts.axes",
+          "label": "Оконные оси",
+          "value": 62,
+          "unit": "",
+          "display": "62",
+          "provenance": {
+            "kind": "derived",
+            "formula": "Σ declaredAxes по пяти секциям"
+          }
+        },
+        {
+          "id": "south.counts.windowSlots",
+          "label": "Оконные слоты",
+          "value": 248,
+          "unit": "",
+          "display": "248",
+          "provenance": {
+            "kind": "derived",
+            "formula": "62 осей × 4 рядов"
+          }
+        },
+        {
+          "id": "south.counts.windows",
+          "label": "Окна",
+          "value": 236,
+          "unit": "",
+          "display": "236",
+          "provenance": {
+            "kind": "derived",
+            "formula": "windowSlots − portalVoidCells"
+          }
+        },
+        {
+          "id": "south.counts.portalVoidCells",
+          "label": "Пустые ячейки портала",
+          "value": 12,
+          "unit": "",
+          "display": "12",
+          "provenance": {
+            "kind": "derived",
+            "formula": "слоты, вытесненные арками входа и портала (решатель)"
+          }
+        },
+        {
+          "id": "south.counts.columnShafts",
+          "label": "Стволы колонн",
+          "value": 68,
+          "unit": "",
+          "display": "68",
+          "provenance": {
+            "kind": "derived",
+            "formula": "Σ KIT.shaftCount × instances по деталям-колоннам (решатель)"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "callout",
+      "id": "south.crease",
+      "level": "warning",
+      "text": "Ломаная линия: в спецификации стоит 215 м (источник — wiki-en, «principal facade», со ссылкой на Budberg, Great Palaces: The Winter Palace, 1969; русскоязычная традиция читает ту же кромку как 210 м); решатель выводит 234 м из основной линии и принятых выносов ризалитов. Две длины из источников, скорее всего, измеряют одну и ту же уличную кромку в разных конвенциях источников, а не линию плана против ломаной; принятый ритм осей (7 + 20 + 8 + 20 + 7) и расчётная величина не имеют оцифрованного подтверждения (поиск по литературе закрыт 2026-10-17). Разрешить вопрос могут только обмерные чертежи — РГИА ф. 485, скан из Альбертины или Пилявский через НЭБ, — поэтому до тех пор это предупреждение остаётся в силе, а спецификация и реестр художественных допущений («Приближения размеров») будут исправлены, если документы разойдутся. Решатель: расчётная длина ломаной 234 м отличается от принятой 215 м"
+    },
+    {
+      "kind": "heading",
+      "level": 2,
+      "text": "Набор деталей"
+    },
+    {
+      "kind": "paragraph",
+      "text": "Детали, которые решатель разместил на южном фасаде; слоты набора без размещений опущены. Потолки треугольников — максимумы набора на один экземпляр, поэтому итоги по деталям — это потолки, а не измеренные количества."
+    },
+    {
+      "kind": "table",
+      "id": "kit.parts",
+      "columns": [
+        "Деталь",
+        "Экземпляры",
+        "Потолок треугольников на экземпляр",
+        "Итого по детали"
+      ],
+      "rows": [
+        {
+          "id": "kit.surround-row1-small",
+          "cells": [
+            "surround-row1-small",
+            "56",
+            "192",
+            "10 752"
+          ],
+          "provenance": [
+            {
+              "kind": "derived",
+              "formula": "counts.byPart × KIT.triangleCeiling"
+            }
+          ]
+        },
+        {
+          "id": "kit.surround-row2-large",
+          "cells": [
+            "surround-row2-large",
+            "56",
+            "288",
+            "16 128"
+          ],
+          "provenance": [
+            {
+              "kind": "derived",
+              "formula": "counts.byPart × KIT.triangleCeiling"
+            }
+          ]
+        },
+        {
+          "id": "kit.surround-row3-large",
+          "cells": [
+            "surround-row3-large",
+            "62",
+            "256",
+            "15 872"
+          ],
+          "provenance": [
+            {
+              "kind": "derived",
+              "formula": "counts.byPart × KIT.triangleCeiling"
+            }
+          ]
+        },
+        {
+          "id": "kit.surround-row4-small",
+          "cells": [
+            "surround-row4-small",
+            "62",
+            "224",
+            "13 888"
+          ],
+          "provenance": [
+            {
+              "kind": "derived",
+              "formula": "counts.byPart × KIT.triangleCeiling"
+            }
+          ]
+        },
+        {
+          "id": "kit.sill",
+          "cells": [
+            "sill",
+            "236",
+            "40",
+            "9 440"
+          ],
+          "provenance": [
+            {
+              "kind": "derived",
+              "formula": "counts.byPart × KIT.triangleCeiling"
+            }
+          ]
+        },
+        {
+          "id": "kit.paired-column",
+          "cells": [
+            "paired-column",
+            "20",
+            "480",
+            "9 600"
+          ],
+          "provenance": [
+            {
+              "kind": "derived",
+              "formula": "counts.byPart × KIT.triangleCeiling"
+            }
+          ]
+        },
+        {
+          "id": "kit.corner-bunch",
+          "cells": [
+            "corner-bunch",
+            "8",
+            "720",
+            "5 760"
+          ],
+          "provenance": [
+            {
+              "kind": "derived",
+              "formula": "counts.byPart × KIT.triangleCeiling"
+            }
+          ]
+        },
+        {
+          "id": "kit.portal-arch",
+          "cells": [
+            "portal-arch",
+            "3",
+            "256",
+            "768"
+          ],
+          "provenance": [
+            {
+              "kind": "derived",
+              "formula": "counts.byPart × KIT.triangleCeiling"
+            }
+          ]
+        },
+        {
+          "id": "kit.ground-arch",
+          "cells": [
+            "ground-arch",
+            "3",
+            "96",
+            "288"
+          ],
+          "provenance": [
+            {
+              "kind": "derived",
+              "formula": "counts.byPart × KIT.triangleCeiling"
+            }
+          ]
+        },
+        {
+          "id": "kit.giant-column",
+          "cells": [
+            "giant-column",
+            "4",
+            "320",
+            "1 280"
+          ],
+          "provenance": [
+            {
+              "kind": "derived",
+              "formula": "counts.byPart × KIT.triangleCeiling"
+            }
+          ]
+        },
+        {
+          "id": "kit.pediment",
+          "cells": [
+            "pediment",
+            "1",
+            "256",
+            "256"
+          ],
+          "provenance": [
+            {
+              "kind": "derived",
+              "formula": "counts.byPart × KIT.triangleCeiling"
+            }
+          ]
+        },
+        {
+          "id": "kit.cartouche",
+          "cells": [
+            "cartouche",
+            "1",
+            "768",
+            "768"
+          ],
+          "provenance": [
+            {
+              "kind": "derived",
+              "formula": "counts.byPart × KIT.triangleCeiling"
+            }
+          ]
+        },
+        {
+          "id": "kit.cornice-run",
+          "cells": [
+            "cornice-run",
+            "17",
+            "104",
+            "1 768"
+          ],
+          "provenance": [
+            {
+              "kind": "derived",
+              "formula": "counts.byPart × KIT.triangleCeiling"
+            }
+          ]
+        },
+        {
+          "id": "kit.order-junction",
+          "cells": [
+            "order-junction",
+            "20",
+            "96",
+            "1 920"
+          ],
+          "provenance": [
+            {
+              "kind": "derived",
+              "formula": "counts.byPart × KIT.triangleCeiling"
+            }
+          ]
+        },
+        {
+          "id": "kit.balustrade",
+          "cells": [
+            "balustrade",
+            "62",
+            "384",
+            "23 808"
+          ],
+          "provenance": [
+            {
+              "kind": "derived",
+              "formula": "counts.byPart × KIT.triangleCeiling"
+            }
+          ]
+        },
+        {
+          "id": "kit.vase",
+          "cells": [
+            "vase",
+            "24",
+            "192",
+            "4 608"
+          ],
+          "provenance": [
+            {
+              "kind": "derived",
+              "formula": "counts.byPart × KIT.triangleCeiling"
+            }
+          ]
+        },
+        {
+          "id": "kit.statue",
+          "cells": [
+            "statue",
+            "24",
+            "640",
+            "15 360"
+          ],
+          "provenance": [
+            {
+              "kind": "derived",
+              "formula": "counts.byPart × KIT.triangleCeiling"
+            }
+          ]
+        },
+        {
+          "id": "kit.total",
+          "cells": [
+            "Итого — активных деталей: 17",
+            "659",
+            "—",
+            "132 264"
+          ],
+          "provenance": [
+            {
+              "kind": "derived",
+              "formula": "Σ по размещённым деталям"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "numbers",
+      "id": "kit.totals",
+      "rows": [
+        {
+          "id": "kit.instances",
+          "label": "Экземпляры",
+          "value": 659,
+          "unit": "",
+          "display": "659",
+          "provenance": {
+            "kind": "derived",
+            "formula": "Σ counts.byPart"
+          }
+        },
+        {
+          "id": "kit.activeParts",
+          "label": "Активные детали",
+          "value": 17,
+          "unit": "",
+          "display": "17",
+          "provenance": {
+            "kind": "derived",
+            "formula": "детали с ≥ 1 экземпляром"
+          }
+        },
+        {
+          "id": "kit.triangles",
+          "label": "Потолок треугольников набора",
+          "value": 132264,
+          "unit": "",
+          "display": "132 264",
+          "provenance": {
+            "kind": "derived",
+            "formula": "Σ instances × triangleCeiling"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "heading",
+      "level": 2,
+      "text": "Проекция бюджета"
+    },
+    {
+      "kind": "numbers",
+      "id": "budget.projection",
+      "rows": [
+        {
+          "id": "budget.facadeDrawCalls",
+          "label": "Вызовы отрисовки фасада",
+          "value": 34,
+          "unit": "",
+          "display": "34",
+          "provenance": {
+            "kind": "derived",
+            "formula": "projectBudget: инстансированные вызовы отрисовки активных деталей по всем проходам"
+          }
+        },
+        {
+          "id": "budget.frameDrawCalls",
+          "label": "Вызовы отрисовки за кадр",
+          "value": 50,
+          "unit": "",
+          "display": "50",
+          "provenance": {
+            "kind": "derived",
+            "formula": "facadeDrawCalls + прочие вызовы отрисовки (16)"
+          }
+        },
+        {
+          "id": "budget.frustumTriangles",
+          "label": "Треугольники в пирамиде видимости",
+          "value": 136506,
+          "unit": "",
+          "display": "136 506",
+          "provenance": {
+            "kind": "derived",
+            "formula": "набор 132 264 + массинг 146 + небо 4 096"
+          }
+        },
+        {
+          "id": "budget.submittedTriangleCeiling",
+          "label": "Потолок отправляемых треугольников",
+          "value": 273012,
+          "unit": "",
+          "display": "273 012",
+          "provenance": {
+            "kind": "derived",
+            "formula": "frustumTriangles × (1 + 1) за счёт теневых проходов"
+          }
+        },
+        {
+          "id": "budget.jsGzipBytes",
+          "label": "JavaScript gzip",
+          "value": null,
+          "unit": "B",
+          "display": "измерено: pending CI measurement",
+          "provenance": {
+            "kind": "derived",
+            "formula": "замер gzip в CI, переданный через allowance.measuredJsGzipBytes"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "callout",
+      "id": "budget.contract",
+      "level": "note",
+      "text": "Контрактные потолки, проверяемые в CI: вызовов отрисовки за кадр — не более 250, треугольников в пирамиде видимости — не более 1 000 000, JavaScript gzip — не более 350 000 Б. Проекция: вызовы — 50 (запас 200), треугольники — 136 506 (запас 863 494), JS gzip измерен: pending CI measurement. Превышение устраняют изменением арта или уровня детализации — и никогда изменением числа."
+    },
+    {
+      "kind": "paragraph",
+      "text": "Резерв на сцену — принятые рабочие оценки того, во что обходится остальной кадр (массинг раунда 7: 12 боксов + плоскость земли; небесный купол; один теневой проход; прочие вызовы отрисовки). Это входные данные проекции, а не измерения."
+    },
+    {
+      "kind": "table",
+      "id": "budget.allowance",
+      "caption": "Резерв на сцену",
+      "columns": [
+        "Статья",
+        "Значение"
+      ],
+      "rows": [
+        {
+          "id": "budget.allowance.shadowPasses",
+          "cells": [
+            "Теневые проходы",
+            "1"
+          ],
+          "provenance": [
+            {
+              "kind": "declared",
+              "id": "budget.allowance.shadowPasses",
+              "license": "budget-allowance",
+              "licenseTitle": "Budget allowance (Phase 1 /notes)"
+            }
+          ]
+        },
+        {
+          "id": "budget.allowance.otherFrameDrawCalls",
+          "cells": [
+            "Прочие вызовы отрисовки за кадр",
+            "16"
+          ],
+          "provenance": [
+            {
+              "kind": "declared",
+              "id": "budget.allowance.otherFrameDrawCalls",
+              "license": "budget-allowance",
+              "licenseTitle": "Budget allowance (Phase 1 /notes)"
+            }
+          ]
+        },
+        {
+          "id": "budget.allowance.massingTriangles",
+          "cells": [
+            "Треугольники массинга",
+            "146"
+          ],
+          "provenance": [
+            {
+              "kind": "declared",
+              "id": "budget.allowance.massingTriangles",
+              "license": "budget-allowance",
+              "licenseTitle": "Budget allowance (Phase 1 /notes)"
+            }
+          ]
+        },
+        {
+          "id": "budget.allowance.skyTriangles",
+          "cells": [
+            "Треугольники неба",
+            "4 096"
+          ],
+          "provenance": [
+            {
+              "kind": "declared",
+              "id": "budget.allowance.skyTriangles",
+              "license": "budget-allowance",
+              "licenseTitle": "Budget allowance (Phase 1 /notes)"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "heading",
+      "level": 2,
+      "text": "Соседние фасады — не входят в Фазу 1"
+    },
+    {
+      "kind": "paragraph",
+      "text": "Северный, западный и восточный фасады позже переиспользуют тот же набор деталей. Их числа осей только приняты (реестр художественных допущений, «Число осей фасадов») и хранятся затем, чтобы в тестах сходилась арифметика плана; длины основных линий — это числа каре, приведённые выше."
+    },
+    {
+      "kind": "table",
+      "id": "siblings",
+      "columns": [
+        "Фасад",
+        "Секции — тип · принятые оси",
+        "Принятые оси",
+        "Характер"
+      ],
+      "rows": [
+        {
+          "id": "siblings.north",
+          "cells": [
+            "north",
+            "nw-risalit (cornerRisalit) 7 · north-stretch-w (stretch) 20 · north-central (centralPortal) 8 · north-stretch-e (stretch) 20 · ne-risalit (cornerRisalit) 7",
+            "62 (±1 на секцию)",
+            "Сплошная колоннада к Неве (visit-petersburg)."
+          ],
+          "provenance": [
+            {
+              "kind": "declared",
+              "id": "siblings.north.declaredAxes",
+              "license": "facade-axis-counts",
+              "licenseTitle": "Facade axis counts (Phase 1 spec)"
+            }
+          ]
+        },
+        {
+          "id": "siblings.west",
+          "cells": [
+            "west",
+            "west-stretch-n (stretch) 22 · west-central (centralPortal) 8 · west-stretch-s (stretch) 22",
+            "52 (±1 на секцию)",
+            "Композиция загородного дворца со стороны Адмиралтейства (visit-petersburg)."
+          ],
+          "provenance": [
+            {
+              "kind": "declared",
+              "id": "siblings.west.declaredAxes",
+              "license": "facade-axis-counts",
+              "licenseTitle": "Facade axis counts (Phase 1 spec)"
+            }
+          ]
+        },
+        {
+          "id": "siblings.east",
+          "cells": [
+            "east",
+            "east-stretch-n (stretch) 22 · east-central (centralPortal) 8 · east-stretch-s (stretch) 22",
+            "52 (±1 на секцию)",
+            "Массивные крылья вокруг служебного двора (visit-petersburg)."
+          ],
+          "provenance": [
+            {
+              "kind": "declared",
+              "id": "siblings.east.declaredAxes",
+              "license": "facade-axis-counts",
+              "licenseTitle": "Facade axis counts (Phase 1 spec)"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,11 +1,28 @@
 // tests/i18n.test.ts
-// Gates for the round-24a extraction files (src/i18n/*): the purity fence (the hud.test.ts
-// reference pattern), the byte-exact formatting law in force today, a dense cross-check of the
-// arithmetic Petersburg clock against formatPetersburg (sky/time.ts), and a round-trip of the
-// real /notes model's rendered numbers through the new formatters.
+// Gates for the i18n modules (src/i18n/*): the purity fence (the hud.test.ts reference
+// pattern), the byte-exact formatting law in force since the round-25 number-law flip
+// (thin-space thousands in BOTH languages, the decimal byte is the only language-dependent
+// one, ISO stays the EN day format), a dense cross-check of the arithmetic Petersburg clock
+// against formatPetersburg (sky/time.ts), the dictionary parity (equal key sets + equal
+// token sets + the typographic lints of §1.3/§1.6), and the language-resolution law
+// (DEC-020, the ?q= lifecycle mirror).
 import { describe, expect, it } from 'vitest';
 import { en } from '../src/i18n/en';
-import { format, formatDate, formatInt, formatNumber, formatTime } from '../src/i18n/format';
+import {
+  format,
+  formatDate,
+  formatInt,
+  formatNumber,
+  formatTime,
+  templateTokens,
+} from '../src/i18n/format';
+import {
+  DEFAULT_LANG,
+  type LangResolutionInput,
+  resolveLang,
+  toggleTarget,
+} from '../src/i18n/locale';
+import { ru } from '../src/i18n/ru';
 import { formatPetersburg } from '../src/sky/time';
 import { buildSouthNotesModel } from '../src/ui/notes-view';
 
@@ -85,16 +102,17 @@ describe('format', () => {
 // The formatting law in force today, byte-exact.
 // ---------------------------------------------------------------------------
 describe('formatInt', () => {
-  it('groups thousands with a plain space', () => {
+  it('groups thousands with the thin space (both languages, §0)', () => {
     expect(formatInt(0)).toBe('0');
     expect(formatInt(999)).toBe('999');
-    expect(formatInt(1000)).toBe('1 000');
-    expect(formatInt(1234567)).toBe('1 234 567');
-    expect(formatInt(1000000)).toBe('1 000 000');
+    expect(formatInt(1000)).toBe('1\u2009000');
+    expect(formatInt(1234567)).toBe('1\u2009234\u2009567');
+    expect(formatInt(1000000)).toBe('1\u2009000\u2009000');
   });
-  it('carries the minus sign', () => {
+  it('carries the ASCII minus sign (the committed EN bytes pin it)', () => {
     expect(formatInt(-5)).toBe('-5');
-    expect(formatInt(-1234567)).toBe('-1 234 567');
+    expect(formatInt(-1234567)).toBe('-1\u2009234\u2009567');
+    expect(formatInt(-0)).toBe('0');
   });
   it('truncates non-integral input toward zero', () => {
     expect(formatInt(210.9)).toBe('210');
@@ -105,7 +123,7 @@ describe('formatInt', () => {
 describe('formatNumber', () => {
   it('prints integers through the grouped int path', () => {
     expect(formatNumber(210)).toBe('210');
-    expect(formatNumber(1234)).toBe('1 234');
+    expect(formatNumber(1234)).toBe('1\u2009234');
   });
   it('trims two-decimal rounding trailing zeros', () => {
     expect(formatNumber(3.39)).toBe('3.39');
@@ -113,10 +131,14 @@ describe('formatNumber', () => {
     expect(formatNumber(2.999)).toBe('3');
     expect(formatNumber(0.005)).toBe('0.01');
   });
-  it('groups the integer part of non-integers (the round-25 ru law shape)', () => {
-    // Today's page renders no non-integer >= 1000 (asserted against the real model below),
-    // so this branch is unreachable in practice and intentionally targets the RU round.
-    expect(formatNumber(1234.56)).toBe('1 234.56');
+  it('swaps only the decimal byte for RU (thin grouping and the trim law are shared)', () => {
+    expect(formatNumber(3.39, 'ru')).toBe('3,39');
+    expect(formatNumber(1234.56, 'ru')).toBe('1\u2009234,56');
+    expect(formatNumber(210, 'ru')).toBe('210');
+    expect(formatNumber(2.999, 'ru')).toBe('3');
+  });
+  it('returns the string form of non-finite input (a display path never throws)', () => {
+    expect(formatNumber(Number.NaN)).toBe('NaN');
   });
 });
 
@@ -126,7 +148,7 @@ describe('formatNumber', () => {
 describe('petersburg wall time cross-check', () => {
   const cross = (epochMs: number): void => {
     const law = formatPetersburg(epochMs);
-    expect(formatDate(epochMs), String(epochMs)).toBe(law.date);
+    expect(formatDate(epochMs, 'en'), String(epochMs)).toBe(law.date);
     expect(formatTime(epochMs), String(epochMs)).toBe(law.time);
   };
   const walkDays = (year: number): void => {
@@ -272,7 +294,7 @@ describe('notes model number round-trip', () => {
           expect(row.display, row.id).toBe(`measured: ${en['notes.pending']}`);
           continue;
         }
-        expect(formatNumber(row.value), row.id).toBe(row.display);
+        expect(formatNumber(row.value, 'en'), row.id).toBe(row.display);
       }
     }
   });
@@ -287,5 +309,124 @@ describe('notes model number round-trip', () => {
         }
       }
     }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Dictionary parity (§1.3, R5): equal key sets, equal {name} token sets per key,
+// non-empty untrimmed values, and the typographic lints both ways.
+// ---------------------------------------------------------------------------
+describe('dictionary parity', () => {
+  const enKeys = Object.keys(en).sort();
+  const ruKeys = Object.keys(ru).sort();
+  it('keeps identical key sets in both columns', () => {
+    expect(ruKeys).toEqual(enKeys);
+  });
+  it('keeps identical {name} token sets per key (moved points are fine, renames are not)', () => {
+    for (const key of enKeys) {
+      expect([...templateTokens(ru[key as keyof typeof ru])].sort(), key).toEqual(
+        [...templateTokens(en[key as keyof typeof en])].sort(),
+      );
+    }
+  });
+  it('has a non-empty, untrimmed value for every key in both columns', () => {
+    for (const [key, value] of Object.entries(ru)) {
+      expect(value.length, `ru ${key}`).toBeGreaterThan(0);
+      expect(value, `ru ${key}`).toBe(value.trim());
+    }
+  });
+  it('keeps the RU typographic lint: no latin double quote, no spaced hyphen dash, no dots', () => {
+    for (const [key, value] of Object.entries(ru)) {
+      expect(value, `ru ${key}`).not.toContain('"');
+      expect(value, `ru ${key}`).not.toContain(' - '); // ' - ' as a dash (the §1.6 law)
+      expect(value, `ru ${key}`).not.toContain('...');
+    }
+  });
+  it('keeps EN free of Cyrillic outside the sanctioned tokens (sources + the toggle name)', () => {
+    for (const [key, value] of Object.entries(en)) {
+      const cyr = value.match(/[\u0400-\u04FF]+/gu) ?? [];
+      for (const token of cyr) {
+        expect(
+          ['РГИА', 'НЭБ'].some((allowed) => token.startsWith(allowed)) ||
+            token === 'ф' || // «ф. 485» — the register's file number
+            (key === 'chrome.toggleAria' && token === 'Русский'), // §1.2: the target name
+          `en ${key}: ${token}`,
+        ).toBe(true);
+      }
+    }
+  });
+  it('keeps RU free of latin prose (identifiers, paths and source labels are allowed)', () => {
+    for (const [key, value] of Object.entries(ru)) {
+      // Latin runs of 4+ letters inside RU values must be code-ish (a path, an id, a
+      // source tag, a {name} token) — no latin prose words. The allowlist is a prefix
+      // check per run; the toggle's accessible name is the target language's name (§1.2).
+      const withoutTokens = value.replace(/\{[A-Za-z][A-Za-z0-9]*\}/gu, '');
+      const latin = withoutTokens.match(/[A-Za-z][A-Za-z0-9.-]*/gu) ?? [];
+      for (const token of latin) {
+        expect(
+          /^(wiki|visit|petersburg|Budberg|Great|Palaces|The|Winter|Palace|principal|declaredAxes|decisions|md|DEC|ATTRIBUTIONS|docs|artistic|license|design|facade|grammar|src|content|facade-spec|windowSlots|portalVoidCells|counts|byPart|KIT|triangleCeiling|instances|frustumTriangles|facadeDrawCalls|projectBudget|allowance|measuredJsGzipBytes|solver|Σ|Phase|JavaScript|gzip|PageUp|PageDown|Home|End|Escape|JS)/.test(
+            token,
+          ) ||
+            token.length < 4 ||
+            (key === 'chrome.toggleAria' && token === 'English'),
+          `ru ${key}: ${token}`,
+        ).toBe(true);
+      }
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// The language-resolution law (DEC-020, §1.1; the ?q= lifecycle mirror).
+// ---------------------------------------------------------------------------
+describe('resolveLang', () => {
+  const resolve = (over: Partial<LangResolutionInput>): ReturnType<typeof resolveLang> =>
+    resolveLang({ queryLang: null, storedLang: null, det: false, navigation: false, ...over });
+  it('a valid query lang wins and persists (the URL wins)', () => {
+    expect(resolve({ queryLang: 'en' })).toEqual({
+      lang: 'en',
+      source: 'query',
+      override: { kind: 'write', lang: 'en' },
+    });
+    expect(resolve({ queryLang: 'ru' }).override).toEqual({ kind: 'write', lang: 'ru' });
+  });
+  it('an invalid query lang is ignored without a throw (the URL is not committed data)', () => {
+    const result = resolve({ queryLang: 'de', storedLang: 'en' });
+    expect(result.lang).toBe('en');
+    expect(result.source).toBe('override');
+  });
+  it('a fresh load without the query reads the persisted override', () => {
+    expect(resolve({ storedLang: 'en' }).lang).toBe('en');
+    expect(resolve({ storedLang: 'ru' }).lang).toBe('ru');
+  });
+  it('a garbage stored value is cleared; a missing one is kept alone', () => {
+    expect(resolve({ storedLang: 'garbage' }).override).toEqual({ kind: 'clear' });
+    expect(resolve({ storedLang: null }).override).toEqual({ kind: 'keep' });
+  });
+  it('det ignores the override both ways; ?lang= still works', () => {
+    const det = { det: true };
+    expect(resolve({ ...det, storedLang: 'en' })).toEqual({
+      lang: DEFAULT_LANG,
+      source: 'default',
+      override: { kind: 'keep' },
+    });
+    expect(resolve({ ...det, queryLang: 'en' })).toEqual({
+      lang: 'en',
+      source: 'query',
+      override: { kind: 'keep' }, // det writes nothing — the golden runs leave no storage
+    });
+  });
+  it('a navigation without lang= resets to the default and clears (the ?q= mirror)', () => {
+    const result = resolve({ storedLang: 'en', navigation: true });
+    expect(result.lang).toBe(DEFAULT_LANG);
+    expect(result.override).toEqual({ kind: 'clear' });
+    expect(resolve({ queryLang: 'en', navigation: true }).override).toEqual({
+      kind: 'write',
+      lang: 'en',
+    });
+  });
+  it('the toggle target is the other language, both ways', () => {
+    expect(toggleTarget('ru')).toBe('en');
+    expect(toggleTarget('en')).toBe('ru');
   });
 });

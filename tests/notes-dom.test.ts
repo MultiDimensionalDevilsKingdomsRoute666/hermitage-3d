@@ -23,9 +23,14 @@ class StubElement {
       if (kid !== undefined && kid !== null) this.children.push(kid as StubElement);
     }
   }
+  replaceChildren(...kids: unknown[]): void {
+    this.children.length = 0; // the re-render is idempotent (the language switch re-renders)
+    this.append(...kids);
+  }
 }
 const root = new StubElement('main');
 const documentStub = {
+  documentElement: new StubElement('html'),
   createElement: (tag: string): StubElement => {
     const node = new StubElement(tag);
     return node;
@@ -37,7 +42,16 @@ const documentStub = {
 beforeAll(async () => {
   (globalThis as { document: unknown }).document = documentStub;
   (globalThis as { HTMLElement: unknown }).HTMLElement = StubElement;
-  await import('../src/ui/notes-main');
+  (globalThis as { HTMLButtonElement: unknown }).HTMLButtonElement = StubElement;
+  // The binding's boot resolves the language per §1.1 — the stub navigation pins ?lang=en
+  // explicitly (the design's e2e rule: no spec relies on the default or on storage).
+  (globalThis as { location: unknown }).location = {
+    hash: '#?lang=en',
+    pathname: '/notes.html',
+    search: '',
+  };
+  const binding = await import('../src/ui/notes-main');
+  await binding.notesReady; // the first render happens behind the dictionary activation
 });
 
 /** Descendants of one node, first occurrence only (creates share graph positions). */

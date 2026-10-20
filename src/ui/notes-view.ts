@@ -30,7 +30,8 @@ import {
   SPEC_PROVENANCE,
 } from '../content/provenance';
 import { type Key, t } from '../i18n';
-import { format, formatInt, formatNumber } from '../i18n/format';
+import { format, formatByteUnit, formatInt, formatNumber } from '../i18n/format';
+import type { Lang } from '../i18n/locale';
 import {
   type BudgetProjection,
   type Issue,
@@ -91,6 +92,11 @@ export type NotesInput = Readonly<{
   rows?: readonly WindowRow[];
   provenance?: ProvenanceTree;
   allowance?: SceneAllowance;
+  /** Display language for numbers, units and data maps. The LABELS come from the active
+   * dictionary (t()) — the caller activates the language before building (the design's
+   * law: the view-model's signature grows a lang argument; §1.3). Defaults to 'en' so the
+   * node tests keep their EN snapshots. */
+  lang?: Lang;
 }>;
 export type NotesResult =
   | Readonly<{ ok: true; model: NotesModel; warnings: readonly Issue[] }>
@@ -133,14 +139,33 @@ const FACADE_CHARACTER: Readonly<Record<FacadeId, Key>> = {
 const prose = (...parts: readonly string[]): string =>
   parts.filter((part) => part !== '').join(' ');
 const derived = (formula: string): RowProvenance => ({ kind: 'derived', formula });
+// Data-unit display map (the D-law: tokens stay raw in data, the render maps per language);
+// byte units ride format.ts's language map (D3).
+const UNIT_DISPLAY: Readonly<Record<string, Partial<Record<Lang, string>>>> = { m: { ru: 'м' } };
+const unitLabel = (unit: string, lang: Lang): string =>
+  unit === 'B' ? formatByteUnit('B', lang) : (UNIT_DISPLAY[unit]?.[lang] ?? unit);
+// Inline metre cells ("3.45 m"); RU joins with a no-break space (§1.4) and maps the unit.
+// The RU tail is a single-quoted escape constant — the literals fence's backtick matcher is
+// escape-blind and would pair the templates' backticks across the ternary otherwise.
+const RU_METRE_TAIL = '\u00A0м';
+const metreCell = (value: number, lang: Lang): string =>
+  lang === 'ru' ? formatNumber(value, lang) + RU_METRE_TAIL : `${formatNumber(value)} m`;
 function derivedRow(
+  ctx: Ctx,
   id: string,
   label: string,
   value: number,
   unit: string,
   formula: string,
 ): NumberRow {
-  return { id, label, value, unit, display: formatNumber(value), provenance: derived(formula) };
+  return {
+    id,
+    label,
+    value,
+    unit: unitLabel(unit, ctx.lang),
+    display: formatNumber(value, ctx.lang),
+    provenance: derived(formula),
+  };
 }
 // ---------------------------------------------------------------------------
 // Provenance resolver, audit, guarded solver calls
@@ -238,12 +263,13 @@ type Ctx = Readonly<{
   warnings: readonly Issue[];
   projection: BudgetProjection;
   allowance: SceneAllowance;
+  lang: Lang;
   cite: (id: string) => RowProvenance;
   cited: (id: string, label: string, value: number, unit: string) => NumberRow;
 }>;
 function introBlocks(): readonly NotesBlock[] {
   return [
-    { kind: 'heading', level: 1, text: NOTES_TITLE },
+    { kind: 'heading', level: 1, text: t('notes.title') },
     { kind: 'paragraph', text: t('notes.intro') },
     {
       kind: 'list',
@@ -315,7 +341,7 @@ function shellBlocks({ cited }: Ctx): readonly NotesBlock[] {
     },
   ];
 }
-function systemBlocks({ rows, cite, cited }: Ctx): readonly NotesBlock[] {
+function systemBlocks({ rows, cite, cited, lang }: Ctx): readonly NotesBlock[] {
   return [
     { kind: 'heading', level: 2, text: t('notes.decorHeading') },
     { kind: 'paragraph', text: t('notes.decorIntro') },
@@ -390,16 +416,25 @@ function systemBlocks({ rows, cite, cited }: Ctx): readonly NotesBlock[] {
       ],
       rows: rows.map((row) => ({
         id: `rows.${row.id}`,
-        cells: [row.id, row.tier, row.module, `${formatNumber(row.declaredHeadHeightM)} m`],
+        cells: [row.id, row.tier, row.module, metreCell(row.declaredHeadHeightM, lang)],
         provenance: [cite(`rows.${row.id}.module`), cite(`rows.${row.id}.declaredHeadHeightM`)],
       })),
     },
   ];
 }
-function creaseCallout({ spec, solved, warnings }: Ctx): NotesBlock {
+function creaseCallout({ spec, solved, warnings, lang }: Ctx): NotesBlock {
   const creaseWarnings = warnings.filter((warning) => warning.code === 'crease');
+  // The rendered warning is a display map over the solved numbers (the solver's own
+  // message string stays a console diagnostic); other codes keep their message text.
+  const rendered = (warning: (typeof creaseWarnings)[number]): string =>
+    warning.code === 'crease'
+      ? format(t('notes.creaseWarning'), {
+          derived: formatNumber(solved.derivedCreaseM, lang),
+          declared: formatNumber(spec.creaseLineLengthM, lang),
+        })
+      : warning.message;
   const solverSays = creaseWarnings
-    .map((warning) => format(t('notes.solverWarning'), { message: warning.message }))
+    .map((warning) => format(t('notes.solverWarning'), { message: rendered(warning) }))
     .join(' ');
   return {
     kind: 'callout',
@@ -407,8 +442,8 @@ function creaseCallout({ spec, solved, warnings }: Ctx): NotesBlock {
     level: creaseWarnings.length > 0 ? 'warning' : 'note',
     text: prose(
       format(t('notes.creaseCallout'), {
-        specCrease: formatNumber(spec.creaseLineLengthM),
-        derivedCrease: formatNumber(solved.derivedCreaseM),
+        specCrease: formatNumber(spec.creaseLineLengthM, lang),
+        derivedCrease: formatNumber(solved.derivedCreaseM, lang),
       }),
       solverSays,
     ),
@@ -427,16 +462,18 @@ function southBlocks(ctx: Ctx): readonly NotesBlock[] {
         cited('south.creaseLineLengthM', t('notes.southCreaseLine'), spec.creaseLineLengthM, 'm'),
         cited('south.declaredBayPitchM', t('notes.southDeclaredPitch'), DECLARED_BAY_PITCH_M, 'm'),
         derivedRow(
+          ctx,
           'south.derivedPitchM',
           t('notes.southDerivedPitch'),
           solved.pitchM,
           'm',
           format(t('notes.formulaPitch'), {
-            length: formatNumber(spec.mainLineLengthM),
+            length: formatNumber(spec.mainLineLengthM, ctx.lang),
             axes: String(counts.axes),
           }),
         ),
         derivedRow(
+          ctx,
           'south.derivedCreaseM',
           t('notes.southDerivedCrease'),
           solved.derivedCreaseM,
@@ -462,7 +499,7 @@ function southBlocks(ctx: Ctx): readonly NotesBlock[] {
           section.id,
           section.kind,
           `${section.declaredAxes} (±1)`,
-          `${formatNumber(section.declaredProtrusionM)} m`,
+          metreCell(section.declaredProtrusionM, ctx.lang),
           section.note,
         ],
         provenance: [
@@ -476,6 +513,7 @@ function southBlocks(ctx: Ctx): readonly NotesBlock[] {
       id: 'south.counts',
       rows: [
         derivedRow(
+          ctx,
           'south.counts.axes',
           t('notes.countWindowAxes'),
           counts.axes,
@@ -483,6 +521,7 @@ function southBlocks(ctx: Ctx): readonly NotesBlock[] {
           t('notes.formulaWindowAxes'),
         ),
         derivedRow(
+          ctx,
           'south.counts.windowSlots',
           t('notes.countWindowSlots'),
           counts.windowSlots,
@@ -490,6 +529,7 @@ function southBlocks(ctx: Ctx): readonly NotesBlock[] {
           format(t('notes.formulaSlots'), { axes: String(counts.axes), rows: String(rows.length) }),
         ),
         derivedRow(
+          ctx,
           'south.counts.windows',
           t('notes.countWindows'),
           counts.windows,
@@ -497,6 +537,7 @@ function southBlocks(ctx: Ctx): readonly NotesBlock[] {
           t('notes.formulaWindows'),
         ),
         derivedRow(
+          ctx,
           'south.counts.portalVoidCells',
           t('notes.countPortalVoidCells'),
           counts.portalVoidCells,
@@ -504,6 +545,7 @@ function southBlocks(ctx: Ctx): readonly NotesBlock[] {
           t('notes.formulaVoidCells'),
         ),
         derivedRow(
+          ctx,
           'south.counts.columnShafts',
           t('notes.countColumnShafts'),
           counts.columnShafts,
@@ -515,7 +557,8 @@ function southBlocks(ctx: Ctx): readonly NotesBlock[] {
     creaseCallout(ctx),
   ];
 }
-function kitBlocks({ solved }: Ctx): readonly NotesBlock[] {
+function kitBlocks(ctx: Ctx): readonly NotesBlock[] {
+  const { solved } = ctx;
   const placed = PART_IDS.flatMap((part) => {
     const instances = solved.counts.byPart[part];
     if (instances <= 0) {
@@ -561,6 +604,7 @@ function kitBlocks({ solved }: Ctx): readonly NotesBlock[] {
       id: 'kit.totals',
       rows: [
         derivedRow(
+          ctx,
           'kit.instances',
           t('notes.kitTotalsInstances'),
           solved.counts.instances,
@@ -568,6 +612,7 @@ function kitBlocks({ solved }: Ctx): readonly NotesBlock[] {
           t('notes.formulaInstances'),
         ),
         derivedRow(
+          ctx,
           'kit.activeParts',
           t('notes.kitTotalsActiveParts'),
           solved.counts.activeParts,
@@ -575,6 +620,7 @@ function kitBlocks({ solved }: Ctx): readonly NotesBlock[] {
           t('notes.formulaActiveParts'),
         ),
         derivedRow(
+          ctx,
           'kit.triangles',
           t('notes.kitTotalsCeiling'),
           solved.counts.triangles,
@@ -656,6 +702,7 @@ function budgetBlocks(ctx: Ctx): readonly NotesBlock[] {
       id: 'budget.projection',
       rows: [
         derivedRow(
+          ctx,
           'budget.facadeDrawCalls',
           t('notes.budgetFacadeDraws'),
           projection.facadeDrawCalls,
@@ -663,6 +710,7 @@ function budgetBlocks(ctx: Ctx): readonly NotesBlock[] {
           t('notes.formulaFacadeDraws'),
         ),
         derivedRow(
+          ctx,
           'budget.frameDrawCalls',
           t('notes.budgetFrameDraws'),
           projection.frameDrawCalls,
@@ -672,6 +720,7 @@ function budgetBlocks(ctx: Ctx): readonly NotesBlock[] {
           }),
         ),
         derivedRow(
+          ctx,
           'budget.frustumTriangles',
           t('notes.budgetFrustumTriangles'),
           projection.frustumTriangles,
@@ -683,6 +732,7 @@ function budgetBlocks(ctx: Ctx): readonly NotesBlock[] {
           }),
         ),
         derivedRow(
+          ctx,
           'budget.submittedTriangleCeiling',
           t('notes.budgetSubmittedCeiling'),
           projection.submittedTriangleCeiling,
@@ -764,12 +814,13 @@ export function buildSouthNotesModel(input: NotesInput = {}): NotesResult {
     return projected;
   }
   const resolver = createResolver(tree);
+  const lang: Lang = input.lang ?? 'en';
   const cited = (id: string, label: string, value: number, unit: string): NumberRow => ({
     id,
     label,
     value,
-    unit,
-    display: formatNumber(value),
+    unit: unitLabel(unit, lang),
+    display: formatNumber(value, lang),
     provenance: resolver.cite(id),
   });
   const ctx: Ctx = {
@@ -779,6 +830,7 @@ export function buildSouthNotesModel(input: NotesInput = {}): NotesResult {
     warnings: solve.warnings,
     projection: projected.value,
     allowance,
+    lang,
     cite: resolver.cite,
     cited,
   };
@@ -800,7 +852,7 @@ export function buildSouthNotesModel(input: NotesInput = {}): NotesResult {
       ),
     };
   }
-  return { ok: true, model: { title: NOTES_TITLE, blocks }, warnings: solve.warnings };
+  return { ok: true, model: { title: t('notes.title'), blocks }, warnings: solve.warnings };
 }
 /** Every provenance object carried by the model, in page order. */
 export function walkProvenance(model: NotesModel): readonly RowProvenance[] {

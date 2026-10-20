@@ -1,18 +1,49 @@
 // src/i18n/format.ts
 /**
- * Formatting law. Implements the adopted i18n/notes design: "Formatting law in force today"
- * (byte-exact reproduction of the current integer grouping, two-decimal trimming, ISO day
- * and HH:MM Petersburg wall time), the typography section (every later RU choice - thin-space
- * grouping, decimal comma, no-break space before units, B -> Б - is isolated in one named
- * constant so the swap is a one-line change at no call site), and the purity gate (no DOM,
- * no three, no clock; formatters take epoch milliseconds and derive civil time arithmetically).
+ * Formatting law (design-i18n-notes.md §0, §1.4, §4.E, §8; decisions D3, D6). The r25
+ * merge of the specialist's draft with the r24a byte laws, which win where they clash:
+ * MINUS_SIGN stays ASCII (the committed EN bytes pin it), formatInt still truncates
+ * non-integers toward zero (pinned by test), and formatNumber still trims trailing
+ * fraction zeros with an integer fast path (the /notes display bytes are pinned by the
+ * model fixture) — the language parameter changes the DECIMAL byte only.
+ *
+ * - Interpolation: templates carry real {name} tokens; a variable that is not a token and
+ *   a token without a variable are both loud errors, so template/variable drift fails the
+ *   first render (templateTokens feeds the round-25 parity test).
+ * - Numbers: thousands grouped with THIN SPACE in both languages (§0); the decimal
+ *   separator is the only language-dependent byte ('.' EN, ',' RU); a NO-BREAK SPACE
+ *   between a number and its unit; the byte-unit map is language-aware (EN B/kB,
+ *   RU Б/кБ — D3). Metres are a display map on the host side, not here.
+ * - Clock: Petersburg wall time, pure arithmetic over the epoch shifted by
+ *   PETERSBURG_OFFSET_MS; no calendar object is ever constructed.
+ * - Calendar line: EN prints the frozen ISO YYYY-MM-DD bytes (arithmetic, unchanged);
+ *   RU asks Intl.DateTimeFormat('ru-RU') over the same shifted epoch and falls back to
+ *   ISO when the formatter throws or yields a digits-only string (D6). '\bDate\b' does
+ *   not match 'DateTimeFormat' — the purity fence is intact.
+ *
+ * Pure module: no DOM, timers, storage, randomness or clock reads.
  */
 
-export const THOUSANDS_SEPARATOR = ' ';
-export const DECIMAL_SEPARATOR = '.';
+import type { Lang } from './locale';
+
+export const THIN_SPACE = '\u2009';
+export const NO_BREAK_SPACE = '\u00A0';
 export const MINUS_SIGN = '-';
-export const UNIT_SEPARATOR = ' ';
+
+const DECIMAL_SEPARATOR = { en: '.', ru: ',' } satisfies Readonly<Record<Lang, string>>;
+
+export const THOUSANDS_SEPARATOR = THIN_SPACE;
+export const UNIT_SEPARATOR = NO_BREAK_SPACE;
 export const MAX_FRACTION_DIGITS = 2;
+
+export type ByteUnit = 'B' | 'kB';
+
+export const BYTE_UNITS = {
+  B: { en: 'B', ru: 'Б' },
+  kB: { en: 'kB', ru: 'кБ' },
+} satisfies Record<ByteUnit, Record<Lang, string>>;
+
+export const formatByteUnit = (unit: ByteUnit, lang: Lang): string => BYTE_UNITS[unit][lang];
 
 export const PETERSBURG_OFFSET_LABEL = 'UTC+03:00';
 export const PETERSBURG_OFFSET_MS = 3 * 60 * 60 * 1000;
@@ -21,32 +52,33 @@ const MINUTE_MS = 60 * 1000;
 const HOUR_MS = 60 * MINUTE_MS;
 const DAY_MS = 24 * HOUR_MS;
 
-export type ByteUnit = 'B' | 'kB';
-
-export const BYTE_UNITS = { B: 'B', kB: 'kB' } satisfies Record<ByteUnit, string>;
-
-export const formatByteUnit = (unit: ByteUnit): string => BYTE_UNITS[unit];
-
 export type FormatVars = Readonly<Record<string, string>>;
 
 const TOKEN_PATTERN = /\{([A-Za-z][A-Za-z0-9]*)\}/g;
 
+export const templateTokens = (template: string): ReadonlySet<string> => {
+  const names = new Set<string>();
+  for (const match of template.matchAll(TOKEN_PATTERN)) {
+    const name = match[1];
+    if (name !== undefined) names.add(name);
+  }
+  return names;
+};
+
 export const format = (template: string, vars: FormatVars): string => {
-  const used = new Set<string>();
-  const result = template.replace(TOKEN_PATTERN, (_token: string, name: string) => {
+  const expected = templateTokens(template);
+  for (const name of Object.keys(vars)) {
+    if (!expected.has(name)) {
+      throw new Error(`format: variable "${name}" is not referenced by the template`);
+    }
+  }
+  return template.replace(TOKEN_PATTERN, (_token: string, name: string) => {
     const value = vars[name];
     if (value === undefined) {
       throw new Error(`format: template references {${name}} but no such variable was given`);
     }
-    used.add(name);
     return value;
   });
-  for (const name of Object.keys(vars)) {
-    if (!used.has(name)) {
-      throw new Error(`format: variable "${name}" is not referenced by the template`);
-    }
-  }
-  return result;
 };
 
 const groupDigits = (digits: string): string =>
@@ -61,7 +93,7 @@ export const formatInt = (value: number): string => {
   return value < 0 && magnitude !== 0 ? MINUS_SIGN + grouped : grouped;
 };
 
-export const formatNumber = (value: number): string => {
+export const formatNumber = (value: number, lang: Lang = 'en'): string => {
   if (!Number.isFinite(value)) {
     return String(value);
   }
@@ -70,9 +102,12 @@ export const formatNumber = (value: number): string => {
     return formatInt(rounded);
   }
   const [integerPart = '0', fractionPart = ''] = String(Math.abs(rounded)).split('.');
-  const body = groupDigits(integerPart) + DECIMAL_SEPARATOR + fractionPart;
+  const body = groupDigits(integerPart) + DECIMAL_SEPARATOR[lang] + fractionPart;
   return rounded < 0 ? MINUS_SIGN + body : body;
 };
+
+/** Joins a formatted number and its unit with the no-break space (§1.4). */
+export const withUnit = (value: string, unit: string): string => value + UNIT_SEPARATOR + unit;
 
 type CivilDay = { readonly year: number; readonly month: number; readonly day: number };
 
@@ -107,13 +142,43 @@ const petersburgWallTime = (epochMs: number): PetersburgWallTime => {
 };
 
 const pad2 = (n: number): string => String(n).padStart(2, '0');
+const pad4 = (n: number): string => String(n).padStart(4, '0');
 
-export const formatDate = (epochMs: number): string => {
-  const { year, month, day } = petersburgWallTime(epochMs);
-  return `${String(year).padStart(4, '0')}-${pad2(month)}-${pad2(day)}`;
+export const formatDate = (epochMs: number, lang: Lang = 'en'): string => {
+  const shifted = epochMs + PETERSBURG_OFFSET_MS;
+  return lang === 'en' ? isoLine(shifted) : (ruCalendarLine(shifted) ?? isoLine(shifted));
 };
 
 export const formatTime = (epochMs: number): string => {
   const { hour, minute } = petersburgWallTime(epochMs);
   return `${pad2(hour)}:${pad2(minute)}`;
+};
+
+// The RU calendar line (D6): the ru-RU formatter over the +3h-shifted epoch, formatted in
+// UTC — the same offset constant governs both clocks. ISO stays the fallback when the
+// formatter throws (a ru-less ICU) or yields a digits-only string.
+const RU_CALENDAR_LOCALE = 'ru-RU';
+const RU_CALENDAR_OPTIONS = {
+  day: 'numeric',
+  month: 'long',
+  year: 'numeric',
+  timeZone: 'UTC',
+} satisfies Intl.DateTimeFormatOptions;
+const DIGITS_ONLY = /^[\d\s.,/\-–]*$/u;
+
+let ruCalendar: Intl.DateTimeFormat | null = null;
+
+const ruCalendarLine = (shiftedMs: number): string | null => {
+  try {
+    ruCalendar ??= new Intl.DateTimeFormat(RU_CALENDAR_LOCALE, RU_CALENDAR_OPTIONS);
+    const line = ruCalendar.format(shiftedMs);
+    return DIGITS_ONLY.test(line) ? null : line;
+  } catch {
+    return null;
+  }
+};
+
+const isoLine = (shiftedMs: number): string => {
+  const { year, month, day } = civilFromDays(Math.floor(shiftedMs / DAY_MS));
+  return `${pad4(year)}-${pad2(month)}-${pad2(day)}`;
 };

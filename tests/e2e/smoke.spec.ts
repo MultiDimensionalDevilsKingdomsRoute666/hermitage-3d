@@ -81,14 +81,14 @@ async function expectWithinBudgets(hud: Locator): Promise<void> {
 
 test('deterministic T1 boot settles within budget', async ({ page }) => {
   // Fresh context: no persisted tier, no ?q → det skips the probe and boots T1.
-  const hud = await bootDeterministic(page, `${AT}&det=1&hud=1`);
+  const hud = await bootDeterministic(page, `${AT}&det=1&hud=1&lang=en`);
   await expect(hud).toHaveAttribute('data-tier', 'T1 · default');
   await expectWithinBudgets(hud);
 });
 
 test('deterministic T0 boot settles within budget', async ({ page }) => {
   // The floor tier must also hold the ceiling numbers.
-  const hud = await bootDeterministic(page, `${AT}&det=1&hud=1&q=t0`);
+  const hud = await bootDeterministic(page, `${AT}&det=1&hud=1&q=t0&lang=en`);
   await expect(hud).toHaveAttribute('data-tier', 'T0 · low');
   await expectWithinBudgets(hud);
 });
@@ -100,7 +100,7 @@ test('deterministic T0 boot settles within budget', async ({ page }) => {
 // no frame timing is compared.
 test('smoke walk: the graph returns the ledger to boot values', async ({ page }) => {
   test.slow(); // four transits on a starved page: the load dwell is data-bound, not timed
-  const query = `${AT}&det=1&hud=1`;
+  const query = `${AT}&det=1&hud=1&lang=en`;
   const hud = await bootDeterministic(page, query);
   // Boot posture: the resident owns the row, nothing registered, no hold.
   await expect(hud).toHaveAttribute('data-room', 'square');
@@ -142,7 +142,7 @@ test('smoke walk: the graph returns the ledger to boot values', async ({ page })
 test('keyboard walk: every stop reachable, reduced-motion cuts', async ({ page }) => {
   test.slow(); // same data-bound dwell per transit, on top of the instant reduced-motion cuts
   await page.emulateMedia({ reducedMotion: 'reduce' });
-  const hud = await bootDeterministic(page, `${AT}&det=1&hud=1`);
+  const hud = await bootDeterministic(page, `${AT}&det=1&hud=1&lang=en`);
   // Press-and-poll one stop at a time. data-stop re-binds at most every 500 ms and a press
   // fired while a transit is open is dropped by design (§2.4 owns the camera), so: press,
   // then wait for the row to CHANGE (a dropped press retries; a landed one binds within
