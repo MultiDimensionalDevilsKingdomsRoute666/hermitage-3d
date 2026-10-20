@@ -11,42 +11,27 @@
       "text": "Every number on this page is produced at load by the same pure solver the app runs over its frozen facade specification (decisions.md, DEC-004). It is not a survey. Three kinds of numbers are kept apart by the type system and labelled here:"
     },
     {
-      "kind": "list",
-      "items": [
-        "Sourced — carries an attribution key into ATTRIBUTIONS.md (\"No line, no use\").",
-        "Declared — a photo-derived working target registered in docs/artistic-license.md; checked against measured elevation drawings during Phase 1 and corrected in both places if the record differs.",
-        "Derived — solver arithmetic over sourced and declared inputs (docs/design-facade-grammar.md); recomputed on every load, never registered."
-      ]
-    },
-    {
-      "kind": "links",
+      "kind": "legend",
       "items": [
         {
-          "href": "https://github.com/vasyapym/hermitage-3d/blob/main/ATTRIBUTIONS.md",
-          "label": "ATTRIBUTIONS.md"
+          "provenance": "sourced",
+          "text": "carries an attribution key into ATTRIBUTIONS.md (\"No line, no use\")."
         },
         {
-          "href": "https://github.com/vasyapym/hermitage-3d/blob/main/docs/artistic-license.md",
-          "label": "docs/artistic-license.md"
+          "provenance": "declared",
+          "text": "a photo-derived working target registered in docs/artistic-license.md; checked against measured elevation drawings during Phase 1 and corrected in both places if the record differs."
         },
         {
-          "href": "https://github.com/vasyapym/hermitage-3d/blob/main/docs/design-facade-grammar.md",
-          "label": "docs/design-facade-grammar.md"
-        },
-        {
-          "href": "https://github.com/vasyapym/hermitage-3d/blob/main/docs/decisions.md",
-          "label": "docs/decisions.md"
-        },
-        {
-          "href": "https://github.com/vasyapym/hermitage-3d/blob/main/src/content/facade-spec.ts",
-          "label": "src/content/facade-spec.ts"
+          "provenance": "derived",
+          "text": "solver arithmetic over sourced and declared inputs (docs/design-facade-grammar.md); recomputed on every load, never registered."
         }
       ]
     },
     {
       "kind": "heading",
       "level": 2,
-      "text": "Shell"
+      "text": "Shell",
+      "id": "shell"
     },
     {
       "kind": "paragraph",
@@ -233,7 +218,8 @@
     {
       "kind": "heading",
       "level": 2,
-      "text": "Window, decor and order system"
+      "text": "Window, decor and order system",
+      "id": "decor"
     },
     {
       "kind": "paragraph",
@@ -509,7 +495,8 @@
     {
       "kind": "heading",
       "level": 2,
-      "text": "South elevation — Palace Square, west → east"
+      "text": "South elevation — Palace Square, west → east",
+      "id": "south"
     },
     {
       "kind": "numbers",
@@ -786,7 +773,8 @@
     {
       "kind": "heading",
       "level": 2,
-      "text": "Instanced kit"
+      "text": "Instanced kit",
+      "id": "kit"
     },
     {
       "kind": "paragraph",
@@ -1068,6 +1056,14 @@
           "provenance": [
             {
               "kind": "derived",
+              "formula": "parts with ≥ 1 instance"
+            },
+            {
+              "kind": "derived",
+              "formula": "Σ counts.byPart"
+            },
+            {
+              "kind": "derived",
               "formula": "Σ over placed parts"
             }
           ]
@@ -1075,48 +1071,10 @@
       ]
     },
     {
-      "kind": "numbers",
-      "id": "kit.totals",
-      "rows": [
-        {
-          "id": "kit.instances",
-          "label": "Instances",
-          "value": 659,
-          "unit": "",
-          "display": "659",
-          "provenance": {
-            "kind": "derived",
-            "formula": "Σ counts.byPart"
-          }
-        },
-        {
-          "id": "kit.activeParts",
-          "label": "Active parts",
-          "value": 17,
-          "unit": "",
-          "display": "17",
-          "provenance": {
-            "kind": "derived",
-            "formula": "parts with ≥ 1 instance"
-          }
-        },
-        {
-          "id": "kit.triangles",
-          "label": "Kit triangle ceiling",
-          "value": 132264,
-          "unit": "",
-          "display": "132 264",
-          "provenance": {
-            "kind": "derived",
-            "formula": "Σ instances × triangleCeiling"
-          }
-        }
-      ]
-    },
-    {
       "kind": "heading",
       "level": 2,
-      "text": "Budget projection"
+      "text": "Budget projection",
+      "id": "budget"
     },
     {
       "kind": "numbers",
@@ -1142,7 +1100,8 @@
           "provenance": {
             "kind": "derived",
             "formula": "facadeDrawCalls + 16 other draw calls"
-          }
+          },
+          "note": "margin 200"
         },
         {
           "id": "budget.frustumTriangles",
@@ -1153,7 +1112,8 @@
           "provenance": {
             "kind": "derived",
             "formula": "kit 132 264 + massing 146 + sky 4 096"
-          }
+          },
+          "note": "margin 863 494"
         },
         {
           "id": "budget.submittedTriangleCeiling",
@@ -1171,7 +1131,8 @@
           "label": "JavaScript gzip",
           "value": null,
           "unit": "B",
-          "display": "measured: pending CI measurement",
+          "display": "—",
+          "note": "pending CI measurement",
           "provenance": {
             "kind": "derived",
             "formula": "CI gzip measurement passed through allowance.measuredJsGzipBytes"
@@ -1183,7 +1144,7 @@
       "kind": "callout",
       "id": "budget.contract",
       "level": "note",
-      "text": "Contract ceilings enforced in CI: ≤ 250 draw calls per frame, ≤ 1 000 000 frustum triangles, ≤ 350 000 B JavaScript gzip. Projected: 50 draws (margin 200), 136 506 triangles (margin 863 494), JS gzip measured: pending CI measurement. An overrun is removed by changing art or level of detail, never the number."
+      "text": "Contract ceilings enforced in CI: ≤ 250 draw calls per frame, ≤ 1 000 000 frustum triangles, ≤ 350 000 B JavaScript gzip. An overrun is removed by changing art or level of detail, never the number."
     },
     {
       "kind": "paragraph",
@@ -1263,7 +1224,8 @@
     {
       "kind": "heading",
       "level": 2,
-      "text": "Sibling facades — not shipped in Phase 1"
+      "text": "Sibling facades — not shipped in Phase 1",
+      "id": "siblings"
     },
     {
       "kind": "paragraph",
@@ -1329,6 +1291,37 @@
               "licenseTitle": "Facade axis counts (Phase 1 spec)"
             }
           ]
+        }
+      ]
+    },
+    {
+      "kind": "heading",
+      "level": 2,
+      "text": "Sources and documents",
+      "id": "sources"
+    },
+    {
+      "kind": "links",
+      "items": [
+        {
+          "href": "https://github.com/vasyapym/hermitage-3d/blob/main/ATTRIBUTIONS.md",
+          "label": "ATTRIBUTIONS.md"
+        },
+        {
+          "href": "https://github.com/vasyapym/hermitage-3d/blob/main/docs/artistic-license.md",
+          "label": "docs/artistic-license.md"
+        },
+        {
+          "href": "https://github.com/vasyapym/hermitage-3d/blob/main/docs/design-facade-grammar.md",
+          "label": "docs/design-facade-grammar.md"
+        },
+        {
+          "href": "https://github.com/vasyapym/hermitage-3d/blob/main/docs/decisions.md",
+          "label": "docs/decisions.md"
+        },
+        {
+          "href": "https://github.com/vasyapym/hermitage-3d/blob/main/src/content/facade-spec.ts",
+          "label": "src/content/facade-spec.ts"
         }
       ]
     }

@@ -55,7 +55,7 @@ export default defineConfig({
       // Local-only pixel goldens on the reference Mac's GPU. Never retried: a flaky golden is
       // the documented signal (charter risk row), not something to paper over.
       name: 'golden',
-      testMatch: /golden\.spec\.ts$/,
+      testMatch: /(golden|fixtures)\.spec\.ts$/,
       retries: 0,
     },
   ],

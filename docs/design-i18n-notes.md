@@ -1,6 +1,7 @@
 # Design — the Russian voice, the type, the /notes face (Round 22)
 
-Status: design complete, delivered for the owner's disposition; code rounds 23–26 implement (§6). The full RU inventory of the real strings arrived on the second continuation (the first continuation's reconstructed rows are discarded); C12/C13 verified against the committed data; the dispositions list is §7. The r22 brief and both continuations are deleted after integration — this document carries everything.
+Status: implemented — the code rounds r23–r26 closed 2026-10-20 (§6 carries their rows); this
+document is frozen at the r26 close (the §9 r26 amendment records the owner's caption law). The full RU inventory of the real strings arrived on the second continuation (the first continuation's reconstructed rows are discarded); C12/C13 verified against the committed data; the dispositions list is §7. The r22 brief and both continuations are deleted after integration — this document carries everything.
 the continuation brief points the specialist here.
 
 # Design — the Russian voice, the type, the /notes face (Round 22)
@@ -140,8 +141,9 @@ ISO dates in both languages; «±24» unspaced, «≤ N» spaced; proper names: 
 
 ### 3.2 Palette tokens (derived from the scene: sky, pale-green walls, white order, ochre)
 `--paper #F7F8F7` (cool off-white, the white-night sky), `--ink #1B1F1D`, `--muted #646B67`,
-`--rule #D8DCD9`, `--green #3C6A4E` / tint `#E4EEE7` (palace walls → «источник»), `--ochre #87651C` /
-tint `#F4EAD2` (→ «принято»); «расчёт» uses ink on `#ECEEEC`. Five hues; colour is spent only on
+`--rule #D8DCD9`, `--green #3C6A4E` / tint `#E4EEE7` (palace walls → «источник»), `--ochre #86641C` /
+tint `#F4EAD2` (→ «принято»; the r26 contrast pass deepened the declared #87651C one step —
+4.49:1 measured under the 4.5:1 §3.2 contract, 4.55:1 after); «расчёт» uses ink on `#ECEEEC`. Five hues; colour is spent only on
 provenance, which is the page's one load-bearing distinction. Contrast ≥ 4.5:1 verified in the a11y gate.
 No dark mode (the scene is daylight), no motion.
 
@@ -360,9 +362,20 @@ semantics are verified against the committed data (see §7).
   (its key `chrome.travelHint` reserved in the r23 freeze). Exit: no EN leak on the RU pages
   (the HUD, the citations and the identifiers excepted); the parity test (equal key sets, equal
   placeholder sets per key); the crease callout renders both parts in RU.
-- **r26 — Native review and layout.** The RU fixes from the owner's read-through; the 360 px
-  wrapping; the screenshot fixtures en/ru × 360/768/1280; the doc frozen. Exit: the owner signs
-  the copy; no clipping at the three widths; the gates in CI.
+- **r26 — Native review and layout — CLOSED 2026-10-20 (orchestrator-direct, no relay).**
+  The §3 /notes redesign folded in per the owner's instruction (it was unscheduled in §6):
+  the light ledger live (§3.1/§3.2/§3.3 — the chip legend, the anchor list, the footer
+  «Источники и документы», the ledger grid label|value|chip, the tinted chips, the boxed-off
+  callouts, the folded kit footer, the margins on the budget rows, the em-dash pending
+  gzip), the D-law display maps wired (kinds, arrangement tokens, the capital family, the
+  wall colour, the section notes — the EN column byte-equal to the spec, so EN output is
+  unchanged; R8 held), and the r26 owner amendments: the S0 caption «фасад и час» →
+  «фасад и свет» (EN "the facade and the hour" pinned unchanged) and the caption re-anchored
+  to the bottom-right corner (§9). The screenshot fixtures en/ru × 360/768/1280 for both
+  pages (12 baselines, tests/e2e/fixtures.spec.ts, the golden project). Exit: the copy is
+  the owner's («фасад и свет» picked from the read-through options; the RU sections caption
+  drops «дословно» — the notes render through the display map now); no clipping at the
+  three widths (the fixtures); the gates green in CI.
 
 ## 7. Dispositions — RULED by the specialist 2026-10-20 (the owner's delegation; one combined relay)
 
@@ -394,15 +407,18 @@ Verified against the committed data (the specialist's R11): `Total height with r
   (the two-gesture variant would wrap). "Closer" is the owner's own word and is accurate
   because the hint shows only at S0. Keyboard users keep the sr-only #scene-help; the hint is
   for sighted first-timers.
-- **Placement/style**: bottom-right corner, on the notes link's baseline and bottom inset
-  (above the 32 px scrub hit area), right inset equal to the title's left inset — the four
-  corners hold one element each (title / HUD-dev-only / notes link / hint) and the caption
-  keeps the bottom-center axis alone. Not top-right: it collides with ?hud=1 during the very
-  debugging sessions where the hint is tuned. 12 px (the notes link's step), the notes link's
-  faint-white opacity, the caption's text shadow, right-aligned, `white-space: nowrap`, no box
-  (a box would read as a control next to the scrub hairline). Narrow fallback (< 600 px CSS):
-  the hint moves into the caption column, centered, stacked directly above #caption with one
-  line-gap; the 360 fixture covers this branch, 768/1280 cover the corner.
+- **Placement/style**: r26 amendment (the owner's instruction) — the CAPTION anchors to the
+  bottom-right corner, right-aligned: the old bottom-center axis touched the EN/RU toggle in
+  the bottom-left chrome row at 360 px. The hint sits one caption line above it
+  (#caption's bottom 52 px + one 14px/1.5 line + one 8 px gap → the hint's bottom 81 px);
+  the four-corners law and the <600 px stacked fallback die together. At ≤719 px the
+  caption steps above the chrome row's line (bottom 81 px — a 2-line beat's box reaches the
+  chrome row at narrow widths) and the hint follows (110 px); the S0 beat the hint
+  accompanies is a single line at every width, so the stack never self-collides. 12 px (the
+  notes link's step), the notes link's faint-white opacity, the caption's text shadow,
+  right-aligned, `white-space: nowrap`, no box (a box would read as a control next to the
+  scrub hairline). Not top-right: it collides with ?hud=1 during the very debugging
+  sessions where the hint is tuned.
 - **Show law**: main page only; shown only when the initial stop of the load is S0 (the rail's
   start — the only place a visitor lands without a shared link); deep links into any other
   stop never show it. Appears at the arrival-settle beat together with the notes link (after
@@ -430,9 +446,11 @@ Verified against the committed data (the specialist's R11): `Total height with r
   clock past HINT_HOLD_MS + HINT_FADE_MS → data-dismissed="timeout"; (e) ?det=1 → data-visible
   stays "false" across frames, golden pixels unchanged; (f) deep links to G0/J4 → never
   visible; (g) prefers-reduced-motion emulated → computed transition-duration 0s; (h) the
-  screenshot fixtures capture the settled-with-hint moment at en/ru × 360/768/1280.
+  screenshot fixtures capture the settled-with-hint moment at en/ru × 360/768/1280 — the
+  r26 layout law is one branch (the corner at every width, the ≤719 raise included);
+  tests/e2e/fixtures.spec.ts, the local-only golden project.
 - **Failure cases**: travel before the show beat → the intent sets data-dismissed="travel"
-  immediately and the show step checks the flag first, so the hint never flashes; 360 px
-  collision → the stacked fallback; the caption's glide fade and the hint's dismiss coincide
+  immediately and the show step checks the flag first, so the hint never flashes; the ≤719
+  raise clears the chrome row for 2-line beats; the caption's glide fade and the hint's dismiss coincide
   on first travel (intended); scrub interaction → the hint stays; language toggle while
   visible → the text swaps in place, timers untouched.

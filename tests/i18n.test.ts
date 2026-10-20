@@ -238,6 +238,7 @@ describe('literals fence', () => {
     '${section.declaredAxes} (±1)', // the axes cell: "N (±1)" (format law, not keys)
     'pitch of ',
     '(±',
+    'unmapped display token', // the display-map guard (developer diagnostics)
   ];
   const stripComments = (src: string): string =>
     src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '');
@@ -291,7 +292,9 @@ describe('notes model number round-trip', () => {
       }
       for (const row of block.rows) {
         if (row.value === null) {
-          expect(row.display, row.id).toBe(`measured: ${en['notes.pending']}`);
+          // §3.4: the pending measurement renders as an em-dash value, the note muted beside.
+          expect(row.display, row.id).toBe('—');
+          expect(row.note, row.id).toBe(en['notes.pending']);
           continue;
         }
         expect(formatNumber(row.value, 'en'), row.id).toBe(row.display);

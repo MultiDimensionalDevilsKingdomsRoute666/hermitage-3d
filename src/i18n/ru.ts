@@ -43,7 +43,7 @@ export const ru = {
   'chrome.noscriptNotes':
     'Для чисел нужен JavaScript: при загрузке страница заново запускает решатель фасада.',
 
-  'caption.s0': 'фасад и час',
+  'caption.s0': 'фасад и свет',
   'caption.s1': 'арка раскрывается',
   'caption.g0': 'темно; площадь позади',
   'caption.g1': 'сжатие',
@@ -60,15 +60,15 @@ export const ru = {
     'который приложение запускает над своей замороженной спецификацией фасада ' +
     '(decisions.md, DEC-004). Это не обмер. Три рода чисел разведены системой типов ' +
     'и помечены здесь:',
+  // §3.1: список трёх родов — легенда чипов; слово рода несёт чип, значение — остаток фразы.
   'notes.kindSourced':
-    'Источник\u00A0— число несёт ключ атрибуции в ATTRIBUTIONS.md ' +
-    '(«нет строки\u00A0— нет использования»).',
+    'число несёт ключ атрибуции в ATTRIBUTIONS.md ' + '(«нет строки\u00A0— нет использования»).',
   'notes.kindDeclared':
-    'Принято\u00A0— рабочее целевое значение, снятое с фотографий и зарегистрированное ' +
+    'рабочее целевое значение, снятое с фотографий и зарегистрированное ' +
     'в docs/artistic-license.md; на этапе 1 сверяется с обмерными чертежами фасадов и, ' +
     'если чертежи с ним расходятся, исправляется в обоих местах.',
   'notes.kindDerived':
-    'Расчёт\u00A0— вычислено решателем из чисел двух предыдущих родов ' +
+    'вычислено решателем из чисел двух предыдущих родов ' +
     '(docs/design-facade-grammar.md); пересчитывается при каждой загрузке, никогда ' +
     'не регистрируется.',
 
@@ -123,8 +123,7 @@ export const ru = {
   'notes.southDerivedPitch': 'Расчётный шаг осей',
   'notes.southDerivedCrease': 'Расчётная ломаная линия',
 
-  'notes.sectionsCaption':
-    'Секции, запад → восток; примечания\u00A0— дословно из замороженной спецификации',
+  'notes.sectionsCaption': 'Секции, запад → восток; примечания\u00A0— из замороженной спецификации',
   'notes.sectionsColSection': 'Секция',
   'notes.sectionsColKind': 'Тип',
   'notes.sectionsColAxes': 'Принятые оси',
@@ -164,9 +163,10 @@ export const ru = {
   'notes.kitColCeilingPerInstance': 'Потолок треугольников на экземпляр',
   'notes.kitColPartTotal': 'Итого по детали',
   'notes.kitTotalRow': 'Итого\u00A0— активных деталей: {activeParts}',
-  'notes.kitTotalsInstances': 'Экземпляры',
-  'notes.kitTotalsActiveParts': 'Активные детали',
-  'notes.kitTotalsCeiling': 'Потолок треугольников набора',
+  // §3.3: блок ссылок — подвал со своим заголовком; §3.3 метка открытого вопроса; §3.4
+  // маржи живут на строках бюджета, в callout остаются потолки и политика.
+  'notes.sourcesHeading': 'Источники и документы',
+  'notes.openQuestion': 'Открытый вопрос',
 
   'notes.budgetHeading': 'Проекция бюджета',
   'notes.budgetFacadeDraws': 'Вызовы отрисовки фасада',
@@ -177,14 +177,12 @@ export const ru = {
   'notes.budgetCallout':
     'Контрактные потолки, проверяемые в CI: вызовов отрисовки за кадр\u00A0— не более ' +
     '{frameDraws}, треугольников в пирамиде видимости\u00A0— не более {frustumTriangles}, ' +
-    'JavaScript gzip\u00A0— не более {gzipBytes}\u00A0Б. Проекция: вызовы\u00A0— ' +
-    '{projectedDraws} (запас {drawMargin}), треугольники\u00A0— {projectedTriangles} ' +
-    '(запас {triangleMargin}), {gzipTail}. Превышение устраняют изменением арта или ' +
-    'уровня детализации\u00A0— и никогда изменением числа.',
-  'notes.gzipTailUnmeasured': 'JS gzip измерен: {pending}',
+    'JavaScript gzip\u00A0— не более {gzipBytes}\u00A0Б. Превышение устраняют изменением арта ' +
+    'или уровня детализации\u00A0— и никогда изменением числа.',
+  // §3.4: проекционные числа переехали на строки бюджета приглушёнными суффиксами «запас»;
+  // ожидающий замер — прочерк со примечанием рядом.
+  'notes.marginSuffix': 'запас\u00A0{margin}',
   'notes.pending': 'ожидает замера в CI',
-  'notes.gzipTailMeasured': '{gzipBytes}\u00A0Б JS gzip (запас {gzipMargin}\u00A0Б)',
-  'notes.gzipRowUnmeasured': 'измерено: {pending}',
 
   'notes.allowanceIntro':
     'Резерв на сцену\u00A0— принятые рабочие оценки того, во что обходится остальной ' +
@@ -225,7 +223,6 @@ export const ru = {
   'notes.formulaKitCeiling': 'Σ по размещённым деталям',
   'notes.formulaInstances': 'Σ counts.byPart',
   'notes.formulaActiveParts': 'детали с ≥\u00A01 экземпляром',
-  'notes.formulaKitTotal': 'Σ instances × triangleCeiling',
   'notes.formulaGzip': 'замер gzip в CI, переданный через allowance.measuredJsGzipBytes',
   'notes.formulaFacadeDraws':
     'projectBudget: инстансированные вызовы отрисовки активных деталей по всем проходам',
@@ -237,6 +234,10 @@ export const ru = {
   'notes.chipSourced': 'источник · {keys}',
   'notes.chipDeclared': 'принято · {licenseTitle}',
   'notes.chipDerived': 'расчёт',
+  // §3.1: «голые» слова родов для легенды (чип без данных происхождения).
+  'notes.chipWordSourced': 'источник',
+  'notes.chipWordDeclared': 'принято',
+  'notes.chipWordDerived': 'расчёт',
   'notes.chipTitleKeys': 'ключи: {keys}',
   'notes.chipTitleRegister': 'строка реестра: {licenseTitle}',
   'notes.errorTitle': 'Примечания к фасаду недоступны',

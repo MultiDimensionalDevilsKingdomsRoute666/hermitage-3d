@@ -9,14 +9,22 @@ class StubElement {
   tag: string;
   className = '';
   dataset: Record<string, string> = {};
+  attributes: Record<string, string> = {};
   title = '';
   textContent: string | undefined;
   scope: string | undefined;
   href: string | undefined;
   rel: string | undefined;
+  id: string | undefined;
   children: StubElement[] = [];
   constructor(tag: string) {
     this.tag = tag;
+  }
+  setAttribute(name: string, value: string): void {
+    this.attributes[name] = value;
+  }
+  getAttribute(name: string): string | null {
+    return this.attributes[name] ?? null;
   }
   append(...kids: unknown[]): void {
     for (const kid of kids) {
@@ -94,12 +102,49 @@ describe('/notes DOM binding', () => {
       'Instanced kit',
       'Budget projection',
       'Sibling facades — not shipped in Phase 1',
+      'Sources and documents',
     ]);
     expect(all().some((node) => node.tag === 'aside' && node.dataset.level === 'warning')).toBe(
       true,
     );
-    expect(all().filter((node) => node.tag === 'nav')).toHaveLength(1);
+    // Two navs: the §3.1 anchor list and the footer links block.
+    expect(all().filter((node) => node.tag === 'nav')).toHaveLength(2);
     expect(all().filter((node) => node.tag === 'a' && node.rel === 'external')).toHaveLength(5);
+  });
+
+  it('renders the anchor list over the section ids and the chip legend', () => {
+    const anchors = all().find((node) => node.tag === 'nav' && node.className === 'anchors');
+    expect(anchors).toBeDefined();
+    const hrefs = descendants(anchors ?? new StubElement('nav'))
+      .filter((node) => node.tag === 'a')
+      .map((node) => node.href);
+    expect(hrefs).toEqual([
+      '#shell',
+      '#decor',
+      '#south',
+      '#kit',
+      '#budget',
+      '#siblings',
+      '#sources',
+    ]);
+    // Every anchored heading carries a matching id in the article.
+    const ids = all()
+      .filter((node) => node.tag === 'h2')
+      .map((node) => node.id);
+    expect(ids).toEqual(['shell', 'decor', 'south', 'kit', 'budget', 'siblings', 'sources']);
+    // The legend: three items, each opening with its provenance chip.
+    const legendUl = all().find((node) => node.tag === 'ul' && node.className === 'legend');
+    expect(legendUl).toBeDefined();
+    const legendRows = (legendUl ?? new StubElement('ul')).children.filter(
+      (node) => node.tag === 'li',
+    );
+    expect(legendRows).toHaveLength(3);
+    for (const li of legendRows) {
+      const chip = li.children[0];
+      expect(chip?.tag).toBe('span');
+      expect(['sourced', 'declared', 'derived']).toContain(chip?.dataset.provenance);
+      expect((chip?.textContent ?? '').length).toBeGreaterThan(0);
+    }
   });
 
   it('aligns provenance chips to their cells and leaves bare rows chip-free', () => {
@@ -122,7 +167,10 @@ describe('/notes DOM binding', () => {
   it('number rows render display values with chips, never fake numbers', () => {
     const budget = rowsOf('budget.projection');
     expect(budget).toHaveLength(5);
-    expect(textOf(budget.at(-1))).toContain('measured: pending CI measurement');
+    // §3.4: the unmeasured gzip is an em dash with the muted pending note beside it.
+    const last = textOf(budget.at(-1));
+    expect(last).toContain('—');
+    expect(last).toContain('pending CI measurement');
     for (const row of budget) {
       expect(descendants(row).some((node) => node.tag === 'span')).toBe(true);
     }

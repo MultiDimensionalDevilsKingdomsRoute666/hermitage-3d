@@ -159,14 +159,16 @@ body {
   color: #fff;
   text-decoration: underline;
 }
-/* §9 travel hint: the bottom-right corner, on the notes link's baseline and bottom inset,
-   right inset equal to the title's left inset; 12 px (the notes link's step), the notes
-   link's faint-white opacity, the caption's text shadow, nowrap, no box. The host rewrites
-   transition-duration per exit (240 travel / 1200 timeout / 0 reduced motion). */
+/* §9 travel hint — the r26 amendment (the owner's instruction): the caption anchors to the
+   bottom-RIGHT corner, so the hint stacks one caption line above it; the corner's former
+   sole-tenant law and the <600 px stacked fallback die together. 12 px (the notes link's
+   step), the notes link's faint-white opacity, the caption's text shadow, nowrap, no box.
+   The host rewrites transition-duration per exit (240 travel / 1200 timeout / 0 reduced
+   motion). */
 #travel-hint {
   position: fixed;
   right: 24px;
-  bottom: 40px;
+  bottom: 81px;
   margin: 0;
   color: rgba(255, 255, 255, 0.55);
   font-size: 12px;
@@ -182,17 +184,6 @@ body {
 #travel-hint[data-visible="false"] {
   opacity: 0;
 }
-/* §9 narrow fallback: the hint stacks into the caption column, one line-gap above
-   #caption (the S0 caption is a single line at 360 px — the r26 fixture pins it). */
-@media (max-width: 599px) {
-  #travel-hint {
-    right: auto;
-    left: 50%;
-    transform: translateX(-50%);
-    text-align: center;
-    bottom: 81px; /* the caption's 52 px + one 14px/1.5 line + one line-gap */
-  }
-}
 @media (prefers-reduced-motion: reduce) {
   #travel-hint {
     transition: none;
@@ -200,20 +191,22 @@ body {
 }
 /* Caption overlay — design-staircase.md §6.1 beats: visible at a rest stop, faded while
    gliding, the dark-card caption during an airlock dwell (§8.4). Write-on-change from the
-   pure core (src/ui/captions.ts); --caption-fade must stay equal to CAPTION_FADE_MS there. */
+   pure core (src/ui/captions.ts); --caption-fade must stay equal to CAPTION_FADE_MS there.
+   r26 (the owner's instruction): the caption anchors to the bottom-RIGHT corner,
+   right-aligned — the bottom-center axis touched the EN/RU toggle in the bottom-left chrome
+   row at 360 px; the corner clears it at every width. */
 .caption {
   --caption-fade: 240ms;
   position: fixed;
-  left: 50%;
-  bottom: 52px; /* above the 32px hairline scrub, clear of the bottom-left notes link */
-  transform: translateX(-50%);
+  right: 24px;
+  bottom: 52px; /* above the 32px hairline scrub */
   max-width: min(32rem, 80vw);
   margin: 0;
   padding: 0;
   font-size: 14px; /* the timeline's size — one quieter step than the 20px wordmark */
   line-height: 1.5;
   letter-spacing: 0.02em;
-  text-align: center;
+  text-align: right;
   text-wrap: balance;
   color: rgba(255, 255, 255, 0.85);
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
@@ -224,6 +217,17 @@ body {
 }
 .caption[data-visible="false"] {
   opacity: 0;
+}
+/* Narrow widths: the caption box can reach the chrome row's line (2-line beats, 80vw box),
+   so the caption steps above it and the hint follows one line up. The S0 beat the hint
+   accompanies is a single line at every width — the stack never self-collides. */
+@media (max-width: 719px) {
+  .caption {
+    bottom: 81px;
+  }
+  #travel-hint {
+    bottom: 110px;
+  }
 }
 @media (prefers-reduced-motion: reduce) {
   .caption {

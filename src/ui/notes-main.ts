@@ -5,7 +5,7 @@
 // binding resolves the language (?lang= → the persisted zimny:lang → RU), awaits the
 // dictionary before the FIRST render (the static RU content covers the chunk fetch) and
 // re-renders on every switch — the page is stateless and cheap (§1.2).
-import { t } from '../i18n';
+import { type Key, t } from '../i18n';
 import { format } from '../i18n/format';
 import { activateLang, activeLang, onLangChange, resolveLang } from '../i18n/locale';
 import {
@@ -16,13 +16,21 @@ import {
   setLangParam,
   writeStoredLang,
 } from './lang-host';
-import type { NotesBlock, NotesModel, NumberRow, RowProvenance, TableRow } from './notes-view';
+import type {
+  LegendItem,
+  NotesBlock,
+  NotesModel,
+  NumberRow,
+  RowProvenance,
+  TableRow,
+} from './notes-view';
 import { buildSouthNotesModel } from './notes-view';
 import '../fonts.css';
 import './notes.css';
 
 // Which table cells a row's provenance chips attach to, by block id (the model's
 // row.provenance order matches these indices; tables without an entry stay chip-free).
+// The kit footer row folds the three totals (§3.4) and carries chips on its own cells.
 const TABLE_CHIP_CELLS: Readonly<Record<string, readonly number[]>> = {
   'south.sections': [2, 3], // declaredAxes, declaredProtrusion
   rows: [2, 3], // module, declared head height
@@ -30,6 +38,14 @@ const TABLE_CHIP_CELLS: Readonly<Record<string, readonly number[]>> = {
   'budget.allowance': [1], // the value
   siblings: [2], // declared axes total
   'kit.parts': [3], // part arithmetic column
+};
+const KIT_TOTAL_CHIP_CELLS: readonly number[] = [0, 1, 3]; // active parts, instances, ceiling
+// §3.3: numeric columns right-align with tabular figures (the same indices as the chips).
+const TABLE_NUMERIC_CELLS: Readonly<Record<string, readonly number[]>> = {
+  'south.sections': [2, 3],
+  rows: [3],
+  'kit.parts': [1, 2, 3],
+  'budget.allowance': [1],
 };
 function hinge(tag: string, className?: string): HTMLElement {
   const element = document.createElement(tag);
@@ -55,6 +71,22 @@ function chipTitle(provenance: RowProvenance): string {
   }
   return provenance.formula;
 }
+// §3.1: the legend's bare kind words (the chip without its provenance payload).
+const CHIP_WORD: Readonly<Record<RowProvenance['kind'], Key>> = {
+  sourced: 'notes.chipWordSourced',
+  declared: 'notes.chipWordDeclared',
+  derived: 'notes.chipWordDerived',
+};
+function chipWord(kind: RowProvenance['kind']): string {
+  return t(CHIP_WORD[kind]);
+}
+/** The legend's bare kind word in its tint (§3.1) — no provenance payload on the chip. */
+function legendChip(kind: LegendItem['provenance']): HTMLElement {
+  const chip = hinge('span', 'chip');
+  chip.dataset.provenance = kind;
+  chip.textContent = chipWord(kind);
+  return chip;
+}
 /** 'sourced · wiki-en' chips; the colour word is data-provenance, styled in notes.css. */
 function provenanceChip(provenance: RowProvenance): HTMLElement {
   const chip = hinge('span', 'chip');
@@ -76,16 +108,20 @@ function renderNumberRow(row: NumberRow, div: HTMLElement): void {
   const dt = singleton('dt', row.label);
   const dd = hinge('dd');
   dd.append(singleton('span', row.display, 'value'), singleton('span', row.unit, 'unit'));
-  dd.append(provenanceChip(row.provenance));
-  div.append(dt, dd);
+  if (row.note !== undefined) dd.append(singleton('span', row.note, 'note'));
+  div.append(dt, dd, provenanceChip(row.provenance)); // §3.3: label | value | chip
 }
-function renderTableRow(row: TableRow, chipCells: readonly number[], body: HTMLElement): void {
+function renderTableRow(row: TableRow, tableId: string, body: HTMLElement): void {
   const tr = row.id === 'kit.total' ? hinge('tr', 'total') : document.createElement('tr');
   tr.dataset.id = row.id;
+  const chipCells =
+    row.id === 'kit.total' ? KIT_TOTAL_CHIP_CELLS : (TABLE_CHIP_CELLS[tableId] ?? []);
+  const numericCells = TABLE_NUMERIC_CELLS[tableId] ?? [];
   row.cells.forEach((cell, index) => {
     const td = index === 0 ? document.createElement('th') : document.createElement('td');
     if (index === 0) td.scope = 'row'; // the leading cell names the row
     td.textContent = cell;
+    if (numericCells.includes(index)) td.className = 'num';
     // Positional alignment: row.provenance[i] annotates cell chipCells[i].
     const chips: RowProvenance[] = [];
     if (row.provenance !== undefined) {
@@ -100,12 +136,26 @@ function renderTableRow(row: TableRow, chipCells: readonly number[], body: HTMLE
 }
 function renderBlock(block: NotesBlock, container: HTMLElement): void {
   switch (block.kind) {
-    case 'heading':
-      container.append(singleton(`h${block.level}`, block.text));
+    case 'heading': {
+      const heading = singleton(`h${block.level}`, block.text);
+      if (block.id !== undefined) heading.id = block.id;
+      container.append(heading);
       break;
+    }
     case 'paragraph':
       container.append(singleton('p', block.text));
       break;
+    case 'legend': {
+      // §3.1: the chip legend — each item opens with its chip.
+      const ul = hinge('ul', 'legend');
+      for (const item of block.items) {
+        const li = hinge('li');
+        li.append(legendChip(item.provenance), singleton('span', item.text));
+        ul.append(li);
+      }
+      container.append(ul);
+      break;
+    }
     case 'list': {
       const ul = hinge('ul');
       for (const item of block.items) ul.append(singleton('li', item));
@@ -124,6 +174,11 @@ function renderBlock(block: NotesBlock, container: HTMLElement): void {
       break;
     }
     case 'table': {
+      // §3.3: the overflow container is keyboard-focusable so the table scrolls for AT too.
+      const wrap = hinge('div', 'table-scroll');
+      wrap.tabIndex = 0;
+      wrap.setAttribute('role', 'region');
+      if (block.caption !== undefined) wrap.setAttribute('aria-label', block.caption);
       const table = hinge('table');
       table.dataset.id = block.id;
       if (block.caption !== undefined) table.append(singleton('caption', block.caption));
@@ -133,17 +188,23 @@ function renderBlock(block: NotesBlock, container: HTMLElement): void {
       head.append(headerRow);
       const body = hinge('tbody');
       for (const row of block.rows) {
-        renderTableRow(row, TABLE_CHIP_CELLS[block.id] ?? [], body);
+        renderTableRow(row, block.id, body);
       }
       table.append(body);
-      container.append(table);
+      wrap.append(table);
+      container.append(wrap);
       break;
     }
     case 'callout': {
-      // Callout chips: no numbers row, the text already embeds values.
+      // §3.3: no box — the warning callout is the ochre «Открытый вопрос» label above the
+      // paragraph, the note callout the same treatment in muted; the error card stays boxed
+      // (the loud contract failure).
       const aside = hinge('aside', 'callout');
       aside.dataset.level = block.level;
-      aside.textContent = block.text;
+      if (block.level === 'warning') {
+        aside.append(singleton('p', t('notes.openQuestion'), 'callout-label'));
+      }
+      aside.append(singleton('p', block.text, 'callout-text'));
       container.append(aside);
       break;
     }
@@ -176,18 +237,34 @@ function render(model: NotesModel): void {
     if (block.kind === 'heading' && block.level === 1) continue;
     renderBlock(block, article);
   }
-  root.replaceChildren(h1, article);
+  // §3.1: the one-line anchor list of the section headings — navigation, not decoration.
+  const anchors = hinge('nav', 'anchors');
+  const anchorList = hinge('ul');
+  for (const block of model.blocks) {
+    if (block.kind !== 'heading' || block.level !== 2 || block.id === undefined) continue;
+    const li = hinge('li');
+    const a = document.createElement('a');
+    a.href = `#${block.id}`;
+    a.textContent = block.text;
+    li.append(a);
+    anchorList.append(li);
+  }
+  anchors.append(anchorList);
+  root.replaceChildren(h1, anchors, article);
 }
 // ---------------------------------------------------------------------------
 // Language law — the host side (§1.1/§1.2): the storage and the URL belong to lang-host;
 // the resolution and the dictionary switch live in the pure locale module.
 // ---------------------------------------------------------------------------
 /** §1.2: the chrome rows the binding owns on this page — <html lang>, the meta
- * description and the toggle's own labels; the <title> rides the model render. */
+ * description, the back link and the toggle's own labels; the <title> rides the model
+ * render. The static shell is RU — every chrome string flips with the dictionary. */
 function applyChrome(): void {
   document.documentElement.lang = activeLang();
   const description = document.querySelector('meta[name="description"]');
   if (description !== null) description.setAttribute('content', t('chrome.descriptionNotes'));
+  const back = document.querySelector('.back');
+  if (back !== null) back.textContent = t('chrome.backLink');
 }
 async function boot(): Promise<void> {
   const resolution = resolveLang({

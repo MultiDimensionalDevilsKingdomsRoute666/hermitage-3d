@@ -1,30 +1,62 @@
-/* /notes page — same two-colour discipline as the palace overlay (src/style.css):
-   near-white text on near-black, hairline rules. Typography: design-i18n-notes.md §2 —
-   the self-hosted WP Sans/Serif stacks (src/fonts.css); declared chips reuse the kit's
-   gold (facade-builder DRESSING trim), nothing else is coloured. */
+/* /notes — the ledger face (design-i18n-notes.md §3, round 26): light paper derived from
+   the scene (the white-night sky, the pale-green walls, the ochre dressing), one 880 px
+   column, hairline rules, tabular numerals. Colour is spent only on provenance — the
+   page's one load-bearing distinction. Typography: §2 — the WP Sans/Serif stacks
+   (src/fonts.css). Contrast verified ≥ 4.5:1 (§3.2; the ochre deepened one step for it). */
 :root {
-  color-scheme: dark;
+  color-scheme: light;
+  /* §3.2 palette tokens. */
+  --paper: #f7f8f7;
+  --ink: #1b1f1d;
+  --muted: #646b67;
+  --rule: #d8dcd9;
+  --green: #3c6a4e;
+  --green-tint: #e4eee7;
+  --ochre: #86641c;
+  --ochre-tint: #f4ead2;
+  --derived-tint: #eceeec;
+  --error: #a33d2e;
   font-family: var(--font-sans, system-ui, sans-serif);
+}
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
 }
 html,
 body {
   margin: 0;
   min-height: 100%;
-  background: #0b0b0c;
-  color: #e8e6e1;
+  background: var(--paper);
+  color: var(--ink);
+}
+/* §3.1: one column, 880 px container, page padding 24 px (48 px from 768 px); the header
+   is in flow — no sidebar, no sticky elements. */
+.page-head,
+main {
+  max-width: 880px;
+  margin: 0 auto;
+  padding-inline: 24px;
 }
 .page-head {
-  position: fixed;
-  top: 16px;
-  left: 24px;
-  right: 24px;
-  z-index: 1;
   display: flex;
   justify-content: space-between;
   align-items: baseline;
   gap: 16px;
+  padding-top: 24px;
 }
-/* §1.2: the language toggle — a text button in the target language's script; the notes
+main {
+  padding-top: 24px;
+  padding-bottom: 96px;
+  line-height: 1.55;
+}
+@media (min-width: 768px) {
+  .page-head,
+  main {
+    padding-inline: 48px;
+  }
+}
+/* §1.2: the language toggle — a text button in the target language's script; the back
    link's quieter register, underline on hover/focus. */
 #lang-toggle {
   appearance: none;
@@ -33,128 +65,195 @@ body {
   padding: 0;
   cursor: pointer;
   font-family: inherit;
-  color: rgba(232, 230, 225, 0.6);
+  color: var(--muted);
   font-size: 14px;
   font-weight: 500;
   letter-spacing: 0.02em;
-  text-decoration: none;
 }
 #lang-toggle:hover,
 #lang-toggle:focus-visible {
-  color: #fff;
+  color: var(--ink);
   text-decoration: underline;
 }
 .back {
-  color: rgba(232, 230, 225, 0.6);
+  color: var(--muted);
   text-decoration: none;
   font-size: 13px;
 }
 .back:hover,
 .back:focus-visible {
-  color: #fff;
+  color: var(--ink);
 }
-main {
-  max-width: 72rem;
-  margin: 0 auto;
-  padding: 48px 24px 96px;
-  line-height: 1.55;
-}
-/* §2.2: H1 serif 400 40/44 (30/34 mobile); H2 serif 400 26/32 (22/28). */
+/* §2.2: H1 serif 400 40/44 (30/34 mobile); H2 serif 400 26/32 (22/28). The 8 px rhythm:
+   72 px between sections, 20 px after a heading. */
 h1 {
+  margin: 0 0 20px;
   font-family: var(--font-serif, Georgia, serif);
   font-size: 40px;
   line-height: 44px;
   font-weight: 400;
 }
 h2 {
-  margin-top: 40px;
+  margin: 72px 0 20px;
   font-family: var(--font-serif, Georgia, serif);
   font-size: 26px;
   line-height: 32px;
   font-weight: 400;
-  border-bottom: 1px solid rgba(232, 230, 225, 0.16);
-  padding-bottom: 6px;
 }
-/* §2.2: body sans 400 17/26, measure 68ch; hyphens: auto on prose only — never in
-   tables or labels. */
+/* §2.2: body sans 400 17/26, measure 68ch; hyphens: auto on prose only — never in tables
+   or labels. */
 p,
 li {
   max-width: 68ch;
   font-size: 17px;
   line-height: 26px;
-  color: rgba(232, 230, 225, 0.82);
+  color: var(--ink);
   hyphens: auto;
 }
-ul {
-  padding-left: 20px;
+p {
+  margin: 0 0 20px;
 }
 a {
-  color: rgba(232, 230, 225, 0.82);
+  color: var(--green);
 }
-/* Numbers: label left, value right, hairline separators — the palace's tabular style.
-   §2.2: ledger and tables sans 400 15/22 with tnum. */
-dl.numbers div {
+a:hover,
+a:focus-visible {
+  color: var(--ink);
+}
+/* §3.1: the one-line anchor list of the section headings — navigation, not decoration. */
+nav.anchors ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 13px;
+  line-height: 20px;
+}
+nav.anchors li {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 20px;
+}
+nav.anchors li + li::before {
+  content: "·";
+  margin-right: 10px;
+}
+/* §3.1: the three-kind legend — each item opens with its chip. */
+ul.legend {
+  margin: 0 0 20px;
+  padding: 0;
+  list-style: none;
+}
+ul.legend li {
   display: flex;
   align-items: baseline;
-  gap: 12px;
-  padding: 4px 0;
-  border-bottom: 1px solid rgba(232, 230, 225, 0.08);
+  gap: 10px;
+  margin: 0 0 8px;
+}
+/* Numbers: label left, value right, chip last, hairline separators. §3.3: grid
+   label | value | chip with the value right-aligned; on narrow screens the label takes
+   the line and value+chip drop below. §2.2: sans 400 15/22 with tabular numerals. */
+dl.numbers {
+  margin: 0;
+}
+dl.numbers div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  column-gap: 16px;
+  align-items: baseline;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--rule);
   font-size: 15px;
   line-height: 22px;
   font-variant-numeric: tabular-nums;
 }
 dl.numbers dt {
-  flex: 1;
+  min-width: 0;
+  overflow-wrap: break-word;
 }
 dl.numbers dd {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  justify-self: end;
   margin: 0;
   text-align: right;
-  font-variant-numeric: tabular-nums;
 }
 .value {
   font-size: 15px;
 }
 .unit {
-  margin-left: 4px;
   font-size: 12px;
-  color: rgba(232, 230, 225, 0.5);
+  color: var(--muted);
 }
-/* Provenance chips — lowercase, boxed; gold marks the declared register.
-   §2.2: chips sans 500 12/16 lowercase. */
+/* §3.4: the muted row suffix — the budget margin, the pending-measurement note. */
+.note {
+  font-size: 13px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+@media (max-width: 719px) {
+  dl.numbers div {
+    grid-template-columns: auto auto;
+    grid-template-areas:
+      "label label"
+      "value chip";
+  }
+  dl.numbers dt {
+    grid-area: label;
+  }
+  dl.numbers dd {
+    grid-area: value;
+    justify-self: start;
+    text-align: left;
+  }
+  dl.numbers div > span.chip {
+    grid-area: chip;
+    justify-self: end;
+  }
+}
+/* Provenance chips — the lowercase kind word in its tint, 2 px radius, no icon, no border
+   (§3.3); declared chips carry the register line as quiet text after the kind. §2.2: sans
+   500 12/16 lowercase. */
 .chip {
   display: inline-block;
-  margin-left: 8px;
   padding: 0 6px;
-  border: 1px solid rgba(232, 230, 225, 0.28);
-  border-radius: 999px;
+  border-radius: 2px;
   font-size: 12px;
   line-height: 16px;
   font-weight: 500;
   text-transform: lowercase;
   letter-spacing: 0.04em;
-  color: rgba(232, 230, 225, 0.6);
   vertical-align: baseline;
-  white-space: nowrap;
+}
+.chip[data-provenance="sourced"] {
+  background: var(--green-tint);
+  color: var(--green);
 }
 .chip[data-provenance="declared"] {
-  border-color: rgba(201, 162, 39, 0.55);
-  color: #c9a227;
+  background: var(--ochre-tint);
+  color: var(--ochre);
 }
 .chip[data-provenance="derived"] {
-  border-style: dashed;
-  opacity: 0.8;
+  background: var(--derived-tint);
+  color: var(--ink);
 }
-/* Tables: hairline borders, chip cells inherit the same markers.
-   §2.2: tables sans 400 15/22 with tnum. */
+/* Tables: §3.3 — the caption is the small uppercase label above, numeric columns
+   right-align tabular, hairline row rules only; the scroll container is keyboard-focusable.
+   §3.1: 8×12 px table cells, flush page edges. §2.2: sans 400 15/22 with tnum. */
+.table-scroll {
+  overflow-x: auto;
+}
 table {
   width: 100%;
   border-collapse: collapse;
-  margin: 16px 0 8px;
+  margin: 0 0 8px;
   font-size: 15px;
   line-height: 22px;
   font-variant-numeric: tabular-nums;
 }
-/* §2.2: captions and table heads sans 500 13/16 uppercase +0.06em muted. */
 caption {
   text-align: left;
   font-size: 13px;
@@ -162,24 +261,37 @@ caption {
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: rgba(232, 230, 225, 0.5);
+  color: var(--muted);
   padding-bottom: 6px;
 }
 th,
 td {
-  border-bottom: 1px solid rgba(232, 230, 225, 0.08);
-  padding: 6px 10px 6px 0;
+  border-bottom: 1px solid var(--rule);
+  padding: 8px 12px;
   text-align: left;
   vertical-align: top;
+}
+th:first-child,
+td:first-child {
+  padding-left: 0;
+}
+th:last-child,
+td:last-child {
+  padding-right: 0;
+}
+td.num,
+th.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
 }
 thead th {
   font-size: 13px;
   line-height: 16px;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: rgba(232, 230, 225, 0.5);
+  color: var(--muted);
   font-weight: 500;
-  border-bottom-color: rgba(232, 230, 225, 0.24);
+  border-bottom-color: var(--ink);
 }
 tbody th {
   font-weight: 500;
@@ -188,36 +300,54 @@ tbody th {
 tbody tr.total td,
 tbody tr.total th {
   border-bottom: 0;
-  border-top: 1px solid rgba(232, 230, 225, 0.24);
+  border-top: 1px solid var(--ink);
   font-weight: 600;
 }
-/* Callouts: left-hairline blocks; warning echoes the solver, error the contract. */
+/* §3.3: no box — the warning callout is the ochre uppercase label above the paragraph,
+   indented to the ledger's value column; the budget policy takes the same treatment in
+   muted. The error card stays boxed: the loud contract failure. */
 .callout {
-  margin: 16px 0;
-  padding: 10px 14px;
-  border-left: 2px solid rgba(232, 230, 225, 0.24);
-  font-size: 13px;
-  color: rgba(232, 230, 225, 0.82);
+  margin: 16px 0 0 40%;
 }
-.callout[data-level="warning"] {
-  border-left-color: #c9a227;
+.callout .callout-label {
+  margin: 0 0 4px;
+  font-size: 13px;
+  line-height: 16px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ochre);
+}
+.callout .callout-text {
+  margin: 0;
+  font-size: 13px;
+  line-height: 20px;
+  color: var(--ink);
+}
+.callout[data-level="note"] .callout-text {
+  color: var(--muted);
 }
 .callout[data-level="error"] {
-  border-left-color: #c25b5b;
+  margin: 16px 0;
+  padding: 12px 16px;
+  border: 1px solid var(--error);
 }
+.callout[data-level="error"] .callout-label {
+  color: var(--error);
+}
+/* §3.3: the footer links block — a plain 15 px list. */
 nav.links ul {
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px 20px;
-  padding-left: 0;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
   list-style: none;
-  font-size: 12px;
+  font-size: 15px;
+  line-height: 22px;
 }
-@media (max-width: 720px) {
-  main {
-    padding: 40px 16px 64px;
-  }
-  /* §2.2 mobile heading sizes. */
+@media (max-width: 719px) {
+  /* §2.2 mobile heading sizes; the callout indent unwinds with the stacked ledger. */
   h1 {
     font-size: 30px;
     line-height: 34px;
@@ -226,13 +356,10 @@ nav.links ul {
     font-size: 22px;
     line-height: 28px;
   }
-  table {
-    display: block;
-    overflow-x: auto;
+  .callout {
+    margin-left: 0;
   }
-  .page-head {
-    position: static;
-    padding: 16px 24px 0;
-    text-align: right;
+  .note {
+    white-space: normal;
   }
 }

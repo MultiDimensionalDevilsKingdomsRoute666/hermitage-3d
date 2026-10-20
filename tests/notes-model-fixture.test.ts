@@ -1,13 +1,13 @@
 // tests/notes-model-fixture.test.ts
-// The round-24b byte-identity gate: the /notes view-model must stay byte-identical to the
-// pre-refactor extraction (design-i18n-notes.md §6, round-24 exit). The fixture was captured
-// from the committed tree BEFORE the keys switch; this test re-runs the pure model builder and
-// compares the serialized model field by field. The DOM binding renders this model 1:1, so a
-// byte-identical model is a byte-identical page.
+// The model fixture gate: the /notes view-model is pinned as a serialized snapshot the DOM
+// binding renders 1:1 — a byte-identical model is a byte-identical page. Captured before the
+// keys switch (r24b) and re-baselined deliberately when the page's content changes by design
+// (r26: the §3 ledger redesign — the legend, the folded kit footer, the margins on rows); any
+// OTHER diff is a regression to explain.
 import { expect, it } from 'vitest';
 import { buildSouthNotesModel } from '../src/ui/notes-view';
 
-it('the notes model stays byte-identical to the pre-refactor extraction', async () => {
+it('the notes model stays byte-identical to the pinned r26 ledger model', async () => {
   const result = buildSouthNotesModel();
   expect(result.ok).toBe(true);
   if (!result.ok) {

@@ -11,42 +11,27 @@
       "text": "Каждое число на этой странице вычисляется при загрузке тем же чистым решателем, который приложение запускает над своей замороженной спецификацией фасада (decisions.md, DEC-004). Это не обмер. Три рода чисел разведены системой типов и помечены здесь:"
     },
     {
-      "kind": "list",
-      "items": [
-        "Источник — число несёт ключ атрибуции в ATTRIBUTIONS.md («нет строки — нет использования»).",
-        "Принято — рабочее целевое значение, снятое с фотографий и зарегистрированное в docs/artistic-license.md; на этапе 1 сверяется с обмерными чертежами фасадов и, если чертежи с ним расходятся, исправляется в обоих местах.",
-        "Расчёт — вычислено решателем из чисел двух предыдущих родов (docs/design-facade-grammar.md); пересчитывается при каждой загрузке, никогда не регистрируется."
-      ]
-    },
-    {
-      "kind": "links",
+      "kind": "legend",
       "items": [
         {
-          "href": "https://github.com/vasyapym/hermitage-3d/blob/main/ATTRIBUTIONS.md",
-          "label": "ATTRIBUTIONS.md"
+          "provenance": "sourced",
+          "text": "число несёт ключ атрибуции в ATTRIBUTIONS.md («нет строки — нет использования»)."
         },
         {
-          "href": "https://github.com/vasyapym/hermitage-3d/blob/main/docs/artistic-license.md",
-          "label": "docs/artistic-license.md"
+          "provenance": "declared",
+          "text": "рабочее целевое значение, снятое с фотографий и зарегистрированное в docs/artistic-license.md; на этапе 1 сверяется с обмерными чертежами фасадов и, если чертежи с ним расходятся, исправляется в обоих местах."
         },
         {
-          "href": "https://github.com/vasyapym/hermitage-3d/blob/main/docs/design-facade-grammar.md",
-          "label": "docs/design-facade-grammar.md"
-        },
-        {
-          "href": "https://github.com/vasyapym/hermitage-3d/blob/main/docs/decisions.md",
-          "label": "docs/decisions.md"
-        },
-        {
-          "href": "https://github.com/vasyapym/hermitage-3d/blob/main/src/content/facade-spec.ts",
-          "label": "src/content/facade-spec.ts"
+          "provenance": "derived",
+          "text": "вычислено решателем из чисел двух предыдущих родов (docs/design-facade-grammar.md); пересчитывается при каждой загрузке, никогда не регистрируется."
         }
       ]
     },
     {
       "kind": "heading",
       "level": 2,
-      "text": "Каре"
+      "text": "Каре",
+      "id": "shell"
     },
     {
       "kind": "paragraph",
@@ -233,7 +218,8 @@
     {
       "kind": "heading",
       "level": 2,
-      "text": "Окна, декор и ордер"
+      "text": "Окна, декор и ордер",
+      "id": "decor"
     },
     {
       "kind": "paragraph",
@@ -360,7 +346,7 @@
           "id": "order.columnArrangement",
           "cells": [
             "Расстановка колонн",
-            "bunch-at-corners · pair-at-portals · pair-piers-between-window-groups"
+            "пучки на углах · пары у порталов · пары на простенках между группами окон"
           ],
           "provenance": [
             {
@@ -377,7 +363,7 @@
           "id": "order.capitalFamily",
           "cells": [
             "Семейство капителей",
-            "corinthian-composite (stylized, single archetype)"
+            "коринфско-композитная (стилизованная, единый архетип)"
           ],
           "provenance": [
             {
@@ -392,7 +378,7 @@
           "id": "order.wallColor",
           "cells": [
             "Цвет стен",
-            "pale green walls, white order and dressings — owner palette decision (decisions.md)"
+            "бледно-зелёные стены, белые ордер и обрамления — решение владельца по палитре (decisions.md)"
           ]
         }
       ]
@@ -509,7 +495,8 @@
     {
       "kind": "heading",
       "level": 2,
-      "text": "Южный фасад — Дворцовая площадь, запад → восток"
+      "text": "Южный фасад — Дворцовая площадь, запад → восток",
+      "id": "south"
     },
     {
       "kind": "numbers",
@@ -585,7 +572,7 @@
     {
       "kind": "table",
       "id": "south.sections",
-      "caption": "Секции, запад → восток; примечания — дословно из замороженной спецификации",
+      "caption": "Секции, запад → восток; примечания — из замороженной спецификации",
       "columns": [
         "Секция",
         "Тип",
@@ -598,10 +585,10 @@
           "id": "south.sections.sw-risalit",
           "cells": [
             "sw-risalit",
-            "cornerRisalit",
+            "угловой ризалит",
             "7 (±1)",
             "6 м",
-            "SW corner mass: its own arched portal with giant columns and balcony, corner column bunches; protrudes toward the square."
+            "Юго-западный угловой массив: собственный арочный портал с гигантскими колоннами и балконом, пучки колонн на углу; выступает к площади."
           ],
           "provenance": [
             {
@@ -622,10 +609,10 @@
           "id": "south.sections.west-stretch",
           "cells": [
             "west-stretch",
-            "stretch",
+            "прясло",
             "20 (±1)",
             "0 м",
-            "Flat run: window axes with paired-column piers every ~4th bay."
+            "Гладкий участок: оконные оси с парами колонн на простенках через каждый ~4-й шаг осей."
           ],
           "provenance": [
             {
@@ -646,10 +633,10 @@
           "id": "south.sections.central-portal",
           "cells": [
             "central-portal",
-            "centralPortal",
+            "центральный портал",
             "8 (±1)",
             "6 м",
-            "Parade gateway: three entrance arches (courtyard entrance), giant columns, pediment with clock and eagle cartouche — the Strelna device."
+            "Парадный проезд: три въездные арки (вход во двор), гигантские колонны, фронтон с часами и картушем с орлом — стрельнинский приём."
           ],
           "provenance": [
             {
@@ -670,10 +657,10 @@
           "id": "south.sections.east-stretch",
           "cells": [
             "east-stretch",
-            "stretch",
+            "прясло",
             "20 (±1)",
             "0 м",
-            "Mirror of the west stretch."
+            "Зеркало западного участка."
           ],
           "provenance": [
             {
@@ -694,10 +681,10 @@
           "id": "south.sections.se-risalit",
           "cells": [
             "se-risalit",
-            "cornerRisalit",
+            "угловой ризалит",
             "7 (±1)",
             "6 м",
-            "SE corner mass: portal with giant columns and cartouche; palace chapel dome rises behind this end."
+            "Юго-восточный угловой массив: портал с гигантскими колоннами и картушем; за этим концом поднимается купол дворцовой церкви."
           ],
           "provenance": [
             {
@@ -786,7 +773,8 @@
     {
       "kind": "heading",
       "level": 2,
-      "text": "Набор деталей"
+      "text": "Набор деталей",
+      "id": "kit"
     },
     {
       "kind": "paragraph",
@@ -1068,6 +1056,14 @@
           "provenance": [
             {
               "kind": "derived",
+              "formula": "детали с ≥ 1 экземпляром"
+            },
+            {
+              "kind": "derived",
+              "formula": "Σ counts.byPart"
+            },
+            {
+              "kind": "derived",
               "formula": "Σ по размещённым деталям"
             }
           ]
@@ -1075,48 +1071,10 @@
       ]
     },
     {
-      "kind": "numbers",
-      "id": "kit.totals",
-      "rows": [
-        {
-          "id": "kit.instances",
-          "label": "Экземпляры",
-          "value": 659,
-          "unit": "",
-          "display": "659",
-          "provenance": {
-            "kind": "derived",
-            "formula": "Σ counts.byPart"
-          }
-        },
-        {
-          "id": "kit.activeParts",
-          "label": "Активные детали",
-          "value": 17,
-          "unit": "",
-          "display": "17",
-          "provenance": {
-            "kind": "derived",
-            "formula": "детали с ≥ 1 экземпляром"
-          }
-        },
-        {
-          "id": "kit.triangles",
-          "label": "Потолок треугольников набора",
-          "value": 132264,
-          "unit": "",
-          "display": "132 264",
-          "provenance": {
-            "kind": "derived",
-            "formula": "Σ instances × triangleCeiling"
-          }
-        }
-      ]
-    },
-    {
       "kind": "heading",
       "level": 2,
-      "text": "Проекция бюджета"
+      "text": "Проекция бюджета",
+      "id": "budget"
     },
     {
       "kind": "numbers",
@@ -1142,7 +1100,8 @@
           "provenance": {
             "kind": "derived",
             "formula": "facadeDrawCalls + прочие вызовы отрисовки (16)"
-          }
+          },
+          "note": "запас 200"
         },
         {
           "id": "budget.frustumTriangles",
@@ -1153,7 +1112,8 @@
           "provenance": {
             "kind": "derived",
             "formula": "набор 132 264 + массинг 146 + небо 4 096"
-          }
+          },
+          "note": "запас 863 494"
         },
         {
           "id": "budget.submittedTriangleCeiling",
@@ -1171,7 +1131,8 @@
           "label": "JavaScript gzip",
           "value": null,
           "unit": "B",
-          "display": "измерено: pending CI measurement",
+          "display": "—",
+          "note": "pending CI measurement",
           "provenance": {
             "kind": "derived",
             "formula": "замер gzip в CI, переданный через allowance.measuredJsGzipBytes"
@@ -1183,7 +1144,7 @@
       "kind": "callout",
       "id": "budget.contract",
       "level": "note",
-      "text": "Контрактные потолки, проверяемые в CI: вызовов отрисовки за кадр — не более 250, треугольников в пирамиде видимости — не более 1 000 000, JavaScript gzip — не более 350 000 Б. Проекция: вызовы — 50 (запас 200), треугольники — 136 506 (запас 863 494), JS gzip измерен: pending CI measurement. Превышение устраняют изменением арта или уровня детализации — и никогда изменением числа."
+      "text": "Контрактные потолки, проверяемые в CI: вызовов отрисовки за кадр — не более 250, треугольников в пирамиде видимости — не более 1 000 000, JavaScript gzip — не более 350 000 Б. Превышение устраняют изменением арта или уровня детализации — и никогда изменением числа."
     },
     {
       "kind": "paragraph",
@@ -1263,7 +1224,8 @@
     {
       "kind": "heading",
       "level": 2,
-      "text": "Соседние фасады — не входят в Фазу 1"
+      "text": "Соседние фасады — не входят в Фазу 1",
+      "id": "siblings"
     },
     {
       "kind": "paragraph",
@@ -1283,7 +1245,7 @@
           "id": "siblings.north",
           "cells": [
             "north",
-            "nw-risalit (cornerRisalit) 7 · north-stretch-w (stretch) 20 · north-central (centralPortal) 8 · north-stretch-e (stretch) 20 · ne-risalit (cornerRisalit) 7",
+            "nw-risalit (угловой ризалит) 7 · north-stretch-w (прясло) 20 · north-central (центральный портал) 8 · north-stretch-e (прясло) 20 · ne-risalit (угловой ризалит) 7",
             "62 (±1 на секцию)",
             "Сплошная колоннада к Неве (visit-petersburg)."
           ],
@@ -1300,7 +1262,7 @@
           "id": "siblings.west",
           "cells": [
             "west",
-            "west-stretch-n (stretch) 22 · west-central (centralPortal) 8 · west-stretch-s (stretch) 22",
+            "west-stretch-n (прясло) 22 · west-central (центральный портал) 8 · west-stretch-s (прясло) 22",
             "52 (±1 на секцию)",
             "Композиция загородного дворца со стороны Адмиралтейства (visit-petersburg)."
           ],
@@ -1317,7 +1279,7 @@
           "id": "siblings.east",
           "cells": [
             "east",
-            "east-stretch-n (stretch) 22 · east-central (centralPortal) 8 · east-stretch-s (stretch) 22",
+            "east-stretch-n (прясло) 22 · east-central (центральный портал) 8 · east-stretch-s (прясло) 22",
             "52 (±1 на секцию)",
             "Массивные крылья вокруг служебного двора (visit-petersburg)."
           ],
@@ -1329,6 +1291,37 @@
               "licenseTitle": "Facade axis counts (Phase 1 spec)"
             }
           ]
+        }
+      ]
+    },
+    {
+      "kind": "heading",
+      "level": 2,
+      "text": "Источники и документы",
+      "id": "sources"
+    },
+    {
+      "kind": "links",
+      "items": [
+        {
+          "href": "https://github.com/vasyapym/hermitage-3d/blob/main/ATTRIBUTIONS.md",
+          "label": "ATTRIBUTIONS.md"
+        },
+        {
+          "href": "https://github.com/vasyapym/hermitage-3d/blob/main/docs/artistic-license.md",
+          "label": "docs/artistic-license.md"
+        },
+        {
+          "href": "https://github.com/vasyapym/hermitage-3d/blob/main/docs/design-facade-grammar.md",
+          "label": "docs/design-facade-grammar.md"
+        },
+        {
+          "href": "https://github.com/vasyapym/hermitage-3d/blob/main/docs/decisions.md",
+          "label": "docs/decisions.md"
+        },
+        {
+          "href": "https://github.com/vasyapym/hermitage-3d/blob/main/src/content/facade-spec.ts",
+          "label": "src/content/facade-spec.ts"
         }
       ]
     }

@@ -143,17 +143,30 @@ describe('determinism', () => {
     expect(JSON.stringify(second.model)).toBe(json);
     expect(JSON.parse(json)).toEqual(first.model);
   });
-  it('opens with the H1 and the three-kind legend', () => {
+  it('opens with the H1 and the chip legend', () => {
     const { model } = expectOk(buildSouthNotesModel());
     expect(model.title).toBe(NOTES_TITLE);
     expect(model.blocks[0]).toEqual({ kind: 'heading', level: 1, text: NOTES_TITLE });
-    const legend = model.blocks.find((block) => block.kind === 'list');
-    expect(legend?.kind).toBe('list');
-    if (legend?.kind === 'list') {
-      expect(legend.items.some((item) => item.startsWith('Sourced'))).toBe(true);
-      expect(legend.items.some((item) => item.startsWith('Declared'))).toBe(true);
-      expect(legend.items.some((item) => item.startsWith('Derived'))).toBe(true);
+    const legend = model.blocks.find((block) => block.kind === 'legend');
+    expect(legend?.kind).toBe('legend');
+    if (legend?.kind === 'legend') {
+      expect(legend.items.map((item) => item.provenance)).toEqual([
+        'sourced',
+        'declared',
+        'derived',
+      ]);
+      for (const item of legend.items) {
+        expect(item.text.length).toBeGreaterThan(0);
+      }
     }
+  });
+  it('names every section with an anchor id and closes with the sources footer', () => {
+    const { model } = expectOk(buildSouthNotesModel());
+    const ids = model.blocks
+      .filter((block) => block.kind === 'heading' && block.level === 2)
+      .map((block) => (block.kind === 'heading' ? block.id : undefined));
+    expect(ids).toEqual(['shell', 'decor', 'south', 'kit', 'budget', 'siblings', 'sources']);
+    expect(model.blocks.at(-1)?.kind).toBe('links');
   });
 });
 // ---------------------------------------------------------------------------
@@ -206,18 +219,23 @@ describe('pinned derived numbers', () => {
     expect(numberRow(model, 'south.counts.windows').value).toBe(EXPECTED.windows);
     expect(numberRow(model, 'south.counts.portalVoidCells').value).toBe(EXPECTED.portalVoidCells);
     expect(numberRow(model, 'south.counts.columnShafts').value).toBe(EXPECTED.columnShafts);
-    expect(numberRow(model, 'kit.instances').value).toBe(EXPECTED.instances);
-    expect(numberRow(model, 'kit.activeParts').value).toBe(EXPECTED.activeParts);
-    expect(numberRow(model, 'kit.triangles').value).toBe(EXPECTED.triangles);
-    for (const id of [
-      'south.counts.axes',
-      'south.counts.windowSlots',
-      'south.counts.windows',
-      'kit.instances',
-      'kit.triangles',
-    ]) {
+    for (const id of ['south.counts.axes', 'south.counts.windowSlots', 'south.counts.windows']) {
       expect(numberRow(model, id).provenance.kind).toBe('derived');
     }
+  });
+  it('the kit totals fold into the table footer row (§3.4) with their formula chips', () => {
+    const table = tableBlock(model, 'kit.parts');
+    const totalRow = table.rows.at(-1);
+    expect(totalRow?.id).toBe('kit.total');
+    // The label carries the active-parts count; the columns name instances and the ceiling.
+    expect(totalRow?.cells[0]).toContain(String(EXPECTED.activeParts));
+    expect(cellInt(totalRow?.cells[1] ?? '')).toBe(EXPECTED.instances);
+    expect(totalRow?.cells[2]).toBe('—');
+    expect(cellInt(totalRow?.cells[3] ?? '')).toBe(EXPECTED.triangles);
+    expect(totalRow?.provenance?.map((p) => p.kind)).toEqual(['derived', 'derived', 'derived']);
+    // The separate totals numbers block is gone — no duplicated numbers on the page.
+    expect(numberRows(model).has('kit.instances')).toBe(false);
+    expect(numberRows(model).has('kit.triangles')).toBe(false);
   });
   it('kit table lists only placed parts and closes on 659 / 132 264', () => {
     const table = tableBlock(model, 'kit.parts');
@@ -250,18 +268,21 @@ describe('pinned derived numbers', () => {
     expect(numberRow(model, 'budget.submittedTriangleCeiling').value).toBe(
       EXPECTED.submittedTriangleCeiling,
     );
+    // §3.4: the projected numbers live on the rows as muted margin suffixes.
+    expect(numberRow(model, 'budget.frameDrawCalls').note).toBe('margin 200');
+    expect(numberRow(model, 'budget.frustumTriangles').note).toBe('margin 863\u2009494');
     const gzip = numberRow(model, 'budget.jsGzipBytes');
     expect(gzip.value).toBeNull();
-    expect(gzip.display).toContain(PENDING_MEASUREMENT);
-    expect(gzip.display).not.toMatch(/\d/);
+    expect(gzip.display).toBe('—'); // an em dash, never a fake number
+    expect(gzip.note).toBe(PENDING_MEASUREMENT);
     const callout = calloutBlock(model, 'budget.contract');
     expect(callout.level).toBe('note');
-    expect(callout.text).toContain(PENDING_MEASUREMENT);
+    expect(callout.text).not.toContain(PENDING_MEASUREMENT); // the margins left the callout
     expect(callout.text).toContain('250');
     expect(callout.text).toContain('1\u2009000\u2009000');
     expect(callout.text).toContain('350\u2009000');
   });
-  it('a measured gzip size replaces the pending note', () => {
+  it('a measured gzip size replaces the pending note with its margin', () => {
     const { model: measured } = expectOk(
       buildSouthNotesModel({
         allowance: {
@@ -276,6 +297,7 @@ describe('pinned derived numbers', () => {
     const gzip = numberRow(measured, 'budget.jsGzipBytes');
     expect(gzip.value).toBe(155_026);
     expect(gzip.display).toBe('155\u2009026');
+    expect(gzip.note).toBe('margin 194\u2009974');
     expect(calloutBlock(measured, 'budget.contract').text).not.toContain(PENDING_MEASUREMENT);
   });
 });

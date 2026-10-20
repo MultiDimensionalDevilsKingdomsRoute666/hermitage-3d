@@ -5,9 +5,10 @@
 // Round-24b: every user-facing string comes from the i18n dictionary (design-i18n-notes.md
 // §1.3, the round-24 extraction) — the EN column IS the pre-refactor tree, byte for byte
 // (tests/notes-model-fixture.test.ts pins it). Data keys stay raw tokens (R8): section
-// kinds, arrangement tokens, the wall-colour note and the section notes flow from the spec
-// untouched; the per-language display maps render them in a later round. The spec-audit
-// Issue messages stay EN (developer diagnostics, the literals-fence allowlist).
+// kinds, arrangement tokens and the prose notes flow from the spec untouched, the
+// per-language display maps render them (the EN map values equal the spec bytes, so EN
+// output is unchanged). The spec-audit Issue messages stay EN (developer diagnostics, the
+// literals-fence allowlist).
 import {
   DECLARED_BAY_PITCH_M,
   DECOR_SYSTEM,
@@ -62,6 +63,8 @@ export type NumberRow = Readonly<{
   unit: string;
   /** Preformatted value text; never a fake number when value is null. */
   display: string;
+  /** Muted suffix beside the value (§3.4: the margin, the pending-measurement note). */
+  note?: string;
   provenance: RowProvenance;
 }>;
 export type TableRow = Readonly<{
@@ -72,9 +75,15 @@ export type TableRow = Readonly<{
 }>;
 export type NotesLink = Readonly<{ href: string; label: string }>;
 export type CalloutLevel = 'note' | 'warning' | 'error';
+/** §3.1: the legend item — the chip carries the kind word, the text the rest of the row. */
+export type LegendItem = Readonly<{
+  provenance: 'sourced' | 'declared' | 'derived';
+  text: string;
+}>;
 export type NotesBlock =
-  | Readonly<{ kind: 'heading'; level: 1 | 2 | 3; text: string }>
+  | Readonly<{ kind: 'heading'; level: 1 | 2 | 3; text: string; id?: string }>
   | Readonly<{ kind: 'paragraph'; text: string }>
+  | Readonly<{ kind: 'legend'; items: readonly LegendItem[] }>
   | Readonly<{ kind: 'list'; items: readonly string[] }>
   | Readonly<{ kind: 'numbers'; id: string; rows: readonly NumberRow[] }>
   | Readonly<{
@@ -133,6 +142,32 @@ const FACADE_CHARACTER: Readonly<Record<FacadeId, Key>> = {
   west: 'data.characterWest',
   east: 'data.characterEast',
 };
+// Data display maps (the D-law: tokens stay raw in the data and the DOM, the view maps them
+// per language; the EN column values equal the spec bytes, so EN output is unchanged).
+const KIND_DISPLAY: Readonly<Record<string, Key>> = {
+  cornerRisalit: 'data.kindCornerRisalit',
+  stretch: 'data.kindStretch',
+  centralPortal: 'data.kindCentralPortal',
+};
+const ARRANGEMENT_DISPLAY: Readonly<Record<string, Key>> = {
+  'bunch-at-corners': 'data.arrangementBunchAtCorners',
+  'pair-at-portals': 'data.arrangementPairAtPortals',
+  'pair-piers-between-window-groups': 'data.arrangementPairPiers',
+};
+const SOUTH_NOTE_DISPLAY: Readonly<Record<string, Key>> = {
+  'sw-risalit': 'data.southNoteSwCorner',
+  'west-stretch': 'data.southNoteWestStretch',
+  'central-portal': 'data.southNotePortal',
+  'east-stretch': 'data.southNoteEastStretch',
+  'se-risalit': 'data.southNoteSeCorner',
+};
+function mappedToken(map: Readonly<Record<string, Key>>, token: string): string {
+  const key = map[token];
+  if (key === undefined) {
+    throw new Error(`unmapped display token '${token}'`);
+  }
+  return t(key);
+}
 // ---------------------------------------------------------------------------
 // Formatting
 // ---------------------------------------------------------------------------
@@ -268,13 +303,28 @@ type Ctx = Readonly<{
   cited: (id: string, label: string, value: number, unit: string) => NumberRow;
 }>;
 function introBlocks(): readonly NotesBlock[] {
+  // §3.1: the three-kind list renders as the chip legend — each item opens with its chip.
+  const legendItem = (provenance: LegendItem['provenance'], key: Key): LegendItem => ({
+    provenance,
+    text: t(key),
+  });
   return [
     { kind: 'heading', level: 1, text: t('notes.title') },
     { kind: 'paragraph', text: t('notes.intro') },
     {
-      kind: 'list',
-      items: [t('notes.kindSourced'), t('notes.kindDeclared'), t('notes.kindDerived')],
+      kind: 'legend',
+      items: [
+        legendItem('sourced', 'notes.kindSourced'),
+        legendItem('declared', 'notes.kindDeclared'),
+        legendItem('derived', 'notes.kindDerived'),
+      ],
     },
+  ];
+}
+/** §3.3: the links block is a footer section under its own heading, last on the page. */
+function sourcesBlocks(): readonly NotesBlock[] {
+  return [
+    { kind: 'heading', level: 2, text: t('notes.sourcesHeading'), id: 'sources' },
     {
       kind: 'links',
       items: [
@@ -289,7 +339,7 @@ function introBlocks(): readonly NotesBlock[] {
 }
 function shellBlocks({ cited }: Ctx): readonly NotesBlock[] {
   return [
-    { kind: 'heading', level: 2, text: t('notes.shellHeading') },
+    { kind: 'heading', level: 2, text: t('notes.shellHeading'), id: 'shell' },
     { kind: 'paragraph', text: t('notes.shellIntro') },
     {
       kind: 'numbers',
@@ -343,7 +393,7 @@ function shellBlocks({ cited }: Ctx): readonly NotesBlock[] {
 }
 function systemBlocks({ rows, cite, cited, lang }: Ctx): readonly NotesBlock[] {
   return [
-    { kind: 'heading', level: 2, text: t('notes.decorHeading') },
+    { kind: 'heading', level: 2, text: t('notes.decorHeading'), id: 'decor' },
     { kind: 'paragraph', text: t('notes.decorIntro') },
     {
       kind: 'numbers',
@@ -390,17 +440,22 @@ function systemBlocks({ rows, cite, cited, lang }: Ctx): readonly NotesBlock[] {
         },
         {
           id: 'order.columnArrangement',
-          cells: [t('notes.orderArrangement'), ORDER_SYSTEM.columnArrangement.join(' · ')],
+          cells: [
+            t('notes.orderArrangement'),
+            ORDER_SYSTEM.columnArrangement
+              .map((token) => mappedToken(ARRANGEMENT_DISPLAY, token))
+              .join(' · '),
+          ],
           provenance: [cite('order.columnArrangement')],
         },
         {
           id: 'order.capitalFamily',
-          cells: [t('notes.orderCapitalFamily'), ORDER_SYSTEM.capitalFamily],
+          cells: [t('notes.orderCapitalFamily'), t('data.capitalFamily')],
           provenance: [cite('order.capitalFamily')],
         },
         {
           id: 'order.wallColor',
-          cells: [t('notes.orderWallColour'), ORDER_SYSTEM.wallColorNote],
+          cells: [t('notes.orderWallColour'), t('data.wallColour')],
         },
       ],
     },
@@ -453,7 +508,7 @@ function southBlocks(ctx: Ctx): readonly NotesBlock[] {
   const { spec, rows, solved, cite, cited } = ctx;
   const { counts } = solved;
   return [
-    { kind: 'heading', level: 2, text: t('notes.southHeading') },
+    { kind: 'heading', level: 2, text: t('notes.southHeading'), id: 'south' },
     {
       kind: 'numbers',
       id: 'south.lines',
@@ -497,10 +552,10 @@ function southBlocks(ctx: Ctx): readonly NotesBlock[] {
         id: `south.sections.${section.id}`,
         cells: [
           section.id,
-          section.kind,
+          mappedToken(KIND_DISPLAY, section.kind),
           `${section.declaredAxes} (±1)`,
           metreCell(section.declaredProtrusionM, ctx.lang),
-          section.note,
+          mappedToken(SOUTH_NOTE_DISPLAY, section.id),
         ],
         provenance: [
           cite(`south.sections.${section.id}.declaredAxes`),
@@ -570,7 +625,7 @@ function kitBlocks(ctx: Ctx): readonly NotesBlock[] {
   const totalInstances = placed.reduce((sum, row) => sum + row.instances, 0);
   const totalTriangles = placed.reduce((sum, row) => sum + row.total, 0);
   return [
-    { kind: 'heading', level: 2, text: t('notes.kitHeading') },
+    { kind: 'heading', level: 2, text: t('notes.kitHeading'), id: 'kit' },
     { kind: 'paragraph', text: t('notes.kitIntro') },
     {
       kind: 'table',
@@ -589,88 +644,52 @@ function kitBlocks(ctx: Ctx): readonly NotesBlock[] {
         })),
         {
           id: 'kit.total',
+          // §3.4: the three kit totals fold into the footer row — the label carries the
+          // active-parts count, the columns name the rest; each cell keeps its formula chip.
           cells: [
             format(t('notes.kitTotalRow'), { activeParts: String(placed.length) }),
             formatInt(totalInstances),
             '—',
             formatInt(totalTriangles),
           ],
-          provenance: [derived(t('notes.formulaKitCeiling'))],
+          provenance: [
+            derived(t('notes.formulaActiveParts')),
+            derived(t('notes.formulaInstances')),
+            derived(t('notes.formulaKitCeiling')),
+          ],
         },
-      ],
-    },
-    {
-      kind: 'numbers',
-      id: 'kit.totals',
-      rows: [
-        derivedRow(
-          ctx,
-          'kit.instances',
-          t('notes.kitTotalsInstances'),
-          solved.counts.instances,
-          '',
-          t('notes.formulaInstances'),
-        ),
-        derivedRow(
-          ctx,
-          'kit.activeParts',
-          t('notes.kitTotalsActiveParts'),
-          solved.counts.activeParts,
-          '',
-          t('notes.formulaActiveParts'),
-        ),
-        derivedRow(
-          ctx,
-          'kit.triangles',
-          t('notes.kitTotalsCeiling'),
-          solved.counts.triangles,
-          '',
-          t('notes.formulaKitTotal'),
-        ),
       ],
     },
   ];
 }
-function budgetCallout({ projection }: Ctx): NotesBlock {
-  const drawMargin = BUDGET_CEILINGS.frameDrawCalls - projection.frameDrawCalls;
-  const triangleMargin = BUDGET_CEILINGS.frustumTriangles - projection.frustumTriangles;
-  const gzip = projection.jsGzipBytes;
-  const gzipOver = gzip !== null && gzip > BUDGET_CEILINGS.jsGzipBytes;
-  const gzipTail =
-    gzip === null
-      ? format(t('notes.gzipTailUnmeasured'), { pending: PENDING_MEASUREMENT })
-      : format(t('notes.gzipTailMeasured'), {
-          gzipBytes: formatInt(gzip),
-          gzipMargin: formatInt(BUDGET_CEILINGS.jsGzipBytes - gzip),
-        });
+function budgetCallout(): NotesBlock {
+  // §3.4: the projected numbers live on the budget rows as muted margin suffixes; the
+  // callout keeps the three ceilings and the policy sentence.
   return {
     kind: 'callout',
     id: 'budget.contract',
-    level: drawMargin < 0 || triangleMargin < 0 || gzipOver ? 'error' : 'note',
+    level: 'note',
     text: format(t('notes.budgetCallout'), {
       frameDraws: formatInt(BUDGET_CEILINGS.frameDrawCalls),
       frustumTriangles: formatInt(BUDGET_CEILINGS.frustumTriangles),
       gzipBytes: formatInt(BUDGET_CEILINGS.jsGzipBytes),
-      projectedDraws: formatInt(projection.frameDrawCalls),
-      drawMargin: formatInt(drawMargin),
-      projectedTriangles: formatInt(projection.frustumTriangles),
-      triangleMargin: formatInt(triangleMargin),
-      gzipTail,
     }),
   };
 }
 function budgetBlocks(ctx: Ctx): readonly NotesBlock[] {
   const { solved, projection, allowance, cited } = ctx;
   const gzip = projection.jsGzipBytes;
+  // §3.4: the margin is a muted suffix on the row; an unmeasured gzip renders as an em-dash
+  // value with the pending note muted beside it — never a fake number.
+  const marginNote = (ceiling: number, value: number): string =>
+    format(t('notes.marginSuffix'), { margin: formatInt(ceiling - value) });
   const gzipRow: NumberRow = {
     id: 'budget.jsGzipBytes',
     label: t('notes.budgetJsGzip'),
     value: gzip,
     unit: 'B',
-    display:
-      gzip === null
-        ? format(t('notes.gzipRowUnmeasured'), { pending: PENDING_MEASUREMENT })
-        : formatInt(gzip),
+    display: gzip === null ? '—' : formatInt(gzip),
+    note: gzip === null ? PENDING_MEASUREMENT : marginNote(BUDGET_CEILINGS.jsGzipBytes, gzip),
     provenance: derived(t('notes.formulaGzip')),
   };
   const allowanceRows: readonly { id: string; label: string; value: number }[] = [
@@ -696,7 +715,7 @@ function budgetBlocks(ctx: Ctx): readonly NotesBlock[] {
     },
   ];
   return [
-    { kind: 'heading', level: 2, text: t('notes.budgetHeading') },
+    { kind: 'heading', level: 2, text: t('notes.budgetHeading'), id: 'budget' },
     {
       kind: 'numbers',
       id: 'budget.projection',
@@ -709,28 +728,34 @@ function budgetBlocks(ctx: Ctx): readonly NotesBlock[] {
           '',
           t('notes.formulaFacadeDraws'),
         ),
-        derivedRow(
-          ctx,
-          'budget.frameDrawCalls',
-          t('notes.budgetFrameDraws'),
-          projection.frameDrawCalls,
-          '',
-          format(t('notes.formulaFrameDraws'), {
-            otherDraws: String(allowance.otherFrameDrawCalls),
-          }),
-        ),
-        derivedRow(
-          ctx,
-          'budget.frustumTriangles',
-          t('notes.budgetFrustumTriangles'),
-          projection.frustumTriangles,
-          '',
-          format(t('notes.formulaFrustum'), {
-            kit: formatInt(solved.counts.triangles),
-            massing: formatInt(allowance.massingTriangles),
-            sky: formatInt(allowance.skyTriangles),
-          }),
-        ),
+        {
+          ...derivedRow(
+            ctx,
+            'budget.frameDrawCalls',
+            t('notes.budgetFrameDraws'),
+            projection.frameDrawCalls,
+            '',
+            format(t('notes.formulaFrameDraws'), {
+              otherDraws: String(allowance.otherFrameDrawCalls),
+            }),
+          ),
+          note: marginNote(BUDGET_CEILINGS.frameDrawCalls, projection.frameDrawCalls),
+        },
+        {
+          ...derivedRow(
+            ctx,
+            'budget.frustumTriangles',
+            t('notes.budgetFrustumTriangles'),
+            projection.frustumTriangles,
+            '',
+            format(t('notes.formulaFrustum'), {
+              kit: formatInt(solved.counts.triangles),
+              massing: formatInt(allowance.massingTriangles),
+              sky: formatInt(allowance.skyTriangles),
+            }),
+          ),
+          note: marginNote(BUDGET_CEILINGS.frustumTriangles, projection.frustumTriangles),
+        },
         derivedRow(
           ctx,
           'budget.submittedTriangleCeiling',
@@ -742,7 +767,7 @@ function budgetBlocks(ctx: Ctx): readonly NotesBlock[] {
         gzipRow,
       ],
     },
-    budgetCallout(ctx),
+    budgetCallout(),
     { kind: 'paragraph', text: t('notes.allowanceIntro') },
     {
       kind: 'table',
@@ -758,7 +783,7 @@ function budgetBlocks(ctx: Ctx): readonly NotesBlock[] {
 }
 function siblingBlocks({ cite }: Ctx): readonly NotesBlock[] {
   return [
-    { kind: 'heading', level: 2, text: t('notes.siblingsHeading') },
+    { kind: 'heading', level: 2, text: t('notes.siblingsHeading'), id: 'siblings' },
     { kind: 'paragraph', text: t('notes.siblingsIntro') },
     {
       kind: 'table',
@@ -779,7 +804,7 @@ function siblingBlocks({ cite }: Ctx): readonly NotesBlock[] {
               .map((section) =>
                 format(t('notes.siblingsSectionCell'), {
                   id: section.id,
-                  kind: section.kind,
+                  kind: mappedToken(KIND_DISPLAY, section.kind),
                   axes: String(section.declaredAxes),
                 }),
               )
@@ -842,6 +867,7 @@ export function buildSouthNotesModel(input: NotesInput = {}): NotesResult {
     ...kitBlocks(ctx),
     ...budgetBlocks(ctx),
     ...siblingBlocks(ctx),
+    ...sourcesBlocks(),
   ];
   const missing = resolver.missing();
   if (missing.length > 0) {

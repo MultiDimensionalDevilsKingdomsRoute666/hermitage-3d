@@ -50,14 +50,15 @@ export const en = {
     'Every number on this page is produced at load by the same pure solver the app runs over ' +
     'its frozen facade specification (decisions.md, DEC-004). It is not a survey. Three kinds ' +
     'of numbers are kept apart by the type system and labelled here:',
-  'notes.kindSourced':
-    'Sourced — carries an attribution key into ATTRIBUTIONS.md ("No line, no use").',
+  // §3.1: the three-kind list renders as the chip legend — the chip carries the kind word,
+  // the value holds the rest of the sentence (the leading "Sourced —" moved into the chip).
+  'notes.kindSourced': 'carries an attribution key into ATTRIBUTIONS.md ("No line, no use").',
   'notes.kindDeclared':
-    'Declared — a photo-derived working target registered in docs/artistic-license.md; ' +
+    'a photo-derived working target registered in docs/artistic-license.md; ' +
     'checked against measured elevation drawings during Phase 1 and corrected in both places ' +
     'if the record differs.',
   'notes.kindDerived':
-    'Derived — solver arithmetic over sourced and declared inputs ' +
+    'solver arithmetic over sourced and declared inputs ' +
     '(docs/design-facade-grammar.md); recomputed on every load, never registered.',
 
   'notes.shellHeading': 'Shell',
@@ -149,9 +150,10 @@ export const en = {
   'notes.kitColCeilingPerInstance': 'Triangle ceiling per instance',
   'notes.kitColPartTotal': 'Part total',
   'notes.kitTotalRow': 'Total — {activeParts} active parts',
-  'notes.kitTotalsInstances': 'Instances',
-  'notes.kitTotalsActiveParts': 'Active parts',
-  'notes.kitTotalsCeiling': 'Kit triangle ceiling',
+  // §3.3: the links block is a footer section under its own heading; §3.3 the open-question
+  // callout label; §3.4 the margins live on the budget rows, the callout keeps the ceilings.
+  'notes.sourcesHeading': 'Sources and documents',
+  'notes.openQuestion': 'Open question',
 
   'notes.budgetHeading': 'Budget projection',
   'notes.budgetFacadeDraws': 'Facade draw calls',
@@ -162,13 +164,11 @@ export const en = {
   'notes.budgetCallout':
     'Contract ceilings enforced in CI: ≤ {frameDraws} draw calls per frame, ' +
     '≤ {frustumTriangles} frustum triangles, ≤ {gzipBytes} B JavaScript gzip. ' +
-    'Projected: {projectedDraws} draws (margin {drawMargin}), {projectedTriangles} triangles ' +
-    '(margin {triangleMargin}), {gzipTail}. An overrun is removed by changing art or level of ' +
-    'detail, never the number.',
-  'notes.gzipTailUnmeasured': 'JS gzip measured: {pending}',
+    'An overrun is removed by changing art or level of detail, never the number.',
+  // §3.4: the projected numbers moved onto the budget rows as muted margin suffixes; the
+  // pending measurement renders as an em-dash value with the note muted beside it.
+  'notes.marginSuffix': 'margin {margin}',
   'notes.pending': 'pending CI measurement',
-  'notes.gzipTailMeasured': '{gzipBytes} B JS gzip (margin {gzipMargin} B)',
-  'notes.gzipRowUnmeasured': 'measured: {pending}',
 
   'notes.allowanceIntro':
     'Scene allowance — declared working estimates of what the rest of the frame costs ' +
@@ -208,7 +208,6 @@ export const en = {
   'notes.formulaKitCeiling': 'Σ over placed parts',
   'notes.formulaInstances': 'Σ counts.byPart',
   'notes.formulaActiveParts': 'parts with ≥ 1 instance',
-  'notes.formulaKitTotal': 'Σ instances × triangleCeiling',
   'notes.formulaGzip': 'CI gzip measurement passed through allowance.measuredJsGzipBytes',
   'notes.formulaFacadeDraws': 'projectBudget: instanced draws of the active parts over all passes',
   'notes.formulaFrameDraws': 'facadeDrawCalls + {otherDraws} other draw calls',
@@ -220,6 +219,10 @@ export const en = {
   'notes.chipSourced': 'sourced · {keys}',
   'notes.chipDeclared': 'declared · {licenseTitle}',
   'notes.chipDerived': 'derived',
+  // §3.1: the legend's bare kind words (the chip without its provenance payload).
+  'notes.chipWordSourced': 'sourced',
+  'notes.chipWordDeclared': 'declared',
+  'notes.chipWordDerived': 'derived',
   'notes.chipTitleKeys': 'keys: {keys}',
   'notes.chipTitleRegister': 'register line: {licenseTitle}',
   'notes.errorTitle': 'Facade notes unavailable',
