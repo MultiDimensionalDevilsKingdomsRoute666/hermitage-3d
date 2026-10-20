@@ -1,6 +1,7 @@
 // Phase 0 coordinator — design-sky-time.md §9, §10, §11. Owns the DOM, the renderer and
 // the frame loop; every time or appearance rule itself lives in the pure sky modules.
 // §10 arrival order is immutable: sky frame → title frame → massing fade → settled.
+import './fonts.css';
 import './style.css';
 import * as THREE from 'three';
 import { AIRLOCKS, ENTRIES } from '../rooms/index';

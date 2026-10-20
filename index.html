@@ -8,6 +8,10 @@
       content="A stylized 3D recreation of the Winter Palace (Hermitage, Saint Petersburg), lit by the real Petersburg sky."
     />
     <title>Winter Palace in the browser</title>
+    <!-- §2.1: the three self-hosted faces preload on both pages; @font-face in src/fonts.css. -->
+    <link rel="preload" href="/fonts/plex-sans-400.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/fonts/plex-sans-500.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/fonts/plex-serif-400.woff2" as="font" type="font/woff2" crossorigin />
   </head>
   <body>
     <canvas

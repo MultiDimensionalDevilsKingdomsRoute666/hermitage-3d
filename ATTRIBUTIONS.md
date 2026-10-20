@@ -2,6 +2,11 @@
 
 Rule: every source gets exactly one line here. No line, no use.
 
+## Typefaces
+
+- IBM Plex Sans (Regular 400, Medium 500), © 2018 IBM Corp., SIL Open Font License 1.1 (Reserved Font Name "Plex") — self-hosted subsets under public/fonts/ renamed to the project-local families (license: public/fonts/OFL.txt): https://github.com/IBM/plex
+- IBM Plex Serif (Regular 400), © 2018 IBM Corp., SIL Open Font License 1.1 (Reserved Font Name "Plex") — self-hosted subsets under public/fonts/ renamed to the project-local families (license: public/fonts/OFL.txt): https://github.com/IBM/plex
+
 ## Drawings & plans (public domain)
 
 - (none yet)

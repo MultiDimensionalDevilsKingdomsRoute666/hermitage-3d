@@ -8,6 +8,10 @@
       content="How the south facade of the Winter Palace is generated: the frozen spec, sourced and declared numbers, the kit of parts and the budget projection."
     />
     <title>How the south facade is built</title>
+    <!-- §2.1: the three self-hosted faces preload on both pages; @font-face in src/fonts.css. -->
+    <link rel="preload" href="/fonts/plex-sans-400.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/fonts/plex-sans-500.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/fonts/plex-serif-400.woff2" as="font" type="font/woff2" crossorigin />
   </head>
   <body>
     <!-- Pure DOM page — no WebGL, no scripts besides the model binding (strict CSP later). -->

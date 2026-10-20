@@ -4,6 +4,7 @@
 
 import type { NotesBlock, NotesModel, NumberRow, RowProvenance, TableRow } from './notes-view';
 import { buildSouthNotesModel } from './notes-view';
+import '../fonts.css';
 import './notes.css';
 
 // Which table cells a row's provenance chips attach to, by block id (the model's

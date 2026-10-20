@@ -1,9 +1,10 @@
 /* /notes page — same two-colour discipline as the palace overlay (src/style.css):
-   system font, near-white text on near-black, hairline rules. Declared chips reuse the
-   kit's gold (facade-builder DRESSING trim), nothing else is coloured. */
+   near-white text on near-black, hairline rules. Typography: design-i18n-notes.md §2 —
+   the self-hosted WP Sans/Serif stacks (src/fonts.css); declared chips reuse the kit's
+   gold (facade-builder DRESSING trim), nothing else is coloured. */
 :root {
   color-scheme: dark;
-  font-family: system-ui, sans-serif;
+  font-family: var(--font-sans, system-ui, sans-serif);
 }
 html,
 body {
@@ -33,22 +34,31 @@ main {
   padding: 48px 24px 96px;
   line-height: 1.55;
 }
+/* §2.2: H1 serif 400 40/44 (30/34 mobile); H2 serif 400 26/32 (22/28). */
 h1 {
-  font-size: 22px;
-  font-weight: 600;
-  letter-spacing: 0.02em;
+  font-family: var(--font-serif, Georgia, serif);
+  font-size: 40px;
+  line-height: 44px;
+  font-weight: 400;
 }
 h2 {
   margin-top: 40px;
-  font-size: 16px;
-  font-weight: 600;
+  font-family: var(--font-serif, Georgia, serif);
+  font-size: 26px;
+  line-height: 32px;
+  font-weight: 400;
   border-bottom: 1px solid rgba(232, 230, 225, 0.16);
   padding-bottom: 6px;
 }
+/* §2.2: body sans 400 17/26, measure 68ch; hyphens: auto on prose only — never in
+   tables or labels. */
 p,
 li {
-  font-size: 14px;
+  max-width: 68ch;
+  font-size: 17px;
+  line-height: 26px;
   color: rgba(232, 230, 225, 0.82);
+  hyphens: auto;
 }
 ul {
   padding-left: 20px;
@@ -56,14 +66,17 @@ ul {
 a {
   color: rgba(232, 230, 225, 0.82);
 }
-/* Numbers: label left, value right, hairline separators — the palace's tabular style. */
+/* Numbers: label left, value right, hairline separators — the palace's tabular style.
+   §2.2: ledger and tables sans 400 15/22 with tnum. */
 dl.numbers div {
   display: flex;
   align-items: baseline;
   gap: 12px;
   padding: 4px 0;
   border-bottom: 1px solid rgba(232, 230, 225, 0.08);
-  font-size: 14px;
+  font-size: 15px;
+  line-height: 22px;
+  font-variant-numeric: tabular-nums;
 }
 dl.numbers dt {
   flex: 1;
@@ -74,21 +87,25 @@ dl.numbers dd {
   font-variant-numeric: tabular-nums;
 }
 .value {
-  font-size: 14px;
+  font-size: 15px;
 }
 .unit {
   margin-left: 4px;
   font-size: 12px;
   color: rgba(232, 230, 225, 0.5);
 }
-/* Provenance chips — lowercase, boxed; gold marks the declared register. */
+/* Provenance chips — lowercase, boxed; gold marks the declared register.
+   §2.2: chips sans 500 12/16 lowercase. */
 .chip {
   display: inline-block;
   margin-left: 8px;
   padding: 0 6px;
   border: 1px solid rgba(232, 230, 225, 0.28);
   border-radius: 999px;
-  font-size: 10px;
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 500;
+  text-transform: lowercase;
   letter-spacing: 0.04em;
   color: rgba(232, 230, 225, 0.6);
   vertical-align: baseline;
@@ -102,16 +119,24 @@ dl.numbers dd {
   border-style: dashed;
   opacity: 0.8;
 }
-/* Tables: hairline borders, chip cells inherit the same markers. */
+/* Tables: hairline borders, chip cells inherit the same markers.
+   §2.2: tables sans 400 15/22 with tnum. */
 table {
   width: 100%;
   border-collapse: collapse;
   margin: 16px 0 8px;
-  font-size: 13px;
+  font-size: 15px;
+  line-height: 22px;
+  font-variant-numeric: tabular-nums;
 }
+/* §2.2: captions and table heads sans 500 13/16 uppercase +0.06em muted. */
 caption {
   text-align: left;
-  font-size: 12px;
+  font-size: 13px;
+  line-height: 16px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
   color: rgba(232, 230, 225, 0.5);
   padding-bottom: 6px;
 }
@@ -123,6 +148,10 @@ td {
   vertical-align: top;
 }
 thead th {
+  font-size: 13px;
+  line-height: 16px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
   color: rgba(232, 230, 225, 0.5);
   font-weight: 500;
   border-bottom-color: rgba(232, 230, 225, 0.24);
@@ -162,6 +191,15 @@ nav.links ul {
 @media (max-width: 720px) {
   main {
     padding: 40px 16px 64px;
+  }
+  /* §2.2 mobile heading sizes. */
+  h1 {
+    font-size: 30px;
+    line-height: 34px;
+  }
+  h2 {
+    font-size: 22px;
+    line-height: 28px;
   }
   table {
     display: block;
