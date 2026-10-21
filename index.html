@@ -49,31 +49,31 @@
       Прокручивайте, перетаскивайте или нажимайте стрелки, чтобы двигаться по маршруту от
       остановки к остановке.
     </p>
+    <!-- §1.2: the language toggle — the r26.1 owner law: the TOP-RIGHT corner, opposite the
+         wordmark (R004: it swapped places with the caption); the toggle shows the TARGET
+         language in its own script, lang set for the screen readers. It PRECEDES #hud in the
+         DOM so the dev HUD can drop below its line. Static text is the pre-JS RU state. -->
+    <button id="lang-toggle" type="button" lang="en" aria-label="Русский">RU</button>
     <!-- Debug HUD (?hud=1 or the H key): client-only overlay per architecture.md delivery
-         rules. aria-hidden: a developer tool, repeated state already announced elsewhere. -->
+         rules. aria-hidden: a developer tool, repeated state already announced elsewhere.
+         When shown it sits below the toggle's line (style.css). -->
     <aside id="hud" hidden aria-hidden="true"></aside>
-    <!-- Caption overlay (§6.1): the stop's beat text; hidden from AT because #caption-live
-         mirrors it. Visible at a rest stop, faded while gliding, the dark-card caption
-         during an airlock dwell. data-stop/data-visible are e2e contract rows. -->
-    <!-- Caption overlay (§6.1): the stop's beat text — the r26.1 owner law: the TOP-RIGHT
-         corner, opposite the wordmark (the bottom row tested centered and right-aligned and
-         read messy at 360 px). Hidden from AT because #caption-live mirrors it. Visible at a
-         rest stop, faded while gliding, the dark-card caption during an airlock dwell.
-         data-stop/data-visible are e2e contract rows. -->
+    <!-- Caption overlay (§6.1): the stop's beat text — the r26.1 owner law: the BOTTOM-RIGHT
+         corner, right-aligned (R004: it swapped places with the language toggle — the
+         toggle went to the top-right, opposite the wordmark). Hidden from AT because
+         #caption-live mirrors it. Visible at a rest stop, faded while gliding, the
+         dark-card caption during an airlock dwell. data-stop/data-visible are e2e rows. -->
     <p id="caption" class="caption" aria-hidden="true" data-visible="false" data-stop=""></p>
     <!-- Live region: «<stop id> · <caption>», rewritten only when it changes (§1.2: stops
          are named in a11y text). -->
     <div id="caption-live" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
-    <!-- §9 travel hint (r26.1): one line above the bottom-right toggle, right-aligned;
+    <!-- §9 travel hint (r26.1): one line above the bottom-right caption, right-aligned;
          S0-only at the settle beat; the host owns the state machine (src/ui/hint.ts);
          data-visible/data-dismissed are e2e contract rows. -->
     <p id="travel-hint" aria-hidden="true" data-visible="false" data-dismissed="none"></p>
-    <!-- §1.2: the bottom chrome row — the notes link left, the language toggle right;
-         the toggle shows the TARGET language in its own script, lang set for the screen
-         readers. Static text is the pre-JS RU state; the runtime binds from the dictionary. -->
+    <!-- The bottom chrome row: the notes link, bottom-left. -->
     <div id="chrome-row">
       <a id="notes-link" href="/notes.html" hidden>Как это устроено →</a>
-      <button id="lang-toggle" type="button" lang="en" aria-label="Русский">RU</button>
     </div>
     <script type="module" src="/src/main.ts"></script>
   </body>
