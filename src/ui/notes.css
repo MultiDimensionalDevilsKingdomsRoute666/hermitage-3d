@@ -626,6 +626,88 @@ body > noscript {
   color: var(--ink-2);
 }
 
+/* ---- ≤ 767: the solver's tables stack — no sideways scroll, no collapsed chips --------- */
+/* Two owner rejections (F010/F011) share one root — the table's auto layout: a column whose
+   only flexible content is a chip with overflow-wrap:anywhere collapses until the chip
+   breaks one glyph per line, and min-width 40rem forces a horizontal scroll with an empty
+   span before the right-aligned values. The fix at phone widths: every table becomes a
+   vertical ledger — the row name is its own strong line, each cell prefixes its column
+   head (the same dictionary string, attr(data-label) — no new text), and the chips ride
+   inline with the full row's width, so nothing can collapse. The ≥ 768 block below
+   restores the real table layout. */
+@media (max-width: 767.98px) {
+  /* The table leaves the table formatting context entirely — block children otherwise
+     get wrapped in anonymous table rows and the layout returns. */
+  table[data-id],
+  table[data-id] tbody {
+    display: block;
+  }
+
+  table[data-id] caption {
+    display: block;
+    padding-bottom: var(--s-3);
+  }
+
+  table[data-id] {
+    min-width: 0;
+  }
+
+  table[data-id] thead {
+    display: none;
+  }
+
+  table[data-id] tr {
+    display: block;
+    padding-block: var(--s-3);
+    border-bottom: var(--hair) solid var(--rule);
+  }
+
+  table[data-id] tbody tr:last-child {
+    border-bottom: 0;
+  }
+
+  table[data-id] tr.total {
+    border-top: var(--hair) solid var(--rule-strong);
+    border-bottom: 0;
+  }
+
+  table[data-id] th,
+  table[data-id] td {
+    display: block;
+    padding: 0;
+    border-bottom: 0;
+  }
+
+  table[data-id] tbody th {
+    margin-bottom: var(--s-1);
+    font-weight: var(--w-medium);
+  }
+
+  table[data-id] td::before {
+    content: attr(data-label);
+    display: inline-block;
+    margin-right: var(--s-2);
+    font-size: var(--fs-label);
+    line-height: var(--lh-label);
+    font-weight: var(--w-medium);
+    letter-spacing: var(--track-label);
+    text-transform: uppercase;
+    color: var(--ink-2);
+  }
+
+  table[data-id] td.num {
+    text-align: left;
+    white-space: normal;
+    font-variant-numeric: tabular-nums;
+  }
+
+  table[data-id] td.num > .chip {
+    display: inline-block;
+    width: auto;
+    margin: 0 0 0 var(--s-2);
+  }
+}
+
 /* ---- 768: re-token, the ledger becomes one grid ----------------------------------------- */
 
 @media (min-width: 768px) {

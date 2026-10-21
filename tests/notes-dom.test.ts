@@ -197,6 +197,20 @@ describe('/notes DOM binding', () => {
     expect(sourcedRow?.children.map((node) => node.tag)).toEqual(['dt', 'dd', 'span']);
   });
 
+  it('labels every table cell with its column head (the block-table hook)', () => {
+    // The ≤767 block-table pattern prefixes each cell with its column head via
+    // attr(data-label) — the same dictionary string, no new text.
+    const module = all().find((node) => node.tag === 'td' && node.textContent === 'small');
+    expect(module?.dataset.label).toBe('Module');
+    const axes = all().find((node) => node.tag === 'td' && node.textContent === '7 (±1)');
+    expect(axes?.dataset.label).toBe('Declared axes');
+    // The leading cell names the row — it carries no label.
+    const rowName = all().find(
+      (node) => node.tag === 'th' && node.scope === 'row' && node.textContent === 'row1',
+    );
+    expect(rowName?.dataset.label).toBeUndefined();
+  });
+
   it('aligns provenance chips to their cells and leaves bare rows chip-free', () => {
     for (const row of rowsOf('south.sections')) {
       const cells = row.children;

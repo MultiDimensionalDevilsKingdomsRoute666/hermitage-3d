@@ -153,7 +153,12 @@ function elevationSvgElement(): SVGSVGElement | null {
     return null;
   }
 }
-function renderTableRow(row: TableRow, tableId: string, body: HTMLElement): void {
+function renderTableRow(
+  row: TableRow,
+  tableId: string,
+  columns: readonly string[],
+  body: HTMLElement,
+): void {
   const tr = row.id === 'kit.total' ? hinge('tr', 'total') : document.createElement('tr');
   tr.dataset.id = row.id;
   const chipCells =
@@ -164,6 +169,9 @@ function renderTableRow(row: TableRow, tableId: string, body: HTMLElement): void
     if (index === 0) td.scope = 'row'; // the leading cell names the row
     td.textContent = cell;
     if (numericCells.includes(index)) td.className = 'num';
+    // The ≤767 block-table pattern (notes.css): each cell prefixes its column head —
+    // the same dictionary string, no new text (F010/F011: no collapsed chips, no scroll).
+    if (index > 0) td.dataset.label = columns[index] ?? '';
     // Positional alignment: row.provenance[i] annotates cell chipCells[i].
     const chips: RowProvenance[] = [];
     if (row.provenance !== undefined) {
@@ -232,7 +240,7 @@ function renderBlock(block: NotesBlock, container: HTMLElement): void {
       head.append(headerRow);
       const body = hinge('tbody');
       for (const row of block.rows) {
-        renderTableRow(row, block.id, body);
+        renderTableRow(row, block.id, block.columns, body);
       }
       table.append(body);
       wrap.append(table);
