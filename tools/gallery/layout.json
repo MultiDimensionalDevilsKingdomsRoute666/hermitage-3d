@@ -13762,6 +13762,19 @@
   },
   "metrics": {
     "allyOffsetX": 2.05,
+    "bayCentresZ": [
+      -37.5,
+      -32.5,
+      -27.5,
+      -22.5,
+      -17.5,
+      -12.5,
+      -7.5,
+      -2.5,
+      2.5,
+      7.5,
+      12.5
+    ],
     "bayPitchZ": 5,
     "canvasOffset": 0.04,
     "columnPitchZ": 1.54,

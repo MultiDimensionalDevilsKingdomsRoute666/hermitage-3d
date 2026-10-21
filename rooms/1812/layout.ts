@@ -501,6 +501,7 @@ export type LightmapLaw = {
 
 export type MetricsLaw = {
   readonly allyOffsetX: number;
+  readonly bayCentresZ: readonly number[];
   readonly bayPitchZ: number;
   readonly canvasOffset: number;
   readonly columnPitchZ: number;
@@ -577,6 +578,7 @@ export function buildLayout(): GalleryLayout {
     },
     metrics: {
       allyOffsetX: ALLY_OFFSET_X,
+      bayCentresZ: Array.from({ length: BAYS_PER_WALL }, (_v, bay) => bayCentreZ(bay)),
       bayPitchZ: BAY_PITCH_Z,
       canvasOffset: CANVAS_OFFSET,
       columnPitchZ: COLUMN_PITCH_Z,
