@@ -1,7 +1,16 @@
 {
   "$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
   "vcs": { "enabled": true, "clientKind": "git", "useIgnoreFile": true },
-  "files": { "includes": ["**", "!dist", "!public", "!tools/bake-logs", "!tests/fixtures"] },
+  "files": {
+    "includes": [
+      "**",
+      "!dist",
+      "!public",
+      "!tools/bake-logs",
+      "!tools/gallery/layout.json",
+      "!tests/fixtures"
+    ]
+  },
   "formatter": { "indentStyle": "space", "lineWidth": 100 },
   "javascript": { "formatter": { "quoteStyle": "single" } },
   "linter": { "enabled": true }
