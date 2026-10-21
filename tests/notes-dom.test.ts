@@ -16,6 +16,7 @@ class StubElement {
   href: string | undefined;
   rel: string | undefined;
   id: string | undefined;
+  innerHTML = '';
   children: StubElement[] = [];
   constructor(tag: string) {
     this.tag = tag;
@@ -43,6 +44,12 @@ const documentStub = {
     const node = new StubElement(tag);
     return node;
   },
+  // The elevation frieze's shell (the night-elevation round): the stub ignores the
+  // namespace — the parameter stays for the real signature.
+  createElementNS: (_ns: string, tag: string): StubElement => {
+    const node = new StubElement(tag);
+    return node;
+  },
   title: '',
   querySelector: (selector: string): StubElement | null => (selector === '#notes' ? root : null),
 };
@@ -51,6 +58,7 @@ beforeAll(async () => {
   (globalThis as { document: unknown }).document = documentStub;
   (globalThis as { HTMLElement: unknown }).HTMLElement = StubElement;
   (globalThis as { HTMLButtonElement: unknown }).HTMLButtonElement = StubElement;
+  (globalThis as { SVGSVGElement: unknown }).SVGSVGElement = StubElement;
   // The binding's boot resolves the language per §1.1 — the stub navigation pins ?lang=en
   // explicitly (the design's e2e rule: no spec relies on the default or on storage).
   (globalThis as { location: unknown }).location = {
@@ -145,6 +153,48 @@ describe('/notes DOM binding', () => {
       expect(['sourced', 'declared', 'derived']).toContain(chip?.dataset.provenance);
       expect((chip?.textContent ?? '').length).toBeGreaterThan(0);
     }
+  });
+
+  it('renders the elevation frieze between the H1 and the anchors', () => {
+    expect(root.children.map((node) => node.tag)).toEqual(['h1', 'figure', 'nav', 'article']);
+    const figure = root.children[1];
+    expect(figure?.className).toBe('elevation');
+    const svg = figure?.children[0];
+    expect(svg?.tag).toBe('svg');
+    expect(svg?.attributes.role).toBe('img');
+    expect(svg?.attributes['aria-label']).toBe('South elevation — Palace Square, west → east');
+    expect(svg?.attributes.viewBox).toBe('-105.000 0.000 210.000 24.000');
+    expect((svg?.innerHTML ?? '').length).toBeGreaterThan(1000);
+  });
+
+  it('derived ledger rows show their formula as a visible second dd', () => {
+    const row = all().find(
+      (node) =>
+        node.tag === 'div' &&
+        node.children.some(
+          (child) => child.tag === 'dt' && child.textContent === 'JavaScript gzip',
+        ),
+    );
+    expect(row).toBeDefined();
+    const children = row?.children ?? [];
+    expect(children.map((node) => node.tag)).toEqual(['dt', 'dd', 'span', 'dd']);
+    const dd = children[1];
+    expect(dd?.className).toBe('');
+    const chip = children[2];
+    expect(chip?.dataset.provenance).toBe('derived');
+    const formula = children[3];
+    expect(formula?.tag).toBe('dd');
+    expect(formula?.className).toBe('formula');
+    expect(formula?.textContent).toContain('CI gzip measurement');
+    // A sourced row stays three children — no formula line.
+    const sourcedRow = all().find(
+      (node) =>
+        node.tag === 'div' &&
+        node.children.some(
+          (child) => child.tag === 'dt' && child.textContent === 'North (Neva) facade length',
+        ),
+    );
+    expect(sourcedRow?.children.map((node) => node.tag)).toEqual(['dt', 'dd', 'span']);
   });
 
   it('aligns provenance chips to their cells and leaves bare rows chip-free', () => {

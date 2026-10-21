@@ -249,12 +249,24 @@ const RULES = {
 // Opening widths of the three sourced window modules (design §1); the sill
 // scales to opening width + 0.40 (round-5 kit rule, restored by the
 // orchestrator — the relay draft emitted unit-scale sills everywhere).
-const OPENING_WIDTH_BY_MODULE: Readonly<Record<WindowModule, number>> = {
+// Exported for the /notes elevation frieze (src/ui/notes-elevation.ts), which
+// over the same declared geometry must not re-declare it.
+export const OPENING_WIDTH_BY_MODULE: Readonly<Record<WindowModule, number>> = {
   small: 1,
   medium: 1.35,
   large: 1.7,
 };
 const SILL_JAMB_OVERHANG_M = 0.4;
+
+// Declared sill heights per window row (the RULES design decisions); the /notes
+// elevation frieze (src/ui/notes-elevation.ts) reads the same numbers instead of
+// re-declaring them.
+export const WINDOW_ROW_SILL_Y: Readonly<Record<WindowRowId, number>> = {
+  row1: RULES.rowSillY.row1,
+  row2: RULES.rowSillY.row2,
+  row3: RULES.rowSillY.row3,
+  row4: RULES.rowSillY.row4,
+};
 
 const EXPECTED_SECTION_KINDS: readonly SectionKind[] = [
   'cornerRisalit',

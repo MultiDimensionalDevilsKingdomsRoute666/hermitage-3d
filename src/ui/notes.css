@@ -1,53 +1,59 @@
-/* /notes — the quiet annex of the Zimny scene. What this implements: one paper column in
-   daylight tints lifted from the facade (pale-green wall, ochre dressing, white-night sky);
-   hairline rules carry all structure and every rule spans the same content width; the serif
-   is reserved for the front matter (H1, lede, section titles) and the sans for everything
-   read as data; each number ledger is one subgrid — label | value | unit | note |
-   provenance — so columns align across rows; colour is spent on exactly one thing,
-   provenance: sourced = green fill, declared = ochre fill, derived = outlined (hue AND shape
-   differ). Contrast on --paper (WCAG, computed): ink 15.6:1, ink-2 5.9:1, green 7.0:1
-   (6.1:1 on its tint), ochre 6.0:1 (5.2:1 on its tint), error 6.7:1. Fonts: src/fonts.css
-   defines --font-sans (WP Sans 400/500) and --font-serif (WP Serif 400); no other faces are
-   used. Single breakpoint: 768 px, declared once at the end; it only re-tokens and lays out
-   the desktop ledger. No state, no runtime styles, no !important. */
+/* /notes — the night elevation. What this implements: a dark ground (the Petersburg night
+   the scene renders at its far end) on which the one chromatic event is the palace itself —
+   a frieze of the real generated south facade (lit slots on the wall plane) that the
+   binding inserts under the H1 from the pure elevation module; the page stands without it.
+   Type: WP Serif 400 for the front matter (H1, lede, section titles), WP Sans 400/500 for
+   everything read as data, the system mono stack for everything that is code — provenance
+   chips, the derived formulas, the language toggle. Colour is spent on exactly one thing,
+   provenance: sourced = green fill, declared = ochre fill, derived = outlined (hue AND
+   shape differ) — the facade's own wall-green and gilt. Contrast on --ground (WCAG,
+   computed): ink 13.8:1, ink-2 7.1:1, sourced 10.5:1 (8.7:1 on its fill), declared 9.9:1
+   (8.4:1 on its fill), error 8.1:1. Structure is carried by space and by the rail, not by
+   rules: at >= 1024 px the anchors become a sticky left rail; each number ledger is one
+   subgrid — label | value | unit | note | provenance — so digits align across rows, and
+   derived rows show their arithmetic on a second line. Two breakpoints: 768 (re-tokens,
+   ledger grid) and 1024 (the rail). No state, no runtime styles, no !important;
+   motion = short colour transitions. */
 :root {
-  color-scheme: light;
-  /* paper and ink */
-  --paper: #f7f8f7;
-  --ink: #1b1f1d;
-  --ink-2: #5b625e;
-  --rule: #d9ddda;
-  --rule-strong: var(--ink);
+  color-scheme: dark;
+  /* ground and ink */
+  --ground: #151a21;
+  --wall: #1c2129;
+  --ink: #e8e4dc;
+  --ink-2: #a1a6a3;
+  --rule: #272d35;
+  --rule-strong: #4e565f;
   /* provenance — the only chromatic tokens on the page */
-  --sourced: #2f5f43;
-  --sourced-tint: #e3ece6;
-  --declared: #7a5a14;
-  --declared-tint: #f3e8cf;
-  --error: #9b3626;
+  --sourced: #a6d3b7;
+  --sourced-fill: #1b2d24;
+  --declared: #e2bf74;
+  --declared-fill: #2f271a;
+  --error: #ee9c8c;
   /* type */
   --sans: var(--font-sans, system-ui, sans-serif);
   --serif: var(--font-serif, Georgia, serif);
+  --mono: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);
   --fs-label: 12px;
   --lh-label: 16px;
   --fs-small: 13px;
   --lh-small: 20px;
   --fs-data: 15px;
   --lh-data: 22px;
+  --fs-value: 17px;
   --fs-body: 16px;
   --lh-body: 26px;
-  --fs-lede: 19px;
-  --lh-lede: 30px;
-  --fs-h2: 21px;
-  --lh-h2: 28px;
-  --fs-h1: 28px;
-  --lh-h1: 34px;
+  --fs-lede: 18px;
+  --lh-lede: 28px;
+  --fs-h2: 24px;
+  --lh-h2: 30px;
+  --fs-h1: 32px;
+  --lh-h1: 38px;
   --w-regular: 400;
   --w-medium: 500;
   --track-label: 0.06em;
-  --track-chip: 0.01em;
   --track-title: -0.01em;
   --underline-offset: 0.15em;
-  --measure: 64ch;
+  --measure: 66ch;
   /* space — a 4 px scale */
   --s-1: 4px;
   --s-2: 8px;
@@ -58,13 +64,15 @@
   --s-7: 48px;
   --s-8: 64px;
   --s-9: 96px;
-  --gutter: var(--s-5);
-  --section-gap: var(--s-7);
-  --column: 784px;
+  --gutter: 20px;
+  --section-gap: 48px;
+  --column: 720px;
+  --article: 760px;
+  --rail: 176px;
   /* lines, corners, motion */
   --hair: 1px;
   --ring: 2px;
-  --radius: 2px;
+  --radius: 3px;
   --dur: 160ms;
 }
 
@@ -77,7 +85,7 @@
 }
 
 html {
-  background: var(--paper);
+  background: var(--ground);
   -webkit-text-size-adjust: 100%;
 }
 
@@ -85,10 +93,15 @@ body {
   margin: 0;
   min-height: 100%;
   color: var(--ink);
-  background: var(--paper);
+  background: var(--ground);
   font-family: var(--sans);
   font-size: var(--fs-body);
   line-height: var(--lh-body);
+}
+
+::selection {
+  color: var(--ground);
+  background: var(--ink);
 }
 
 :focus-visible {
@@ -96,11 +109,16 @@ body {
   outline-offset: var(--ring);
 }
 
+figure {
+  margin: 0;
+}
+
 a,
 button {
   transition:
     color var(--dur),
     border-color var(--dur),
+    background-color var(--dur),
     text-decoration-color var(--dur);
 }
 
@@ -110,7 +128,7 @@ button {
   }
 }
 
-/* The column: width, not padding, so every rule drawn by a block spans exactly the content. */
+/* The column: width, not padding, so every block spans exactly the content. */
 .page-head,
 main,
 body > noscript {
@@ -126,7 +144,6 @@ body > noscript {
   justify-content: space-between;
   gap: var(--s-4);
   padding-block: var(--s-4);
-  border-bottom: var(--hair) solid var(--rule);
   font-size: var(--fs-small);
   line-height: var(--lh-small);
 }
@@ -144,15 +161,18 @@ body > noscript {
 
 #lang-toggle {
   appearance: none;
+  flex: none;
   margin: 0;
   padding: var(--s-1) var(--s-2);
-  border: var(--hair) solid var(--rule);
+  border: var(--hair) solid var(--ink-2);
   border-radius: var(--radius);
   background: none;
   cursor: pointer;
-  font: inherit;
-  font-weight: var(--w-medium);
-  letter-spacing: var(--track-label);
+  font-family: var(--mono);
+  font-size: var(--fs-label);
+  line-height: var(--lh-label);
+  font-weight: var(--w-regular);
+  letter-spacing: 0.04em;
   color: var(--ink-2);
 }
 
@@ -178,11 +198,9 @@ h1 {
 }
 
 h2 {
-  padding-top: var(--s-5);
-  border-top: var(--hair) solid var(--rule);
   font-size: var(--fs-h2);
   line-height: var(--lh-h2);
-  scroll-margin-top: var(--s-5);
+  scroll-margin-top: var(--s-6);
 }
 
 p {
@@ -192,8 +210,7 @@ p {
   text-wrap: pretty;
 }
 
-/* The lede: the one paragraph set in the serif — the intro opens the article, right under
-   the title (the anchors strip sits between them in the DOM; :first-child is the intro). */
+/* The lede: the one paragraph set in the serif — the intro opens the article. */
 .notes-article > p:first-child {
   font-family: var(--serif);
   font-size: var(--fs-lede);
@@ -212,12 +229,86 @@ a:hover {
   text-decoration-color: currentColor;
 }
 
-/* ---- anchors --------------------------------------------------------------------------- */
+/* ---- main flow ------------------------------------------------------------------------- */
 
-nav.anchors {
-  padding-top: var(--s-3);
-  border-top: var(--hair) solid var(--rule);
+main {
+  padding-block: var(--s-6) var(--s-9);
 }
+
+/* The frieze bleeds by the gutter on narrow screens: the facade runs edge to edge. */
+main > figure.elevation {
+  margin: var(--s-6) calc(-1 * var(--gutter)) 0;
+}
+
+main > nav.anchors {
+  margin-top: var(--s-6);
+}
+
+main > article {
+  margin-top: var(--s-7);
+}
+
+.notes-article {
+  max-width: var(--article);
+}
+
+.notes-article > * + * {
+  margin-top: var(--s-5);
+}
+
+.notes-article > p + p {
+  margin-top: var(--s-4);
+}
+
+.notes-article > h2 {
+  margin-top: var(--section-gap);
+}
+
+.notes-article > h2 + * {
+  margin-top: var(--s-4);
+}
+
+.notes-article > ul:not(.legend) {
+  margin: 0;
+  padding-left: 1.25em;
+  max-width: var(--measure);
+}
+
+/* ---- the frieze ------------------------------------------------------------------------ */
+
+/* viewBox only on the SVG (no width/height attributes) — the ratio comes from the facade. */
+figure.elevation svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  color: var(--ink);
+  shape-rendering: crispEdges;
+}
+
+.elevation .wall {
+  fill: var(--wall);
+}
+
+.elevation .slot {
+  fill: currentColor;
+}
+
+.elevation .shaft {
+  fill: var(--ink-2);
+}
+
+.elevation .portal {
+  fill: var(--ground);
+}
+
+.elevation .crease,
+.elevation .datum {
+  stroke: var(--rule-strong);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+
+/* ---- anchors --------------------------------------------------------------------------- */
 
 nav.anchors ul {
   display: flex;
@@ -240,30 +331,15 @@ nav.anchors a:hover {
   text-decoration: underline;
 }
 
-/* ---- main flow ------------------------------------------------------------------------- */
-
-main {
-  padding-block: var(--s-7) var(--s-9);
-}
-
-.notes-article > * + * {
-  margin-top: var(--s-5);
-}
-
-.notes-article > p + p {
-  margin-top: var(--s-4);
-}
-
-.notes-article > nav.anchors {
-  margin-top: var(--s-6);
-}
-
-.notes-article > h2 {
-  margin-top: var(--section-gap);
-}
-
-.notes-article > h2 + * {
-  margin-top: var(--s-4);
+/* The anchors mark the section a deep link landed on — pure CSS, :target under :has(). */
+main:has(#shell:target) nav.anchors a[href="#shell"],
+main:has(#decor:target) nav.anchors a[href="#decor"],
+main:has(#south:target) nav.anchors a[href="#south"],
+main:has(#kit:target) nav.anchors a[href="#kit"],
+main:has(#budget:target) nav.anchors a[href="#budget"],
+main:has(#siblings:target) nav.anchors a[href="#siblings"],
+main:has(#sources:target) nav.anchors a[href="#sources"] {
+  color: var(--ink);
 }
 
 /* ---- legend ---------------------------------------------------------------------------- */
@@ -295,34 +371,35 @@ ul.legend li {
   }
 }
 
-/* ---- provenance chips ------------------------------------------------------------------ */
+/* ---- provenance chips (code is set as code) -------------------------------------------- */
 
 .chip {
   display: inline-block;
   max-width: 100%;
-  padding: 0 var(--s-2);
+  padding: 1px var(--s-2);
   border: var(--hair) solid transparent;
   border-radius: var(--radius);
-  font-family: var(--sans);
+  font-family: var(--mono);
   font-size: var(--fs-label);
   line-height: var(--lh-label);
-  font-weight: var(--w-medium);
-  letter-spacing: var(--track-chip);
+  font-weight: var(--w-regular);
+  letter-spacing: 0;
   white-space: normal;
+  overflow-wrap: anywhere;
   text-align: left;
   vertical-align: baseline;
 }
 
 .chip[data-provenance="sourced"] {
   color: var(--sourced);
-  background: var(--sourced-tint);
-  border-color: var(--sourced-tint);
+  background: var(--sourced-fill);
+  border-color: var(--sourced-fill);
 }
 
 .chip[data-provenance="declared"] {
   color: var(--declared);
-  background: var(--declared-tint);
-  border-color: var(--declared-tint);
+  background: var(--declared-fill);
+  border-color: var(--declared-fill);
 }
 
 .chip[data-provenance="derived"] {
@@ -330,7 +407,7 @@ ul.legend li {
   border-color: currentColor;
 }
 
-/* ---- number ledger (mobile-first: label line, then value left / chip right) ------------ */
+/* ---- number ledger (mobile-first: label / value left + chip right / formula) ----------- */
 
 dl.numbers {
   margin: 0;
@@ -345,7 +422,8 @@ dl.numbers > div {
   grid-template-columns: minmax(0, 1fr) minmax(0, max-content);
   grid-template-areas:
     "label label"
-    "value chip";
+    "value chip"
+    "formula formula";
   column-gap: var(--s-4);
   row-gap: var(--s-1);
   align-items: baseline;
@@ -365,14 +443,30 @@ dl.numbers dd {
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
-  gap: var(--s-1);
+  gap: var(--s-1) var(--s-2);
   margin: 0;
   min-width: 0;
 }
 
-dl.numbers > div > .chip {
+dl.numbers .chip {
   grid-area: chip;
   justify-self: end;
+}
+
+/* Derived rows show their arithmetic — the same string the chip carries as its title. */
+dl.numbers dd.formula {
+  grid-area: formula;
+  display: block;
+  font-family: var(--mono);
+  font-size: var(--fs-small);
+  line-height: var(--lh-small);
+  color: var(--ink-2);
+  overflow-wrap: anywhere;
+}
+
+.value {
+  font-size: var(--fs-value);
+  line-height: var(--lh-data);
 }
 
 .unit,
@@ -382,8 +476,8 @@ dl.numbers > div > .chip {
   color: var(--ink-2);
 }
 
-.note {
-  padding-left: var(--s-1);
+.unit:empty {
+  display: none;
 }
 
 /* ---- tables ---------------------------------------------------------------------------- */
@@ -401,14 +495,19 @@ table {
   font-variant-numeric: tabular-nums;
 }
 
+/* The wide tables keep their columns readable and scroll inside the region below 768 px. */
+table[data-id="south.sections"],
+table[data-id="kit.parts"],
+table[data-id="siblings"] {
+  min-width: 40rem;
+}
+
 caption {
   padding-bottom: var(--s-2);
   text-align: left;
-  font-size: var(--fs-label);
-  line-height: var(--lh-label);
+  font-size: var(--fs-small);
+  line-height: var(--lh-small);
   font-weight: var(--w-medium);
-  letter-spacing: var(--track-label);
-  text-transform: uppercase;
   color: var(--ink);
 }
 
@@ -443,13 +542,25 @@ thead th {
 
 tbody th {
   font-weight: var(--w-medium);
-  white-space: nowrap;
 }
 
 .num {
   text-align: right;
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
+}
+
+/* Chips riding a cell: inline after prose, on their own line under a number. */
+table[data-id] th > .chip,
+table[data-id] td > .chip {
+  margin-inline-start: var(--s-2);
+}
+
+table[data-id] td.num > .chip {
+  display: block;
+  width: max-content;
+  max-width: 100%;
+  margin: var(--s-1) 0 0 auto;
 }
 
 tbody tr.total th,
@@ -463,16 +574,13 @@ tbody tr.total td {
 
 aside.callout {
   max-width: var(--measure);
-  padding-block: var(--s-4);
-  border-top: var(--hair) solid var(--rule);
-  border-bottom: var(--hair) solid var(--rule);
 }
 
 .callout-label {
   margin: 0 0 var(--s-1);
+  font-family: var(--mono);
   font-size: var(--fs-label);
   line-height: var(--lh-label);
-  font-weight: var(--w-medium);
   letter-spacing: var(--track-label);
   text-transform: uppercase;
   color: var(--declared);
@@ -484,17 +592,14 @@ aside.callout {
   line-height: var(--lh-data);
 }
 
-aside.callout[data-level="note"] {
-  padding-block: 0;
-  border: 0;
-}
-
 aside.callout[data-level="note"] .callout-text {
   color: var(--ink-2);
 }
 
 aside.callout[data-level="error"] {
-  border-color: var(--error);
+  padding: var(--s-4);
+  border: var(--hair) solid var(--error);
+  border-radius: var(--radius);
 }
 
 aside.callout[data-level="error"] .callout-label {
@@ -521,67 +626,51 @@ body > noscript {
   color: var(--ink-2);
 }
 
-/* ---- the one breakpoint ---------------------------------------------------------------- */
+/* ---- 768: re-token, the ledger becomes one grid ----------------------------------------- */
 
 @media (min-width: 768px) {
   :root {
-    --gutter: var(--s-7);
-    --section-gap: var(--s-8);
-    --fs-h1: 36px;
-    --lh-h1: 42px;
-    --fs-h2: 24px;
-    --lh-h2: 32px;
+    --gutter: 48px;
+    --section-gap: 80px;
+    --fs-h1: 44px;
+    --lh-h1: 50px;
+    --fs-h2: 28px;
+    --lh-h2: 34px;
+    --fs-lede: 20px;
+    --lh-lede: 32px;
   }
 
-  /* The ledger becomes one grid: label | value | unit | note | provenance. */
-  dl.numbers {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) max-content max-content max-content minmax(0, max-content);
+  main > figure.elevation {
+    margin-inline: 0;
   }
 
-  /* Fallback row (no subgrid): three independent columns per row. */
-  dl.numbers > div {
-    grid-column: 1 / -1;
-    grid-template-columns: minmax(0, 1fr) max-content minmax(0, max-content);
-    grid-template-areas: none;
-    column-gap: var(--s-2);
-    row-gap: 0;
-  }
-
-  dl.numbers dt,
-  dl.numbers dd,
-  dl.numbers > div > .chip {
-    grid-area: auto;
-  }
-
-  dl.numbers dt {
-    padding-right: var(--s-4);
-  }
-
-  dl.numbers dd {
-    justify-self: end;
-    flex-wrap: nowrap;
-  }
-
-  dl.numbers > div > .chip {
-    justify-self: start;
-    margin-left: var(--s-3);
-  }
-
+  /* label | value | unit | note | provenance; without subgrid the stacked layout stands. */
   @supports (grid-template-columns: subgrid) {
+    dl.numbers {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) max-content max-content minmax(0, 14ch) minmax(0, 22ch);
+    }
+
     dl.numbers > div {
+      grid-column: 1 / -1;
       grid-template-columns: subgrid;
+      grid-template-areas: none;
+      column-gap: var(--s-3);
+      row-gap: var(--s-1);
     }
 
     dl.numbers dt {
+      grid-area: auto;
       grid-column: 1;
+      padding-right: var(--s-4);
     }
 
     dl.numbers dd {
+      grid-area: auto;
       grid-column: 2 / 5;
       display: grid;
       grid-template-columns: subgrid;
-      column-gap: var(--s-1);
+      column-gap: var(--s-2);
       align-items: baseline;
       justify-self: stretch;
     }
@@ -599,8 +688,53 @@ body > noscript {
       grid-column: 3;
     }
 
-    dl.numbers > div > .chip {
+    dl.numbers .chip {
+      grid-area: auto;
       grid-column: 5;
+      justify-self: start;
     }
+
+    dl.numbers dd.formula {
+      grid-area: auto;
+      grid-column: 1 / -1;
+      display: block;
+    }
+  }
+}
+
+/* ---- 1024: the rail --------------------------------------------------------------------- */
+
+@media (min-width: 1024px) {
+  :root {
+    --column: 1008px;
+  }
+
+  main {
+    display: grid;
+    grid-template-columns: var(--rail) minmax(0, 1fr);
+    column-gap: var(--s-8);
+    align-items: start;
+  }
+
+  main > h1,
+  main > figure.elevation {
+    grid-column: 1 / -1;
+  }
+
+  main > nav.anchors {
+    position: sticky;
+    top: var(--s-6);
+    grid-column: 1;
+    margin-top: var(--s-7);
+  }
+
+  nav.anchors ul {
+    display: grid;
+    gap: var(--s-2);
+  }
+
+  main > article {
+    grid-column: 2;
+    margin-top: var(--s-7);
   }
 }

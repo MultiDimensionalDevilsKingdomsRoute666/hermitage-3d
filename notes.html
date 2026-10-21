@@ -3,6 +3,8 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark" />
+    <meta name="theme-color" content="#151a21" />
     <meta
       name="description"
       content="Как генерируется южный фасад Зимнего дворца: замороженная спецификация, числа из источников и принятые значения, набор деталей и проекция бюджета."
@@ -16,7 +18,8 @@
   <body>
     <!-- Pure DOM page — no WebGL, no scripts besides the model binding (strict CSP later).
          §1.5: the static shell is RU; the binding resolves ?lang= and re-renders for EN. -->
-    <!-- §3.1: the header row — back link left, toggle right; static (no sticky elements). -->
+    <!-- §3.1: the header row — back link left, toggle right; static. The only sticky element
+         on the page is the anchors rail the binding renders into #notes (≥ 1024 px, notes.css). -->
     <header class="page-head">
       <a class="back" href="/">← Дворцовая площадь</a>
       <button id="lang-toggle" type="button" lang="en" aria-label="Русский">RU</button>

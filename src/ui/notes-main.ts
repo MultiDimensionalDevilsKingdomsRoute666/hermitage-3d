@@ -16,6 +16,7 @@ import {
   setLangParam,
   writeStoredLang,
 } from './lang-host';
+import { SVG_NS, southElevationSvg } from './notes-elevation';
 import type {
   LegendItem,
   NotesBlock,
@@ -110,6 +111,47 @@ function renderNumberRow(row: NumberRow, div: HTMLElement): void {
   dd.append(singleton('span', row.display, 'value'), singleton('span', row.unit, 'unit'));
   if (row.note !== undefined) dd.append(singleton('span', row.note, 'note'));
   div.append(dt, dd, provenanceChip(row.provenance)); // §3.3: label | value | chip
+  // The night-elevation round (r26.2): a derived row shows its arithmetic — the formula
+  // as a visible second <dd> (the same string the chip carries as its title; no new text).
+  if (row.provenance.kind === 'derived') {
+    div.append(singleton('dd', row.provenance.formula, 'formula'));
+  }
+}
+/**
+ * The frieze under the H1: the pure elevation module hands over the SVG of the real
+ * generated south facade; the binding only wraps it and names it with the south heading
+ * (an existing string — no new text). Null (module absent, or the spec did not close) →
+ * no figure; the page stands without the frieze.
+ */
+function elevationFigure(model: NotesModel, svg: SVGSVGElement | null): HTMLElement | null {
+  if (svg === null) return null;
+  const south = model.blocks.find(
+    (block) => block.kind === 'heading' && block.level === 2 && block.id === 'south',
+  );
+  svg.setAttribute('role', 'img');
+  if (south !== undefined && south.kind === 'heading') {
+    svg.setAttribute('aria-label', south.text);
+  } else {
+    svg.setAttribute('aria-hidden', 'true');
+  }
+  const figure = hinge('figure', 'elevation');
+  figure.append(svg);
+  return figure;
+}
+/** The elevation's SVG element, or null — the frieze never breaks the page. */
+function elevationSvgElement(): SVGSVGElement | null {
+  try {
+    const elevation = southElevationSvg();
+    if (elevation === null) return null;
+    if (typeof document.createElementNS !== 'function') return null;
+    const svg = document.createElementNS(SVG_NS, 'svg');
+    if (!(svg instanceof SVGSVGElement)) return null;
+    svg.setAttribute('viewBox', elevation.viewBox);
+    svg.innerHTML = elevation.body;
+    return svg;
+  } catch {
+    return null;
+  }
 }
 function renderTableRow(row: TableRow, tableId: string, body: HTMLElement): void {
   const tr = row.id === 'kit.total' ? hinge('tr', 'total') : document.createElement('tr');
@@ -229,7 +271,7 @@ function renderBlock(block: NotesBlock, container: HTMLElement): void {
     }
   }
 }
-function render(model: NotesModel): void {
+function render(model: NotesModel, elevation: () => SVGSVGElement | null): void {
   const root = document.querySelector('#notes');
   if (!(root instanceof HTMLElement)) throw new Error('#notes missing');
   document.title = model.title;
@@ -240,7 +282,8 @@ function render(model: NotesModel): void {
     if (block.kind === 'heading' && block.level === 1) continue;
     renderBlock(block, article);
   }
-  // §3.1: the one-line anchor list of the section headings — navigation, not decoration.
+  // §3.1: the anchor list of the section headings — navigation, not decoration (the rail
+  // at ≥ 1024 px, an inline strip below; notes.css).
   const anchors = hinge('nav', 'anchors');
   const anchorList = hinge('ul');
   anchorList.setAttribute('role', 'list'); // list-style:none drops the semantics — restore it
@@ -254,7 +297,12 @@ function render(model: NotesModel): void {
     anchorList.append(li);
   }
   anchors.append(anchorList);
-  root.replaceChildren(h1, anchors, article);
+  // Document order (the r26.2 night elevation): title, the frieze, the anchors, the
+  // ledger. The factory runs on every render, so the language switch rebuilds the
+  // frieze with everything else — the re-render stays stateless.
+  const figure = elevationFigure(model, elevation());
+  const children = figure === null ? [h1, anchors, article] : [h1, figure, anchors, article];
+  root.replaceChildren(...children);
 }
 // ---------------------------------------------------------------------------
 // Language law — the host side (§1.1/§1.2): the storage and the URL belong to lang-host;
@@ -280,25 +328,29 @@ async function boot(): Promise<void> {
   if (resolution.override.kind === 'write') writeStoredLang(resolution.override.lang);
   if (resolution.override.kind === 'clear') clearStoredLang();
   await activateLang(resolution.lang);
+  const elevation = (): SVGSVGElement | null => elevationSvgElement();
   const rerender = (): void => {
     const result = buildSouthNotesModel({ lang: activeLang() });
     if (result.ok) {
-      render(result.model);
+      render(result.model, elevation);
       for (const warning of result.warnings) console.warn(`zimny: ${warning.message}`);
     } else {
-      render({
-        title: t('notes.errorTitle'),
-        blocks: [
-          {
-            kind: 'callout',
-            id: 'error',
-            level: 'error',
-            text: format(t('notes.errorIntro'), {
-              issues: result.issues.map((issue) => `${issue.path}: ${issue.message}`).join(' · '),
-            }),
-          },
-        ],
-      });
+      render(
+        {
+          title: t('notes.errorTitle'),
+          blocks: [
+            {
+              kind: 'callout',
+              id: 'error',
+              level: 'error',
+              text: format(t('notes.errorIntro'), {
+                issues: result.issues.map((issue) => `${issue.path}: ${issue.message}`).join(' · '),
+              }),
+            },
+          ],
+        },
+        elevation,
+      );
     }
     applyChrome();
   };
