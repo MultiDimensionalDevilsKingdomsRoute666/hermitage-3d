@@ -19,6 +19,8 @@ const VIEWPORTS = [
   { name: '360', width: 360, height: 744 },
   { name: '768', width: 768, height: 1024 },
   { name: '1280', width: 1280, height: 720 },
+  // The ≥1600 px chrome step-up law (the overlay reads small on big displays) — pinned.
+  { name: '1920', width: 1920, height: 1080 },
 ] as const;
 const LANGS = ['en', 'ru'] as const;
 
