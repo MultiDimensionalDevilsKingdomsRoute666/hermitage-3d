@@ -197,6 +197,17 @@ body {
 #travel-hint[data-visible="false"] {
   opacity: 0;
 }
+/* The r26.1 owner law (R007, F016): on desktop the hint sits CENTERED horizontally —
+   the bottom-center axis is free there (the link is bottom-left, the caption
+   bottom-right); mobile keeps the R004 corner law (one line above the caption,
+   right-aligned). The vertical anchor stays one line above the caption at every width. */
+@media (min-width: 768px) {
+  #travel-hint {
+    right: 0;
+    left: 0;
+    text-align: center;
+  }
+}
 @media (prefers-reduced-motion: reduce) {
   #travel-hint {
     transition: none;
