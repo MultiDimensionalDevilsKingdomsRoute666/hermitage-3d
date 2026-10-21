@@ -1,0 +1,4167 @@
+{
+  "id": "military-gallery",
+  "files": [
+    {
+      "path": "military-gallery.glb",
+      "bytes": 994164,
+      "sha256": "ab47a2fcbf1aba507d8aee127ed496006376b4e8d51e609d7a1165b8082f02b7",
+      "kind": "glb"
+    },
+    {
+      "path": "tex/military-gallery-parquet.ktx2",
+      "bytes": 12782,
+      "sha256": "58ed868308d009cbd30de8ed7f55bcded78ef759dbf7bf7bd609e376ba2d090c",
+      "kind": "ktx2"
+    }
+  ],
+  "geometry": {
+    "meshes": [
+      {
+        "name": "floor",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "wall_crimson",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 4
+      },
+      {
+        "name": "wall_plaster",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 8
+      },
+      {
+        "name": "vault",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 500
+      },
+      {
+        "name": "lantern_glazing",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 30
+      },
+      {
+        "name": "lantern_bars",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 468
+      },
+      {
+        "name": "door_leaves",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 168
+      },
+      {
+        "name": "door_cases",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 252
+      },
+      {
+        "name": "pier_shafts",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 576
+      },
+      {
+        "name": "pier_gilt",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 1176
+      },
+      {
+        "name": "pier_columns",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 264
+      },
+      {
+        "name": "torchere_body",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2808
+      },
+      {
+        "name": "torchere_candles",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 4680
+      },
+      {
+        "name": "bench",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 168
+      },
+      {
+        "name": "portal_gilt",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 72
+      },
+      {
+        "name": "portal_leaves",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 24
+      },
+      {
+        "name": "portal_step",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 12
+      },
+      {
+        "name": "frame_000",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_000",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_001",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_001",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_002",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_002",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_003",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_003",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_004",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_004",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_005",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_005",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_006",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_006",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_007",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_007",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_008",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_008",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_009",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_009",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_010",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_010",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_011",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_011",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_012",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_012",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_013",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_013",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_014",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_014",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_015",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_015",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_016",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_016",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_017",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_017",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_018",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_018",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_019",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_019",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_020",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_020",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_021",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_021",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_022",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_022",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_023",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_023",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_024",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_024",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_025",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_025",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_026",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_026",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_027",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_027",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_028",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_028",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_029",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_029",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_030",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_030",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_031",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_031",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_032",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_032",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_033",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_033",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_034",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_034",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_035",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_035",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_036",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_036",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_037",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_037",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_038",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_038",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_039",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_039",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_040",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_040",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_041",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_041",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_042",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_042",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_043",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_043",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_044",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_044",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_045",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_045",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_046",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_046",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_047",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_047",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_048",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_048",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_049",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_049",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_050",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_050",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_051",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_051",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_052",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_052",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_053",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_053",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_054",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_054",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_055",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_055",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_056",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_056",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_057",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_057",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_058",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_058",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_059",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_059",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_060",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_060",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_061",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_061",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_062",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_062",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_063",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_063",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_064",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_064",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_065",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_065",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_066",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_066",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_067",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_067",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_068",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_068",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_069",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_069",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_070",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_070",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_071",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_071",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_072",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_072",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_073",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_073",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_074",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_074",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_075",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_075",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_076",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_076",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_077",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_077",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_078",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_078",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_079",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_079",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_080",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_080",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_081",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_081",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_082",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_082",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_083",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_083",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_084",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_084",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_085",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_085",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_086",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_086",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_087",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_087",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_088",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_088",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_089",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_089",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_090",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_090",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_091",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_091",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_092",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_092",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_093",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_093",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_094",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_094",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_095",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_095",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_096",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_096",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_097",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_097",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_098",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_098",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_099",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_099",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_100",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_100",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_101",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_101",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_102",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_102",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_103",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_103",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_104",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_104",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_105",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_105",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_106",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_106",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_107",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_107",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_108",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_108",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_109",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_109",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_110",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_110",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_111",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_111",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_112",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_112",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_113",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_113",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_114",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_114",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_115",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_115",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_116",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_116",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_117",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_117",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_118",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_118",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_119",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_119",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_120",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_120",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_121",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_121",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_122",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_122",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_123",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_123",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_124",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_124",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_125",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_125",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_126",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_126",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_127",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_127",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_128",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_128",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_129",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_129",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_130",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_130",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_131",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_131",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_132",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_132",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_133",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_133",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_134",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_134",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_135",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_135",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_136",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_136",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_137",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_137",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_138",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_138",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_139",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_139",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_140",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_140",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_141",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_141",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_142",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_142",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_143",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_143",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_144",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_144",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_145",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_145",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_146",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_146",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_147",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_147",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_148",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_148",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_149",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_149",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_150",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_150",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_151",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_151",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_152",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_152",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_153",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_153",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_154",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_154",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_155",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_155",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_156",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_156",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_157",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_157",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_158",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_158",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_159",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_159",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_160",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_160",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_161",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_161",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_162",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_162",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_163",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_163",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_164",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_164",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_165",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_165",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_166",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_166",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_167",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_167",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_168",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_168",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_169",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_169",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_170",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_170",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_171",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_171",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_172",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_172",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_173",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_173",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_174",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_174",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_175",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_175",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_176",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_176",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_177",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_177",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_178",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_178",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_179",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_179",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_180",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_180",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_181",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_181",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_182",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_182",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_183",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_183",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_184",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_184",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_185",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_185",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_186",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_186",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_187",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_187",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_188",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_188",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_189",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_189",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_190",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_190",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_191",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_191",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_192",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_192",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_193",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_193",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_194",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_194",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_195",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_195",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_196",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_196",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_197",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_197",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_198",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_198",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_199",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_199",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_200",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_200",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_201",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_201",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_202",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_202",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_203",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_203",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_204",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_204",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_205",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_205",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_206",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_206",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_207",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_207",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_208",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_208",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_209",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_209",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_210",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_210",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_211",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_211",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_212",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_212",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_213",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_213",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_214",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_214",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_215",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_215",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_216",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_216",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_217",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_217",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_218",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_218",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_219",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_219",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_220",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_220",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_221",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_221",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_222",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_222",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_223",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_223",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_224",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_224",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_225",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_225",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_226",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_226",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_227",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_227",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_228",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_228",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_229",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_229",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_230",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_230",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_231",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_231",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_232",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_232",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_233",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_233",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_234",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_234",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_235",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_235",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_236",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_236",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_237",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_237",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_238",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_238",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_239",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_239",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_240",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_240",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_241",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_241",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_242",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_242",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_243",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_243",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_244",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_244",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_245",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_245",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_246",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_246",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_247",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_247",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_248",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_248",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_249",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_249",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_250",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_250",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_251",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_251",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_252",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_252",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_253",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_253",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_254",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_254",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_255",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_255",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_256",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_256",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_257",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_257",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_258",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_258",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_259",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_259",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_260",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_260",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_261",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_261",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_262",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_262",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_263",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_263",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_264",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_264",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_265",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_265",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_266",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_266",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_267",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_267",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_268",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_268",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_269",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_269",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_270",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_270",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_271",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_271",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_272",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_272",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_273",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_273",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_274",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_274",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_275",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_275",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_276",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_276",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_277",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_277",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_278",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_278",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_279",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_279",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_280",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_280",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_281",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_281",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_282",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_282",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_283",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_283",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_284",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_284",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_285",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_285",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_286",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_286",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_287",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_287",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_288",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_288",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_289",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_289",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_290",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_290",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_291",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_291",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_292",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_292",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_293",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_293",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_294",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_294",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_295",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_295",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_296",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_296",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_297",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_297",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_298",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_298",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_299",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_299",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_300",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_300",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_301",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_301",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_302",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_302",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_303",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_303",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_304",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_304",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_305",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_305",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_306",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_306",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_307",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_307",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_308",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_308",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_309",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_309",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_310",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_310",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_311",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_311",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_312",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_312",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_313",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_313",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_314",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_314",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_315",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_315",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_316",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_316",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_317",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_317",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_318",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_318",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_319",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_319",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_320",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_320",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_321",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_321",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_322",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_322",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_323",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_323",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_324",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_324",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_325",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_325",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_326",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_326",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_327",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_327",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_328",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_328",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_329",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_329",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_330",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_330",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_331",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_331",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_332",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_332",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_333",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_333",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      },
+      {
+        "name": "frame_334",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 48
+      },
+      {
+        "name": "canvas_334",
+        "instances": 1,
+        "primitives": 1,
+        "triangles": 2
+      }
+    ],
+    "trianglesUnique": 27962,
+    "trianglesDrawn": 27962,
+    "extensionsRequired": [
+      "EXT_meshopt_compression",
+      "KHR_mesh_quantization",
+      "KHR_texture_basisu"
+    ]
+  },
+  "lightmaps": {
+    "states": [],
+    "res": null,
+    "intensity": null
+  },
+  "budget": {
+    "trianglesMax": 60000,
+    "drawsMax": 19,
+    "textureBytesMax": 1000000,
+    "payloadBytesMax": 4000000
+  },
+  "toolchain": {
+    "blender": "4.2.23 LTS",
+    "toktx": "4.4.2",
+    "gltfTransformCli": "4.5.1",
+    "three": "0.186.1"
+  }
+}

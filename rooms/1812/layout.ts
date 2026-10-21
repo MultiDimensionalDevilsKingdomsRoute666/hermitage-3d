@@ -47,10 +47,10 @@ export type FrameTransform = {
 };
 
 export type FrameRecord = FrameTransform & {
-  /** The gilt bars' strip in the kit chart; null for the K8 portal. */
-  readonly chart: UvRect | null;
-  /** The canvas quad's strip in the kit chart; null for the K8 portal. */
-  readonly chartCanvas: UvRect | null;
+  /** The gilt bars' strip in the kit chart; the K8 portal rides latecomer strips. */
+  readonly chart: UvRect;
+  /** The canvas quad's strip in the kit chart (same latecomer law for the portal). */
+  readonly chartCanvas: UvRect;
   readonly index: number;
   readonly slot: number;
   readonly uv: UvRect;
@@ -446,16 +446,16 @@ export function chartOrder(): readonly number[] {
     .map((entry) => entry.index);
 }
 
-export function frameCharts(
-  index: number,
-): { readonly canvas: UvRect; readonly frame: UvRect } | null {
+export function frameCharts(index: number): { readonly canvas: UvRect; readonly frame: UvRect } {
   const frame = allFrames()[index];
-  if (frame === undefined || !isKitFrame(frame.kind)) {
-    return null;
+  if (frame === undefined) {
+    throw new Error(`frame index out of range: ${index}`);
   }
+  // The K8 portal rides latecomer kit-chart strips until R4's architecture
+  // chart packer replaces the placeholder (design-gallery.md §3.7, declared).
   const order = chartOrder();
-  const chart = order.indexOf(index);
-  if (chart < 0) {
+  const chart = isKitFrame(frame.kind) ? order.indexOf(index) : kitFrames().length;
+  if (isKitFrame(frame.kind) && chart < 0) {
     throw new Error(`kit frame missing from chart order: ${index}`);
   }
   return { canvas: chartRect(chart, 'canvas'), frame: chartRect(chart, 'frame') };
@@ -533,8 +533,8 @@ export function buildLayout(): GalleryLayout {
     const strips = frameCharts(index);
     return {
       ...frame,
-      chart: strips?.frame ?? null,
-      chartCanvas: strips?.canvas ?? null,
+      chart: strips.frame,
+      chartCanvas: strips.canvas,
       index,
       slot: slotOfFrame(index),
       uv: frameUvRect(index),

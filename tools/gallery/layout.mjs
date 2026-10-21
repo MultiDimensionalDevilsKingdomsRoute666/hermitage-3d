@@ -376,12 +376,12 @@ export function chartOrder() {
 
 export function frameCharts(index) {
   const frame = allFrames()[index];
-  if (frame === undefined || !isKitFrame(frame.kind)) {
-    return null;
+  if (frame === undefined) {
+    throw new Error(`frame index out of range: ${index}`);
   }
   const order = chartOrder();
-  const chart = order.indexOf(index);
-  if (chart < 0) {
+  const chart = isKitFrame(frame.kind) ? order.indexOf(index) : kitFrames().length;
+  if (isKitFrame(frame.kind) && chart < 0) {
     throw new Error(`kit frame missing from chart order: ${index}`);
   }
   return { canvas: chartRect(chart, 'canvas'), frame: chartRect(chart, 'frame') };
@@ -392,8 +392,8 @@ export function buildLayout() {
     const strips = frameCharts(index);
     return {
       ...frame,
-      chart: strips ? strips.frame : null,
-      chartCanvas: strips ? strips.canvas : null,
+      chart: strips.frame,
+      chartCanvas: strips.canvas,
       index,
       slot: slotOfFrame(index),
       uv: frameUvRect(index),
