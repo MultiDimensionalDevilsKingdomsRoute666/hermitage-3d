@@ -71,6 +71,11 @@
          S0-only at the settle beat; the host owns the state machine (src/ui/hint.ts);
          data-visible/data-dismissed are e2e contract rows. -->
     <p id="travel-hint" aria-hidden="true" data-visible="false" data-dismissed="none"></p>
+    <!-- The boundary prompt (2026-10-21): visible while settled at a rail end whose
+         airlock side is next; activating it travels like the arrows. The prompt is a
+         real button (keyboard-complete, focusable) but starts hidden and is
+         excluded from the golden fixtures like the other chrome overlays. -->
+    <button id="edge-prompt" type="button" data-visible="false"></button>
     <!-- The bottom chrome row: the notes link, bottom-left. -->
     <div id="chrome-row">
       <a id="notes-link" href="/notes.html" hidden>Как это устроено →</a>

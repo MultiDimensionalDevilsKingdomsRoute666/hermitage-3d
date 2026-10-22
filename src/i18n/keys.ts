@@ -17,6 +17,7 @@ export type ChromeKey =
   | 'chrome.wordmark'
   | 'chrome.notesLink'
   | 'chrome.travelHint'
+  | 'chrome.edgePrompt'
   | 'chrome.toggleLabel'
   | 'chrome.toggleAria'
   | 'chrome.scrubLabel'

@@ -19,6 +19,7 @@ export const en = {
   // the toggle shows the TARGET language in its own script; the accessible name is the
   // target language's name.
   'chrome.travelHint': 'Drag to move closer',
+  'chrome.edgePrompt': 'Keep scrolling to enter',
   'chrome.toggleLabel': 'RU',
   'chrome.toggleAria': 'Русский',
   'chrome.scrubLabel': 'Petersburg time, ±24 hours around the scene time',

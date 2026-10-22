@@ -227,6 +227,57 @@ body {
     bottom: 74px;
   }
 }
+/* The boundary prompt (2026-10-21): the travel hint's register on the FREE bottom-center
+   axis (the r26 law freed it: the link bottom-left, the caption bottom-right, the toggle
+   top-right), one line ABOVE the chrome row; visible only while settled at a rail end
+   whose airlock side is next. A real button: the chrome's colors, no border, the caption's
+   text shadow; the hover/focus underline mirrors the lang toggle. data-visible is the e2e
+   contract row; the golden fixtures hide it. */
+#edge-prompt {
+  position: fixed;
+  right: 0;
+  left: 0;
+  bottom: 46px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: rgba(255, 255, 255, 0.55);
+  font-size: var(--hint-size);
+  line-height: 1.5;
+  text-align: center;
+  white-space: nowrap;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+  opacity: 1;
+  transition: opacity 240ms ease;
+  cursor: pointer;
+  pointer-events: auto;
+}
+#edge-prompt[data-visible="false"] {
+  opacity: 0;
+  pointer-events: none;
+}
+#edge-prompt:hover,
+#edge-prompt:focus-visible {
+  color: #fff;
+  text-decoration: underline;
+  outline: none;
+}
+@media (min-width: 768px) {
+  #edge-prompt {
+    bottom: 24px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  #edge-prompt {
+    transition: none;
+  }
+}
+@media (min-width: 1600px) {
+  #edge-prompt {
+    bottom: 30px;
+  }
+}
 /* Caption overlay — design-staircase.md §6.1 beats: visible at a rest stop, faded while
    gliding, the dark-card caption during an airlock dwell (§8.4). Write-on-change from the
    pure core (src/ui/captions.ts); --caption-fade must stay equal to CAPTION_FADE_MS there.

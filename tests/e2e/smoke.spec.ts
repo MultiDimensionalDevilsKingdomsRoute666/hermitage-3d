@@ -133,6 +133,69 @@ test('smoke walk: the graph returns the ledger to boot values', async ({ page })
   await expect(hud).toHaveAttribute('data-hold-ms', '0', { timeout: 60_000 });
 });
 
+test('wheel walk: the boundary prompt and the sustained wheel enter both airlocks', async ({
+  page,
+}) => {
+  // The owner's reachability report (2026-10-21): a trackpad visitor scrolled to a rail
+  // end and stalled — the doors were arrows-only. Two roads must reach the same
+  // beginTransitTo call the arrows use: the chrome prompt (click) and a sustained
+  // deliberate wheel past the clamp (the momentum-immunity law, DEC-031). Fresh page:
+  // a mounted room keeps its technique (the round-17 measurement trap).
+  test.slow();
+  const query = `${AT}&det=1&hud=1&lang=en`;
+  const hud = await bootDeterministic(page, query);
+  await expectWithinBudgets(hud);
+  const edgePrompt = page.locator('#edge-prompt');
+  // Mid-room at the start: the prompt is hidden (the UI-nearly-absent law).
+  await expect(edgePrompt).toHaveAttribute('data-visible', 'false');
+  await page.mouse.move(640, 360);
+  // The deliberate walk: 80 px per event at ~45 ms — every event under the speed gate.
+  // Dispatched inside the page: a trusted-input round-trip per event makes a 50-event
+  // walk crawl under SwiftShader (the hint spec sends one event; this walk needs a stream).
+  const wheel = async (events: number): Promise<void> => {
+    await page.evaluate((n) => {
+      const canvas = document.querySelector('#scene');
+      for (let i = 0; i < n; i += 1) {
+        setTimeout(() => {
+          canvas?.dispatchEvent(
+            new WheelEvent('wheel', { deltaY: 80, cancelable: true, bubbles: true }),
+          );
+        }, i * 45);
+      }
+    }, events);
+    await page.waitForTimeout(events * 45 + 120);
+  };
+  // The square's one segment into S1's clamp; the glide settles and the prompt appears.
+  await wheel(16);
+  await expect(edgePrompt).toHaveAttribute('data-visible', 'true', { timeout: 30_000 });
+  // Road 1 — the prompt: the click travels the same boundary step the arrows use.
+  await edgePrompt.click();
+  // The URL is the state: the swap rewrites the hash to the room's route (DEC-031).
+  await expect(page).toHaveURL(/#\/gallery/, { timeout: 60_000 });
+  await expect(hud).toHaveAttribute('data-room', 'rastrelli-gallery', { timeout: 60_000 });
+  // The swap is only proven by the hold returning to zero at the NEW room (the dwell
+  // caption shows DURING the hold — it names the destination, not the arrival).
+  await expect(hud).toHaveAttribute('data-hold-ms', '0', { timeout: 60_000 });
+  await expectWithinBudgets(hud);
+  // Road 2 — the sustained wheel: the gallery's two segments into G2's clamp, then the
+  // pass spans its sustain window; the airlock fires mid-batch.
+  await wheel(34);
+  await expect(edgePrompt).toHaveAttribute('data-visible', 'true', { timeout: 30_000 });
+  await wheel(14);
+  await expect(hud).toHaveAttribute('data-room', 'jordan', { timeout: 60_000 });
+  await expect(hud).toHaveAttribute('data-hold-ms', '0', { timeout: 60_000 });
+  await expect(page).toHaveURL(/#\/jordan/, { timeout: 60_000 });
+  await expectWithinBudgets(hud);
+  // Home by URL (the smoke's own law): the ledger returns to boot values. The room's
+  // own rewrites mean the boot hash now DIFFERS from the address bar (the URL-is-the-
+  // state law), so this assignment is a real hashchange → the transit home by the chain.
+  await page.evaluate((hash) => {
+    location.hash = hash;
+  }, `#/?${query}`);
+  await expect(hud).toHaveAttribute('data-room', 'square', { timeout: 60_000 });
+  await expect(hud).toHaveAttribute('data-ledger-bytes', '0', { timeout: 60_000 });
+});
+
 // r18 gate (§6.1, §10): every stop of the phase is reachable by keyboard — arrows step
 // stop→stop and a boundary intent past an end stop IS the keyboard's airlock — and
 // reduced-motion glides are cuts. Reduced motion is emulated BEFORE boot (the host reads

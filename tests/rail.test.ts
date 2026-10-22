@@ -229,7 +229,7 @@ describe('purity', () => {
       .replace(/'(?:\\.|[^'\\\n])*'/g, '')
       .replace(/"(?:\\.|[^"\\\n])*"/g, '');
   it('loads the module source', () => {
-    expect(Object.keys(sources)).toHaveLength(4); // rail + square-rail + cam-param + look (r21)
+    expect(Object.keys(sources)).toHaveLength(5); // rail + square-rail + cam-param + look + wheel-edge (r21, DEC-031)
   });
   it('imports nothing from three or node', () => {
     for (const src of Object.values(sources)) {

@@ -21,6 +21,7 @@ import {
   stepStop,
 } from './camera/rail';
 import { SQUARE_RAIL, SQUARE_S0_GAZE } from './camera/square-rail';
+import { WHEEL_EDGE_START, type WheelEdgeState, wheelEdge } from './camera/wheel-edge';
 import { SOUTH_FACADE, WINDOW_ROWS } from './content/facade-spec';
 import { TIME } from './content/sky-time';
 import { createLedger } from './engine/ledger';
@@ -54,6 +55,7 @@ import {
   EMPTY_CAPTION,
   presentCaption,
 } from './ui/captions';
+import { edgePromptView } from './ui/edge-prompt';
 import {
   createHintState,
   HINT_HOLD_MS,
@@ -121,6 +123,8 @@ const notesLink = document.querySelector('#notes-link');
 if (!(notesLink instanceof HTMLAnchorElement)) throw new Error('#notes-link missing');
 const travelHint = document.querySelector('#travel-hint');
 if (!(travelHint instanceof HTMLElement)) throw new Error('#travel-hint missing');
+const edgePrompt = document.querySelector('#edge-prompt');
+if (!(edgePrompt instanceof HTMLButtonElement)) throw new Error('#edge-prompt missing');
 
 const isDeterministic = (state: TimeState): boolean =>
   state.mode === 'fixed' ? state.deterministic : false;
@@ -165,6 +169,7 @@ const bindChrome = (): void => {
   canvas.setAttribute('aria-label', t('chrome.canvasLabel'));
   notesLink.textContent = t('chrome.notesLink');
   travelHint.textContent = t('chrome.travelHint'); // §9: swaps in place, timers untouched
+  edgePrompt.textContent = t('chrome.edgePrompt'); // §6.1 amendment: same swap law
   // The clock labels bind per minute-change; a fixed ?at= boot has no live resample, so
   // the language switch re-applies the epoch itself (idempotent: the same instant, the
   // new language's day line).
@@ -920,6 +925,24 @@ const commitGesture = (): void => {
   writeTimeUrl(committed); // one replaceState per commit; det and other params preserved (§9)
 };
 
+/** The room's own route into the hash at the transit's completion (the URL-is-the-state
+ * law): route keys are ENTRIES' static data ('/' the resident, '/gallery', '/jordan');
+ * the query rides along untouched (time/tier/lang/det). */
+const writeRoomUrl = (node: NodeHandle | null): void => {
+  if (node === null) return;
+  const entry = ENTRIES.find((e) => e.id === node);
+  if (entry === undefined) return;
+  const hash = location.hash.startsWith('#') ? location.hash.slice(1) : location.hash;
+  const mark = hash.indexOf('?');
+  const query = new URLSearchParams(mark === -1 ? '' : hash.slice(mark + 1));
+  // A room change must not carry a stale ?stop=/?cam= pinned by a shared link: those
+  // belong to the room they landed in; the new room seeds fresh.
+  query.delete('stop');
+  query.delete('cam');
+  const search = query.toString();
+  history.replaceState(null, '', `#${entry.route}${search ? `?${search}` : ''}`);
+};
+
 const startGesture = (): void => {
   if (gesture !== null) return;
   gesture = { anchorMs: epochMs, restore: timeState };
@@ -960,9 +983,31 @@ canvas.addEventListener(
   'wheel',
   (event) => {
     hintTravel(); // §9: the wheel IS travel — the first intent dismisses the hint
-    if (!railInputReady()) return;
+    if (!railInputReady()) {
+      wheelEdgeState = WHEEL_EDGE_START;
+      return;
+    }
     event.preventDefault(); // the rail owns travel; no page scroll or pinch-zoom leaks through
     railState = scroll(rail, railState, event.deltaY, reducedMotion);
+    // §6.1 amendment (DEC-031): a deliberate sustained scroll past a rail end fires that
+    // end's airlock; a momentum burst restarts the pass (the pure law's three thresholds).
+    const boundary = railPushBoundary();
+    if (boundary === null) {
+      wheelEdgeState = WHEEL_EDGE_START; // the pass lives only at the boundary
+      return;
+    }
+    const direction = event.deltaY > 0 ? 'forward' : 'backward';
+    if (direction !== boundary) {
+      wheelEdgeState = WHEEL_EDGE_START; // one pass, one direction by intent
+      return;
+    }
+    const step = wheelEdge(wheelEdgeState, {
+      pastBoundary: true,
+      deltaPx: event.deltaY,
+      nowMs: performance.now(),
+    });
+    wheelEdgeState = step.state;
+    if (step.fire) enterBoundary(direction);
   },
   { passive: false },
 );
@@ -1025,6 +1070,64 @@ document.addEventListener('keydown', (event) => {
   if (next !== undefined) beginTransitTo(next);
 });
 
+// --- The boundary prompt + the wheel-through (2026-10-21, DEC-031; laws in
+// src/ui/edge-prompt.ts and src/camera/wheel-edge.ts). The owner's reachability
+// report: a trackpad visitor scrolled to a rail end and stalled — the rail's own
+// wheel is travel-only (§6.1), so the doors were arrows-only. Now a boundary has
+// TWO roads into the same beginTransitTo call the arrows use: the chrome prompt
+// ("Keep scrolling to enter", click to travel) and a sustained deliberate wheel
+// past the clamp — the momentum-immunity thresholds are declared tuning constants.
+let wheelEdgeState: WheelEdgeState = WHEEL_EDGE_START;
+let edgePromptShown = false;
+const EDGE_SETTLE_EPS = 1e-9; // the rail's snapped stops sit at parameters 0 and 1 exactly
+const boundaryNext = (direction: 'forward' | 'backward'): NodeHandle | null => {
+  const at = RAIL_CHAIN.indexOf(railNode);
+  if (at < 0) return null;
+  const next = direction === 'forward' ? RAIL_CHAIN[at + 1] : RAIL_CHAIN[at - 1];
+  return next ?? null;
+};
+/** The rail end this settled state sits on, only when an airlock side exists there.
+ * The prompt's road: it must show once the visitor STOPS at the door — a glide means
+ * the camera is still moving and the chrome stays quiet. */
+const railSettledBoundary = (): 'backward' | 'forward' | null => {
+  if (railState.glide !== null) return null; // mid-flight is nowhere to prompt
+  if (railState.u >= 1 - EDGE_SETTLE_EPS) {
+    return boundaryNext('forward') === null ? null : 'forward';
+  }
+  if (railState.u <= EDGE_SETTLE_EPS) {
+    return boundaryNext('backward') === null ? null : 'backward';
+  }
+  return null;
+};
+/** The rail end the wheel is pushing into, glide included: a scroll stream keeps a
+ * glide alive indefinitely (every event re-creates it), so the wheel-through law reads
+ * the CLAMPED scroll target, not the settled parameter — the pass must survive the stream. */
+const railPushBoundary = (): 'backward' | 'forward' | null => {
+  const g = railState.glide;
+  const param = g !== null ? g.to : railState.u;
+  if (param >= 1 - EDGE_SETTLE_EPS) {
+    return boundaryNext('forward') === null ? null : 'forward';
+  }
+  if (param <= EDGE_SETTLE_EPS) {
+    return boundaryNext('backward') === null ? null : 'backward';
+  }
+  return null;
+};
+const enterBoundary = (direction: 'forward' | 'backward'): void => {
+  const next = boundaryNext(direction);
+  wheelEdgeState = WHEEL_EDGE_START; // both roads clear the accumulator
+  if (next === null || !railInputReady()) return;
+  beginTransitTo(next);
+};
+edgePrompt.addEventListener('click', () => {
+  // The push law, not the settled one: a click lands while the wheel's glide is still
+  // finishing, and the prompt's intent is unambiguous — travel now (the transit owns
+  // the camera; the arrival re-seeds the rail at the destination's entry stop).
+  const boundary = railPushBoundary();
+  hintTravel(); // a prompt click IS travel (§9: the one definition)
+  if (boundary === null) return;
+  enterBoundary(boundary);
+});
 function returnToNow(): void {
   cancelGesture();
   const now = Date.now();
@@ -1169,6 +1272,12 @@ const tick = (timeMs: number): void => {
       activeNode = advanced.state.to;
       finishTransit(advanced.state);
       transit = null;
+      // The URL is the state (architecture.md): the room change lands in the hash at the
+      // transit's completion — a human-entered transit (prompt/arrow/wheel) shares the
+      // room from the address bar the moment it arrives. replaceState: no history spam
+      // per transit; the browser's back walks the last WRITTEN URL (a deep link) and
+      // the hashchange path transits home.
+      writeRoomUrl(activeNode);
       assertDisposal(advanced.state.from, activeNode);
       const next = queuedTarget ?? target;
       queuedTarget = null;
@@ -1245,6 +1354,18 @@ const tick = (timeMs: number): void => {
   if (captionDiff.stopId) caption.dataset.stop = captionNext.stopId ?? '';
   if (captionDiff.announcement) captionLive.textContent = captionNext.announcement;
   captionView = captionNext;
+
+  // The boundary prompt (DEC-031): one pure view per frame, the node written on change
+  // (the caption law's harmless brother). The visibility belongs to the law; the text
+  // rides the language setter.
+  const edgeNext = edgePromptView({
+    settled: arrival.phase === 'settled' && transit === null,
+    boundary: railSettledBoundary(),
+  });
+  if (edgeNext.visible !== edgePromptShown) {
+    edgePromptShown = edgeNext.visible;
+    edgePrompt.dataset.visible = edgeNext.visible ? 'true' : 'false';
+  }
   if (perfLog) {
     if (!firstSkyLogged) {
       firstSkyLogged = true;

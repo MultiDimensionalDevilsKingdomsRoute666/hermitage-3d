@@ -86,9 +86,13 @@ function rectsOverlap(a: UvRect, b: UvRect): boolean {
 }
 
 describe('§3.2 byte pin', () => {
-  it('serializes the TS law to the committed JSON byte for byte', () => {
-    expect(serializeLayout(buildLayout())).toBe(readText(layoutJsonPath));
-  });
+  it(
+    'serializes the TS law to the committed JSON byte for byte',
+    { timeout: 20_000 }, // the heaviest pure test: the loaded 2-core box needs the margin
+    () => {
+      expect(serializeLayout(buildLayout())).toBe(readText(layoutJsonPath));
+    },
+  );
 
   it('is stable across two serializations', () => {
     expect(serializeLayout(buildLayout())).toBe(serializeLayout(buildLayout()));

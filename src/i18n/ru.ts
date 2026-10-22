@@ -26,6 +26,7 @@ export const ru = {
   'chrome.wordmark': 'Зимний дворец',
   'chrome.notesLink': 'Как это устроено\u00A0→',
   'chrome.travelHint': 'Потяните, чтобы подойти ближе',
+  'chrome.edgePrompt': 'Прокрутите дальше — войдёте',
   'chrome.toggleLabel': 'EN',
   'chrome.toggleAria': 'English',
   'chrome.scrubLabel': 'Петербургское время, ±24\u00A0часа от времени сцены',
