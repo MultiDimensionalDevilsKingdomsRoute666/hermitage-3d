@@ -86,13 +86,10 @@ function rectsOverlap(a: UvRect, b: UvRect): boolean {
 }
 
 describe('§3.2 byte pin', () => {
-  it(
-    'serializes the TS law to the committed JSON byte for byte',
-    { timeout: 20_000 }, // the heaviest pure test: the loaded 2-core box needs the margin
-    () => {
-      expect(serializeLayout(buildLayout())).toBe(readText(layoutJsonPath));
-    },
-  );
+  it('serializes the TS law to the committed JSON byte for byte', { timeout: 20_000 }, () => {
+    // the heaviest pure test: the loaded 2-core box needs the margin
+    expect(serializeLayout(buildLayout())).toBe(readText(layoutJsonPath));
+  });
 
   it('is stable across two serializations', () => {
     expect(serializeLayout(buildLayout())).toBe(serializeLayout(buildLayout()));
@@ -241,7 +238,10 @@ describe('§3.4 UV invariants', () => {
     }
   });
 
-  it('keeps the 668 lightmap strips disjoint, padded and inside the chart', () => {
+  it('keeps the 668 lightmap strips disjoint, padded and inside the chart', {
+    timeout: 20_000,
+  }, () => {
+    // the pairwise sweep is O(n²) — the loaded box needs the margin
     const order = chartOrder();
     expect(order).toHaveLength(334);
     const frames = chartRects(order);
