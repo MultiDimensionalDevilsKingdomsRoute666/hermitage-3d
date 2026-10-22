@@ -16,6 +16,7 @@ import {
   nearestStopIndex,
   type RailState,
   samplePose,
+  samplePosition,
   scroll,
   seedState,
   stepStop,
@@ -82,10 +83,17 @@ import {
   setLangParam,
   writeStoredLang,
 } from './ui/lang-host';
-import { advanceTransit, beginTransit, finishTransit, type TransitState } from './world/airlock';
+import {
+  advanceTransit,
+  beatProgress,
+  beginTransit,
+  finishTransit,
+  type TransitState,
+} from './world/airlock';
 import { parseLmParam } from './world/lm-mode';
 import { WINDOW_WARM_LINEAR, warmGround } from './world/night-facade';
 import {
+  type AirlockDef,
   airlockEntering,
   type NodeHandle,
   nextAirlockOnPath,
@@ -99,6 +107,7 @@ import {
   type Vec3,
 } from './world/registry';
 import { parseStopParam } from './world/stop-param';
+import { arrivePose, type BeatPose, beatExposure, departPose } from './world/threshold-beat';
 
 const SUN_DISTANCE = 1000;
 const TIER_STORAGE_KEY = 'zimny:tier';
@@ -117,6 +126,8 @@ const hud = document.querySelector('#hud');
 if (!(hud instanceof HTMLElement)) throw new Error('#hud missing');
 const caption = document.querySelector('#caption');
 if (!(caption instanceof HTMLElement)) throw new Error('#caption missing');
+const captionTitle = document.querySelector('#caption-title');
+if (!(captionTitle instanceof HTMLElement)) throw new Error('#caption-title missing');
 const captionLive = document.querySelector('#caption-live');
 if (!(captionLive instanceof HTMLElement)) throw new Error('#caption-live missing');
 const notesLink = document.querySelector('#notes-link');
@@ -443,11 +454,21 @@ let roomCtx: RoomLoadContext = {
 let activeNode: NodeHandle | null = null; // null = cold entry (nothing mounted yet)
 let indoor = false;
 let ready = false;
-let transit: Readonly<{ state: TransitState; target: NodeHandle }> | null = null;
+let transit: Readonly<{ state: TransitState; target: NodeHandle; def: AirlockDef }> | null = null;
 let queuedTarget: NodeHandle | null = null;
 let transitStarted = false;
 const roomWork = new Map<RoomId, Promise<void>>();
 const roomModules = new Map<RoomId, RoomModule>();
+
+// The threshold beat's host side (design-walkthrough-ux.md §4, R-UX1): the pure FSM owns the
+// phases, this host owns the camera pose and the exposure over them. The door pose and the
+// rail's end tangent lock on the FIRST depart frame — a wheel-through may fire mid-glide, and
+// the locked pose keeps the switch continuous (the rail's own glide is absorbed into the beat's).
+// The exposure endpoints capture at begin: the drain starts from the view the visitor sees.
+let beatDoor: BeatPose | null = null;
+let beatTangent: Vec3 | null = null;
+let beatFromExposure = 1;
+let beatToExposure = 1;
 
 // The room whose baked light applies this frame: the node being entered during a transit,
 // otherwise the active node. The square owns none; unregistered rooms no-op in blend-gl.
@@ -537,11 +558,23 @@ const seedRail = (node: NodeHandle): void => {
 // the stop the frame will rest on — shows its beat; the hand-over changes nothing.
 const dwellStop = (): CaptionStop | null => {
   const st = transit?.state;
-  if (st === undefined || st.phase !== 'hold' || st.to === null) return null;
+  if (st === undefined) return null;
+  if (st.phase !== 'card' && st.phase !== 'arrive') return null;
+  if (st.to === null) return null;
   const dest = railFor(st.to);
   const seeded = seedState(dest, seedInputs()).state;
   const stop = dest.stops[nearestStopIndex(dest, seeded.u)];
   return stop === undefined ? null : { id: stop.id, caption: t(stop.caption) };
+};
+
+// The title card (DEC-017 rewritten; D3): while the frame is black, the caption region
+// carries the destination's room title — the words the door label (R-UX2) will click. It
+// clears with the arrive phase, so its fade overlaps the first lit frames (§4.4).
+const dwellTitle = (): string | null => {
+  const st = transit?.state;
+  if (st === undefined || st.phase !== 'card' || st.to === null) return null;
+  if (st.to === 'square') return t('data.titleSquare');
+  return t(roomEntryOf(st.to).contract.title);
 };
 
 // The square's default gaze is its authored framing, not the room pose law: S0 up at the
@@ -633,6 +666,80 @@ const applyRailPose = (): void => {
   }
 };
 
+/** The threshold beat owns the camera and the exposure during depart/card/arrive (§4):
+ * the base pose is the beat's (the rail's eased look offsets still compose on top — the
+ * arrive's end pose IS the rail's rest pose, so the hand-over frame is zero-change), and
+ * the tone-mapping exposure drains/ramps with the same progress. Returns false when no
+ * beat is open and the rail owns the frame. */
+const applyBeatPose = (): boolean => {
+  const open = transit;
+  const st = open?.state;
+  if (open === null || st === undefined || st.phase === 'idle' || st.phase === 'exit') {
+    return false;
+  }
+  const pose = samplePose(rail, railState, railNode === 'square' ? SQUARE_GAZE : undefined);
+  let beat: BeatPose;
+  if (st.phase === 'depart') {
+    // The door pose + the end tangent lock on the first depart frame (continuity above).
+    if (beatDoor === null || beatTangent === null) {
+      const u = railState.u;
+      // The door stop sits at a rail end; the tangent points INTO the boundary being pushed.
+      const step = 1e-4;
+      const inner = samplePosition(rail, Math.min(1, Math.max(0, u >= 0.5 ? u - step : u + step)));
+      const raw: Vec3 = [
+        pose.position[0] - inner[0],
+        pose.position[1] - inner[1],
+        pose.position[2] - inner[2],
+      ];
+      const len = Math.hypot(raw[0], raw[1], raw[2]);
+      if (len <= 0) throw new Error('zimny: the door stop has a degenerate rail tangent');
+      beatDoor = { position: pose.position, target: pose.target };
+      beatTangent = [raw[0] / len, raw[1] / len, raw[2] / len];
+    }
+    const doorPortal =
+      st.from !== null && st.from === open.def.from
+        ? open.def.portalFrom
+        : (open.def.portalTo ?? open.def.portalFrom);
+    beat = departPose({
+      stop: beatDoor,
+      tangent: beatTangent,
+      portal: doorPortal,
+      progress: beatProgress(st),
+    });
+  } else if (st.phase === 'card') {
+    if (beatDoor === null || beatTangent === null) return false; // a cut/cold card: the rail owns it
+    const doorPortal =
+      st.from !== null && st.from === open.def.from
+        ? open.def.portalFrom
+        : (open.def.portalTo ?? open.def.portalFrom);
+    beat = departPose({ stop: beatDoor, tangent: beatTangent, portal: doorPortal, progress: 1 });
+  } else {
+    const destPortal =
+      st.to !== null && st.to === open.def.from ? open.def.portalFrom : open.def.portalTo;
+    if (destPortal === null) return false; // unreachable: arrive never runs at a dead end
+    beat = arrivePose({
+      portal: destPortal,
+      stop: { position: pose.position, target: pose.target },
+      progress: beatProgress(st),
+    });
+  }
+  camera.position.set(beat.position[0], beat.position[1], beat.position[2]);
+  camera.lookAt(beat.target[0], beat.target[1], beat.target[2]);
+  if (pose.look.yaw !== 0) {
+    camera.rotateOnWorldAxis(UP_AXIS, -pose.look.yaw * THREE.MathUtils.DEG2RAD);
+  }
+  if (pose.look.pitch !== 0) {
+    camera.rotateOnAxis(RIGHT_AXIS, pose.look.pitch * THREE.MathUtils.DEG2RAD);
+  }
+  renderer.toneMappingExposure = beatExposure({
+    phase: st.phase,
+    progress: st.phase === 'card' ? 0 : beatProgress(st),
+    fromExposure: beatFromExposure,
+    toExposure: beatToExposure,
+  });
+  return true;
+};
+
 const applySwap = (to: NodeHandle | null): void => {
   if (to === 'square') {
     indoor = false;
@@ -682,7 +789,14 @@ const beginTransitTo = (target: NodeHandle): void => {
   // Entering through the airlock's home side (gallery ← jordan, square ← gallery) seeds the
   // far stop: the journey continues in the direction of travel (§6.1 seed law).
   seedAtFarStop = def.from === target;
-  transit = { state, target };
+  transit = { state, target, def };
+  // The threshold beat's exposure endpoints (§4): the departure drains the view the visitor
+  // sees (outdoors E(h), indoors the room constant) and the arrival ramps to the
+  // destination's own constant. A cold entry has no depart — the endpoints sit unused.
+  beatDoor = null;
+  beatTangent = null;
+  beatFromExposure = state.from === 'square' ? sample.exposure : INTERIOR_EXPOSURE;
+  beatToExposure = state.to === 'square' ? sample.exposure : INTERIOR_EXPOSURE;
   ready = state.to === 'square'; // the resident is always ready
   if (state.to !== null && state.to !== 'square') {
     void ensureRoom(state.to).then(() => {
@@ -1270,6 +1384,12 @@ const tick = (timeMs: number): void => {
     if (advanced.state.phase === 'exit') {
       const { target } = transit;
       activeNode = advanced.state.to;
+      // The beat's last write was the pre-transition frame (slightly under the destination's
+      // exposure), and a cut's black card ends here with the drain still at zero: restore
+      // the destination constant on the exit frame — both paths, one write (§4.3/§4.4).
+      renderer.toneMappingExposure = beatToExposure;
+      beatDoor = null;
+      beatTangent = null;
       finishTransit(advanced.state);
       transit = null;
       // The URL is the state (architecture.md): the room change lands in the hash at the
@@ -1298,8 +1418,9 @@ const tick = (timeMs: number): void => {
 
   // Camera rail (§6.1): advance the glide (a cut already settled) and apply the pose — the
   // rail owns position and gaze every frame; the inputs below mutate its state in listeners.
+  // During an open threshold beat the beat owns the pose and the exposure instead (§4).
   railState = advance(rail, railState, deltaMs);
-  applyRailPose();
+  if (!applyBeatPose()) applyRailPose();
 
   // §11 permits camera-ray uniforms per visible frame; cheap and rotation-correct.
   rig.updateCamera(camera);
@@ -1340,18 +1461,24 @@ const tick = (timeMs: number): void => {
 
   // Caption overlay (§6.1/§8.4): one pure presentation call per frame, DOM writes only on
   // change (the hud law). The dwell outranks: the dark card carries the destination's
-  // seed-stop caption; the arrival title beat suppresses until settled.
+  // seed-stop caption + the room title while black (§4, DEC-017); the title empties with
+  // the arrive phase and the arrival title beat suppresses until settled.
   const captionNext = presentCaption(captionView, {
     stops: captionStops,
     stopIndex: nearestStopIndex(rail, railState.u),
     gliding: railState.glide !== null,
     dwell: dwellStop(),
+    dwellTitle: dwellTitle(),
     suppressed: arrival.phase !== 'settled',
   });
   const captionDiff = captionChanges(captionView, captionNext);
   if (captionDiff.text) caption.textContent = captionNext.text;
   if (captionDiff.visible) caption.dataset.visible = String(captionNext.visible);
   if (captionDiff.stopId) caption.dataset.stop = captionNext.stopId ?? '';
+  if (captionDiff.title) {
+    captionTitle.textContent = captionNext.title;
+    captionTitle.dataset.visible = String(captionNext.title !== '');
+  }
   if (captionDiff.announcement) captionLive.textContent = captionNext.announcement;
   captionView = captionNext;
 

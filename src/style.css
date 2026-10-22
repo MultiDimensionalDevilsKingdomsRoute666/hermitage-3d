@@ -277,6 +277,9 @@ body {
   #edge-prompt {
     bottom: 30px;
   }
+  .caption-title {
+    bottom: 74px; /* the title card follows the taller-line anchor (§4) */
+  }
 }
 /* Caption overlay — design-staircase.md §6.1 beats: visible at a rest stop, faded while
    gliding, the dark-card caption during an airlock dwell (§8.4). Write-on-change from the
@@ -284,20 +287,18 @@ body {
    r26.1 (the owner's law, R004): the caption anchors to the BOTTOM-RIGHT corner,
    right-aligned — it swapped places with the language toggle (the toggle went top-right,
    opposite the wordmark; the caption tried the top line and the row slot before that).
-   The hint stacks one line above it on the same side. */
+   The hint stacks one line above it on the same side.
+   R-UX1 (design-walkthrough-ux.md §4): the title card joins the same corner as a stack —
+   the room title above the caption while the threshold is black (DEC-017 rewritten); a
+   two-line caption can never overlap its own title (a fixed offset would). */
+.caption-title,
 .caption {
-  --caption-fade: 240ms;
   position: fixed;
   right: 24px;
-  bottom: 40px; /* the notes link's line */
   max-width: min(32rem, 80vw);
   margin: 0;
   padding: 0;
-  font-size: var(--chrome-size); /* the timeline's size — one quieter step than the wordmark */
-  line-height: 1.5;
-  letter-spacing: 0.02em;
   text-align: right;
-  text-wrap: balance;
   color: rgba(255, 255, 255, 0.85);
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
   opacity: 1;
@@ -305,10 +306,33 @@ body {
   pointer-events: none;
   user-select: none;
 }
+.caption-title {
+  --caption-fade: 240ms;
+  /* The title card rides the chrome axis ONE LINE ABOVE the caption (the hint's r26.1
+     anchor: 40 + one 14px/1.5 line + one 8 px gap) — the same slot the travel hint uses,
+     at a different phase: the hint is dismissed by the first travel intent, the card
+     lives only while a transit is open, so the two never show together. */
+  bottom: 69px;
+  font-family: var(--font-serif, Georgia, serif); /* the room label's museum register */
+  font-size: 18px;
+  line-height: 1.5;
+  letter-spacing: 0.01em;
+  text-wrap: balance;
+}
+.caption {
+  --caption-fade: 240ms;
+  bottom: 40px; /* the notes link's line */
+  font-size: var(--chrome-size); /* the timeline's size — one quieter step than the wordmark */
+  line-height: 1.5;
+  letter-spacing: 0.02em;
+  text-wrap: balance;
+}
+.caption-title[data-visible="false"],
 .caption[data-visible="false"] {
   opacity: 0;
 }
 @media (prefers-reduced-motion: reduce) {
+  .caption-title,
   .caption {
     transition: none;
   }

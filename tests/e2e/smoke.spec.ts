@@ -115,6 +115,11 @@ test('smoke walk: the graph returns the ledger to boot values', async ({ page })
   await nav('/gallery');
   await expect(hud).toHaveAttribute('data-room', 'rastrelli-gallery', { timeout: 60_000 });
   await expect(hud).not.toHaveAttribute('data-ledger-bytes', '0', { timeout: 60_000 });
+  // §8.4/§1.2 + §4 (DEC-017 rewritten): the black card carries the destination's room title
+  // above the seed-stop caption — the cold entry's card-first shape, now titled.
+  await expect(page.locator('#caption-title')).toHaveText('Rastrelli Gallery — the way in', {
+    timeout: 60_000,
+  });
   // §8.4/§1.2: the dwell shows the destination's seed-stop caption and hands over to the
   // rest frame on the same stop — the dark card never flashes a second text.
   await expect(page.locator('#caption')).toHaveText('dark; the square behind', { timeout: 60_000 });
@@ -170,6 +175,11 @@ test('wheel walk: the boundary prompt and the sustained wheel enter both airlock
   await expect(edgePrompt).toHaveAttribute('data-visible', 'true', { timeout: 30_000 });
   // Road 1 — the prompt: the click travels the same boundary step the arrows use.
   await edgePrompt.click();
+  // The threshold beat (§4, DEC-017 rewritten): the black card shows the destination's room
+  // title (the words the door label will click), then empties with the first lit frame.
+  const captionTitle = page.locator('#caption-title');
+  await expect(captionTitle).toHaveText('Rastrelli Gallery — the way in', { timeout: 60_000 });
+  await expect(captionTitle).toHaveAttribute('data-visible', 'false', { timeout: 60_000 });
   // The URL is the state: the swap rewrites the hash to the room's route (DEC-031).
   await expect(page).toHaveURL(/#\/gallery/, { timeout: 60_000 });
   await expect(hud).toHaveAttribute('data-room', 'rastrelli-gallery', { timeout: 60_000 });

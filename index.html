@@ -58,6 +58,11 @@
          rules. aria-hidden: a developer tool, repeated state already announced elsewhere.
          When shown it sits below the toggle's line (style.css). -->
     <aside id="hud" hidden aria-hidden="true"></aside>
+    <!-- The threshold beat's title card (design-walkthrough-ux.md §4, DEC-017 rewritten):
+         the destination's room title on the black card, the entry caption beneath; the
+         title fades on the first lit frame. Visual mirror only (aria-hidden) — the live
+         region keeps announcing «<stop id> · <caption>» (§1.2). data-visible is an e2e row. -->
+    <p id="caption-title" class="caption-title" aria-hidden="true" data-visible="false"></p>
     <!-- Caption overlay (§6.1): the stop's beat text — the r26.1 owner law: the BOTTOM-RIGHT
          corner, right-aligned (R004: it swapped places with the language toggle — the
          toggle went to the top-right, opposite the wordmark). Hidden from AT because

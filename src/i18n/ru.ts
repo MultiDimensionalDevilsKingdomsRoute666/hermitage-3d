@@ -246,6 +246,7 @@ export const ru = {
 
   'data.titleGallery': 'Галерея Растрелли\u00A0— путь внутрь',
   'data.titleJordan': 'Иорданская лестница\u00A0— подъём',
+  'data.titleSquare': 'Дворцовая площадь',
   'data.kindCornerRisalit': 'угловой ризалит',
   'data.kindStretch': 'прясло',
   'data.kindCentralPortal': 'центральный портал',

@@ -34,6 +34,10 @@ Edges (ordered, bidirectional for the back-scroll):
 
 ### 1.3 Prefetch policy
 
+> **R-UX1 note (2026-10-22):** the prefetch SHIPS with a simpler trigger — at every
+> arrival-settle, not rail-keyed — per [design-walkthrough-ux.md §4.6](design-walkthrough-ux.md);
+> the table below is the superseded phase-2 plan, kept for provenance.
+
 | trigger | prefetches | mechanism |
 |---|---|---|
 | boot on `#/`, after first frame + idle (`requestIdleCallback`, 2 s fallback) | `rastrelli-gallery` **manifest only** (≤2 KB) | fetch, no decode |
@@ -99,6 +103,7 @@ The arch passage itself (X −4…+4, Z +63.5…+87.5, the 24 m wing depth) is p
 
 - **Windows in jordan:** opaque baked panes (the sky colour per state is baked into the pane texture). Avoids see-through to the dome (whose brightness follows E(h), not the bake), avoids card-model leaks, saves draws. Flip to see-through only if the owner wants real sun movement in the panes (then the dome renders through window stencils — +1 draw, exposure mismatch to solve). Q9 in §12.
 - **The shell is a card model:** the massing has no arch hole today. Default: the arch-portal is a doorway transit whose first metre is inside the card (the vault mesh begins at the facade plane and the fade-to-dark completes before the camera crosses the card plane); r16 may alternatively cut an arch opening in the card — owner's call (Q7). Interiors sit at true coordinates inside the envelope; nothing exterior is drawn while a room is active, so there is no collision to resolve, only the one plane at the arch.
+- **R-UX1 (2026-10-22): the hold choreography shipped as the threshold beat** — the camera keeps moving through the light-fade (the drain rides `renderer.toneMappingExposure`, not an overlay), the FSM gained depart → card → arrive, and the transit became a threshold for every airlock. This section's fade-to-dark-in-place is superseded by [design-walkthrough-ux.md §4](design-walkthrough-ux.md).
 
 ### 2.4 The airlock — definition
 

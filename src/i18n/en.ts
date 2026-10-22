@@ -231,6 +231,7 @@ export const en = {
 
   'data.titleGallery': 'Rastrelli Gallery — the way in',
   'data.titleJordan': 'Jordan Staircase — the ascent',
+  'data.titleSquare': 'Palace Square',
   'data.kindCornerRisalit': 'cornerRisalit',
   'data.kindStretch': 'stretch',
   'data.kindCentralPortal': 'centralPortal',

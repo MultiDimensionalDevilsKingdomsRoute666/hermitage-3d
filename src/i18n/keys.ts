@@ -166,6 +166,7 @@ export type NotesKey =
 export type DataKey =
   | 'data.titleGallery'
   | 'data.titleJordan'
+  | 'data.titleSquare'
   | 'data.kindCornerRisalit'
   | 'data.kindStretch'
   | 'data.kindCentralPortal'

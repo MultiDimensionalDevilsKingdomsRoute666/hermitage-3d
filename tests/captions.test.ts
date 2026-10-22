@@ -35,13 +35,20 @@ const rest = (stops: readonly CaptionStop[], stopIndex: number): CaptionInput =>
   stopIndex,
   gliding: false,
   dwell: null,
+  dwellTitle: null,
   suppressed: false,
 });
 const glide = (stops: readonly CaptionStop[], stopIndex: number): CaptionInput => ({
   ...rest(stops, stopIndex),
   gliding: true,
 });
-const noChange = { text: false, visible: false, stopId: false, announcement: false };
+const noChange = {
+  text: false,
+  visible: false,
+  stopId: false,
+  title: false,
+  announcement: false,
+};
 
 describe('rest law', () => {
   it('reaches every committed beat text, visibly, from an empty view', () => {
@@ -83,6 +90,7 @@ describe('glide law', () => {
       text: true,
       visible: true,
       stopId: true,
+      title: false,
       announcement: true,
     });
   });
@@ -96,24 +104,38 @@ describe('glide law', () => {
 
 describe('dwell law', () => {
   const dwellJ0: CaptionInput = { ...rest(GALLERY, 2), dwell: JORDAN[0] };
+  const card: CaptionInput = { ...dwellJ0, dwellTitle: 'Jordan Staircase — the ascent' };
   it('shows the destination entry caption on the dark card', () => {
     const atG2 = presentCaption(EMPTY_CAPTION, rest(GALLERY, 2));
-    const card = presentCaption(atG2, dwellJ0);
-    expect(card.text).toBe('looking up into light');
-    expect(card.visible).toBe(true);
-    expect(card.stopId).toBe('J0');
-    expect(card.announcement).toBe('J0 · looking up into light');
+    const view = presentCaption(atG2, dwellJ0);
+    expect(view.text).toBe('looking up into light');
+    expect(view.visible).toBe(true);
+    expect(view.stopId).toBe('J0');
+    expect(view.announcement).toBe('J0 · looking up into light');
   });
-  it('hands over to the rest caption of J0 without any change (no flash)', () => {
-    const card = presentCaption(EMPTY_CAPTION, dwellJ0);
-    const frame = presentCaption(card, rest(JORDAN, 0));
-    expect(frame).toEqual(card);
-    expect(captionChanges(card, frame)).toEqual(noChange);
+  it('carries the room title above the caption while the frame is black (§4, DEC-017)', () => {
+    const view = presentCaption(EMPTY_CAPTION, card);
+    expect(view.title).toBe('Jordan Staircase — the ascent');
+    expect(view.text).toBe('looking up into light');
+    expect(view.visible).toBe(true);
+  });
+  it('the title empties on the first lit frame (the arrive phase: no dwellTitle)', () => {
+    const black = presentCaption(EMPTY_CAPTION, card);
+    const lit = presentCaption(black, dwellJ0);
+    expect(lit.title).toBe('');
+    expect(lit.text).toBe(black.text); // the caption hand-over is still zero-change
+    expect(captionChanges(black, lit)).toEqual({ ...noChange, title: true });
+  });
+  it('the rest frame after the beats equals the lit beat frame (no caption flash)', () => {
+    const lit = presentCaption(EMPTY_CAPTION, dwellJ0);
+    const frame = presentCaption(lit, rest(JORDAN, 0));
+    expect(frame).toEqual(lit);
+    expect(captionChanges(lit, frame)).toEqual(noChange);
   });
   it('cold deep link: the first view is already J0 text, fading in from empty', () => {
-    const card = presentCaption(EMPTY_CAPTION, { ...rest(JORDAN, 0), dwell: JORDAN[0] });
-    expect(captionChanges(EMPTY_CAPTION, card).visible).toBe(true);
-    expect(card.text).toBe(JORDAN[0].caption);
+    const view = presentCaption(EMPTY_CAPTION, { ...rest(JORDAN, 0), dwell: JORDAN[0] });
+    expect(captionChanges(EMPTY_CAPTION, view).visible).toBe(true);
+    expect(view.text).toBe(JORDAN[0].caption);
   });
   it('outranks suppression', () => {
     const view = presentCaption(EMPTY_CAPTION, { ...dwellJ0, suppressed: true });
