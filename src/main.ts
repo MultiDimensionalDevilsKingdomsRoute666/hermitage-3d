@@ -28,7 +28,7 @@ import {
   seedState,
   stepStop,
 } from './camera/rail';
-import { SQUARE_RAIL, SQUARE_S0_GAZE } from './camera/square-rail';
+import { SQUARE_RAIL, SQUARE_S0_GAZE, SQUARE_S1_GAZE } from './camera/square-rail';
 import { WHEEL_EDGE_START, type WheelEdgeState, wheelEdge } from './camera/wheel-edge';
 import { SOUTH_FACADE, WINDOW_ROWS } from './content/facade-spec';
 import { TIME } from './content/sky-time';
@@ -50,6 +50,7 @@ import { activateLang, activeLang, onLangChange, resolveLang } from './i18n/loca
 import { buildFacade } from './procedural/facade-builder';
 import { solveSouthFacade } from './procedural/facade-solver';
 import { buildNightLattice } from './procedural/night-lattice';
+import { buildThroat, openGroundArch, setThroatOpacity } from './procedural/throat';
 import { type SkySample, sampleSky } from './sky/appearance';
 import type { ArrivalState } from './sky/arrival';
 import { advanceArrival, initialArrival, presentationForArrival } from './sky/arrival';
@@ -123,6 +124,7 @@ import {
 } from './world/registry';
 import { parseStopParam } from './world/stop-param';
 import { arrivePose, type BeatPose, beatExposure, departPose } from './world/threshold-beat';
+import { THROAT_VOID } from './world/throat';
 
 const SUN_DISTANCE = 1000;
 const TIER_STORAGE_KEY = 'zimny:tier';
@@ -248,6 +250,10 @@ const facadeBuild = buildFacade(solvedFacade.value);
 // DEC-019 night lattice: one pane quad per window recess, hashed into three stock levels.
 // Lives inside the palace group — the indoors visibility flip is inherited for free.
 const nightLattice = buildNightLattice(solvedFacade.value);
+// R-UX3 (§3): the resident throat — rides the palace group: hidden the frame a room mounts,
+// faded in with the massing. The kit's middle ground-arch slab is voided for it.
+const throat = buildThroat();
+openGroundArch(facadeBuild);
 
 const palace = new THREE.Group();
 palace.name = 'PalaceMassing';
@@ -281,17 +287,26 @@ const protrusionZ = PALACE.halfDepth + PALACE.protrude - southFrontDepth / 2; //
 // (outer face at halfDepth + protrude). The old card-model x-positions were
 // approximate and did not match the spec's axis layout.
 let sectionPrefixAxes = 0;
-const southWings = SOUTH_FACADE.sections.map((section) => {
+const southWings = SOUTH_FACADE.sections.flatMap((section) => {
   const deep = section.declaredProtrusionM > 0;
+  const width = section.declaredAxes * solvedFacade.value.pitchM;
   const centreX =
     -PALACE.halfWidth + (sectionPrefixAxes + section.declaredAxes / 2) * solvedFacade.value.pitchM;
   sectionPrefixAxes += section.declaredAxes;
-  return block(
-    section.declaredAxes * solvedFacade.value.pitchM,
-    deep ? PALACE.wingDepth + PALACE.protrude : PALACE.wingDepth,
-    centreX,
-    deep ? protrusionZ : innerZ,
-  );
+  const depth = deep ? PALACE.wingDepth + PALACE.protrude : PALACE.wingDepth;
+  const z = deep ? protrusionZ : innerZ;
+  if (section.kind !== 'centralPortal') return [block(width, depth, centreX, z)];
+  // R-UX3 (§3): the gate pavilion is voided through its middle arch for the throat — two piers
+  // and a lintel instead of one solid; the throat's own surfaces line the void (THROAT_VOID
+  // clears them by 0.25 m so no pier face is coplanar with a throat wall).
+  const pierW = (width - 2 * THROAT_VOID.halfWidth) / 2;
+  const pierX = THROAT_VOID.halfWidth + pierW / 2;
+  const lintelH = PALACE.cornice - THROAT_VOID.topY;
+  return [
+    block(pierW, depth, centreX - pierX, z),
+    block(pierW, depth, centreX + pierX, z),
+    block(2 * THROAT_VOID.halfWidth, depth, centreX, z, lintelH, THROAT_VOID.topY + lintelH / 2),
+  ];
 });
 const northWings = [block(PALACE.halfWidth * 2, PALACE.wingDepth, 0, -innerZ)];
 const sideWings = [
@@ -322,6 +337,7 @@ palace.add(
   ...bands,
   facadeBuild.group,
   nightLattice.group,
+  throat.group,
 );
 // Shadows return with the facade kit (architecture.md): every solid casts and receives.
 ground.receiveShadow = true;
@@ -643,12 +659,9 @@ const dwellTitle = (): string | null => {
   return t(roomEntryOf(st.to).contract.title);
 };
 
-// The square's default gaze is its authored framing, not the room pose law: S0 up at the
-// cornice line is what the noon and white-night goldens pin (§6.1 «exists today»), and S1
-// gazes into the arch — resolved at runtime to the gallery's entry stop (no room data copied).
-const galleryEntry = roomEntryOf('rastrelli-gallery').contract.rail.stops[0];
-if (galleryEntry === undefined) throw new Error('zimny: gallery has no entry stop');
-const SQUARE_GAZE: readonly Vec3[] = [SQUARE_S0_GAZE, galleryEntry.position];
+// The square's gaze is its authored framing, not the room pose law: S0 up at the cornice line
+// (the goldens' pin) and S1 into the arch mouth (R-UX3) — both square data, no room data read.
+const SQUARE_GAZE: readonly Vec3[] = [SQUARE_S0_GAZE, SQUARE_S1_GAZE];
 let captionStops: readonly CaptionStop[] = rail.stops.map((s) => ({
   id: s.id,
   caption: t(s.caption),
@@ -1041,6 +1054,7 @@ const applyPresentation = (): void => {
     kitMaterial.opacity = presentation.massingOpacity;
     // Opaque once settled: depth-write rendering without the transparency pass.
     kitMaterial.transparent = presentation.massingOpacity < 1;
+    setThroatOpacity(throat, presentation.massingOpacity);
   }
   scrub.hidden = arrival.phase !== 'settled';
   notesLink.hidden = arrival.phase !== 'settled'; // DEC-004's in-app route to /notes

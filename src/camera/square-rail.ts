@@ -1,13 +1,14 @@
 // src/camera/square-rail.ts
 /**
  * The square's rail (design-staircase §6.1 — S0 «the facade and the hour», S1 «the arch
- * approach»). The square is a resident without a contract, so its stop data lives here; the
- * values are the §6.1 declared ones, ids follow the design's stop naming (S0/S1 like J0/J4).
+ * approach»; design-walkthrough-ux §3 «the gate composition», §12 R-UX3). The square is a
+ * resident without a contract, so its stop data lives here; ids follow the design's naming.
  *
- * The square's default gaze is NOT the room pose law: S0's authored framing — level with the
- * boot camera, up at the cornice line — is what the noon and white-night goldens pin, so it is
- * carried here as SQUARE_S0_GAZE and fed to samplePose by the host. S1 gazes into the arch:
- * the host resolves that target to the gallery's entry stop at runtime (no room data lives here).
+ * The square's gaze is NOT the room pose law: S0's authored framing — level with the boot
+ * camera, up at the cornice line — is what the noon and white-night goldens pin; S1 (R-UX3,
+ * D7) stands back so the gate pavilion composes as architecture and gazes at an authored point
+ * just inside the arch mouth at about two-thirds of the opening's height — the throat's axis.
+ * Both targets are fed to samplePose by the host as the per-stop gaze override.
  */
 import type { Rail, Vec3 } from '../world/registry';
 
@@ -21,7 +22,7 @@ export const SQUARE_RAIL = {
     },
     {
       id: 'S1',
-      position: [0, 1.7, 100],
+      position: [0, 1.7, 124],
       look: { yaw: 25, pitchUp: 20, pitchDown: 10 },
       caption: 'caption.s1',
     },
@@ -30,3 +31,6 @@ export const SQUARE_RAIL = {
 
 /** The authored S0 gaze target (§6.1 «exists today»): the boot pose the goldens pin. */
 export const SQUARE_S0_GAZE: Vec3 = [0, 11, 0];
+/** The authored S1 gaze target (R-UX3): inside the mouth (z 93.5), ≈ ⅔ of the 9.55 m opening.
+ * From S1 this is 8.7° up: the frame's top edge meets the facade near y 24 (entablature in). */
+export const SQUARE_S1_GAZE: Vec3 = [0, 6.6, 92];

@@ -12,7 +12,7 @@ import {
   stepStop,
   stopParameter,
 } from '../src/camera/rail';
-import { SQUARE_RAIL, SQUARE_S0_GAZE } from '../src/camera/square-rail';
+import { SQUARE_RAIL, SQUARE_S0_GAZE, SQUARE_S1_GAZE } from '../src/camera/square-rail';
 import { t } from '../src/i18n';
 import type { Rail, Stop, Vec3 } from '../src/world/registry';
 
@@ -202,16 +202,17 @@ describe('square rail (design §6.1, declared data)', () => {
     expect(SQUARE_RAIL.stops[0]?.position).toEqual([0, 1.7, 230]);
     expect(SQUARE_RAIL.stops[0]?.look).toEqual({ yaw: 35, pitchUp: 35, pitchDown: 35 });
     expect(t(SQUARE_RAIL.stops[0]?.caption ?? 'caption.s0')).toBe('the facade and the hour');
-    expect(SQUARE_RAIL.stops[1]?.position).toEqual([0, 1.7, 100]);
+    expect(SQUARE_RAIL.stops[1]?.position).toEqual([0, 1.7, 124]);
     expect(SQUARE_RAIL.stops[1]?.look).toEqual({ yaw: 25, pitchUp: 20, pitchDown: 10 });
     expect(t(SQUARE_RAIL.stops[1]?.caption ?? 'caption.s1')).toBe('the arch opens');
   });
-  it('keeps the authored S0 gaze and a level approach gaze at S1', () => {
-    const gaze: readonly Vec3[] = [SQUARE_S0_GAZE, [0, 1.7, 86]];
+  it('keeps the authored S0 gaze and the authored arch-mouth gaze at S1 (R-UX3, D7)', () => {
+    const gaze: readonly Vec3[] = [SQUARE_S0_GAZE, SQUARE_S1_GAZE];
     const s0 = samplePose(SQUARE_RAIL, restingAt(0), gaze);
     expect(s0.target).toEqual(SQUARE_S0_GAZE);
     const s1 = samplePose(SQUARE_RAIL, restingAt(1), gaze);
-    expect(s1.target).toEqual([0, 1.7, 86]);
+    expect(s1.target).toEqual(SQUARE_S1_GAZE);
+    expect(SQUARE_S1_GAZE).toEqual([0, 6.6, 92]);
   });
 });
 

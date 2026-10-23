@@ -16,9 +16,10 @@ const VIEWPORT = { width: 1280, height: 720 };
 
 // An element screenshot is a clip of the composited page, so overlapping DOM overlays would land
 // in the baseline. Hide them (visibility keeps layout, so nothing reflows). #chrome-row holds
-// the notes link and the language toggle; #travel-hint is the §9 hint — both are overlay chrome.
+// the notes link; #lang-toggle is the §1.2 top-right toggle (outside the row); #travel-hint is
+// the §9 hint — all overlay chrome.
 const HIDE_OVERLAYS_CSS =
-  '#title, #scrub, #chrome-row, #travel-hint, #edge-prompt, #hud, #caption, #caption-title { visibility: hidden !important; }';
+  '#title, #scrub, #chrome-row, #lang-toggle, #travel-hint, #edge-prompt, #hud, #caption, #caption-title { visibility: hidden !important; }';
 
 const MAX_DIFF_PIXEL_RATIO = 0.01;
 
@@ -92,6 +93,15 @@ test('golden: noon', async ({ page }) => {
 test('golden: white night (devlog-0000 hero)', async ({ page }) => {
   await settledPage(page, 'at=2026-06-20T21:45:00Z&det=1');
   await expect(page).toHaveScreenshot('golden-white-night.png', SHOT);
+});
+
+// golden: the square's S1 frame — the gate whole with the throat's receding vault and its
+// warm far light (R-UX3 §3, §9 «Approach»; sep-2026: the doorstep a stop further back).
+// Seeds ?stop=S1 over the noon instant; captured like every square scene (settled + margin).
+test('golden: S1 noon (the gate approach)', async ({ page }) => {
+  await settledPage(page, 'at=2026-06-21T12:00:00Z&det=1&stop=S1');
+  // Deliberate re-composition (D7): a NEW baseline, recorded in the round row.
+  await expect(page).toHaveScreenshot('golden-s1-noon.png', SHOT);
 });
 
 // Phase 2b exit gate (DEC-019): 21 Dec 21:00 local (18:00Z) — deep winter night, the sun far
