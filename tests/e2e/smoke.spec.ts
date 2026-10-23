@@ -213,9 +213,11 @@ test('wheel walk: the boundary prompt and the sustained wheel enter both airlock
   });
   await expect(edgePrompt).toHaveAttribute('data-visible', 'true');
   await expect(edgePrompt).toHaveText('Back out · Palace Square');
-  // Road 2 — the sustained wheel: the gallery's two segments into G2's clamp, then the
-  // pass spans its sustain window; the airlock fires mid-batch.
-  await wheel(34);
+  // Road 2 — the sustained wheel: the gallery's three segments into G2's clamp, then the
+  // pass spans its sustain window; the airlock fires mid-batch. wheel() emits 80 px events:
+  // 1200 / 80 = 15 per segment (SCROLL_PX_PER_SEGMENT), three gallery segments
+  // (G0→Gj→G1→G2) + the same 4-event sustain window the two-segment road used.
+  await wheel(49);
   await expect(edgePrompt).toHaveAttribute('data-visible', 'true', { timeout: 30_000 });
   await expect(edgePrompt).toHaveText('Enter · Jordan Staircase', { timeout: 30_000 });
   await wheel(14);
@@ -250,17 +252,21 @@ test('keyboard walk: every stop reachable, reduced-motion cuts', async ({ page }
   // A cut transit to the instant-ready resident never reports a non-zero hold — data-stop
   // is the honest gate, and every landing is observed (§10 r18 gate).
   const caption = page.locator('#caption');
-  // The §6.1 caption beats, verbatim from the committed stop data (rooms/*/contract.ts).
+  // The §6.1 caption beats, verbatim from the committed stop data (rooms/*/contract.ts;
+  // R-UX5 §7/§8 stop authoring: Gj, J1b, J2b new; J2, J3 re-authored).
   const BEATS: Readonly<Record<string, string>> = {
     S0: 'the facade and the hour',
     S1: 'the arch opens',
     G0: 'dark; the square behind',
+    Gj: 'Where the passage meets the gallery the way turns east and runs unbroken: pilaster after pilaster, sconce after sconce, pacing the forty-odd metres to the far door.',
     G1: 'compression',
     G2: 'the door (airlock)',
     J0: 'looking up into light',
     J1: 'the flight',
-    J2: 'portholes mirror the windows',
-    J3: 'the gallery above',
+    J1b: 'Halfway up the first flight the gilded sconce of the upper run shows across the well. Rastrelli lights the turn before you reach it.',
+    J2: 'On the landing the stair divides. The sconce above the second flight marks where the two runs meet again beneath the painted ceiling.',
+    J2b: 'Halfway up the second flight the upper tier of windows opens over the climb. The Neva light enters high here and carries the last run of the stair up to the landing.',
+    J3: 'Near the top the eastern portal comes square to the eye: the doorway to the state rooms, framed in gilt between columns of grey granite.',
     J4: 'arrival; the portal (landing airlock)',
   };
   const walkTo = (stop: string, key = 'ArrowRight'): Promise<void> =>
@@ -289,9 +295,9 @@ test('keyboard walk: every stop reachable, reduced-motion cuts', async ({ page }
         await expect(caption).toHaveAttribute('data-stop', stop, { timeout: 60_000 });
         await expect(caption).toHaveText(beat, { timeout: 60_000 });
       });
-  // Forward: S0 → S1, the arch-portal boundary, G0 → G2, the gallery-airlock boundary,
-  // J0 → J4 — every stop of the phase observed landed.
-  for (const stop of ['S1', 'G0', 'G1', 'G2', 'J0', 'J1', 'J2', 'J3', 'J4']) {
+  // Forward: S0 → S1, the arch-portal boundary, G0 → Gj → G2, the gallery-airlock boundary,
+  // J0 → J1b → J2b → J4 — every stop of the phase observed landed.
+  for (const stop of ['S1', 'G0', 'Gj', 'G1', 'G2', 'J0', 'J1', 'J1b', 'J2', 'J2b', 'J3', 'J4']) {
     await walkTo(stop);
   }
   // The live region names the stop (§1.2) and tracks the walk's landings.
@@ -305,7 +311,7 @@ test('keyboard walk: every stop reachable, reduced-motion cuts', async ({ page }
   await expect(hud).toHaveAttribute('data-stop', 'J4');
   // Backward: the whole way home through both airlocks — the backward entries seed the
   // far stop (G2, then S1), so the direction of travel is preserved (§6.1 seed law).
-  for (const stop of ['J3', 'J2', 'J1', 'J0', 'G2', 'G1', 'G0', 'S1', 'S0']) {
+  for (const stop of ['J3', 'J2b', 'J2', 'J1b', 'J1', 'J0', 'G2', 'G1', 'Gj', 'G0', 'S1', 'S0']) {
     await walkTo(stop, 'ArrowLeft');
   }
   await expect(page.locator('#caption-live')).toHaveText('S0 · the facade and the hour');

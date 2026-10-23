@@ -19,8 +19,18 @@ import type { Rail, Stop, Vec3 } from '../src/world/registry';
 const stop = (id: string, position: Vec3, yaw = 30, pitchUp = 20, pitchDown = 10): Stop => ({
   id,
   position,
+  subject: null, // the pose law: the next stop's position, the last stop looks back
   look: { yaw, pitchUp, pitchDown },
   caption: 'caption.s0', // fixtures never resolve captions; the key just has to typecheck
+});
+
+// R-UX5 §8: a stop with an authored world-space subject.
+const aimed = (id: string, position: Vec3, subject: Vec3): Stop => ({
+  id,
+  position,
+  subject,
+  look: { yaw: 30, pitchUp: 20, pitchDown: 10 },
+  caption: 'caption.s0',
 });
 
 const STAIR: Rail = {
@@ -75,15 +85,41 @@ describe('committed pose law', () => {
     const d = pose.target.map((v, k) => v - (pose.position[k] ?? 0));
     expect(Math.hypot(d[0] ?? 0, d[1] ?? 0, d[2] ?? 0)).toBeCloseTo(1);
   });
-  it('honours a per-stop gaze override (the square’s authored framing)', () => {
-    const gaze: readonly Vec3[] = [
-      [0, 11, 0],
-      [0, 1.7, 86],
-    ];
-    const s0 = samplePose(LINE, restingAt(0), gaze);
-    const s1 = samplePose(LINE, restingAt(1), gaze);
-    expect(s0.target).toEqual(gaze[0]);
-    expect(s1.target).toEqual(gaze[1]);
+});
+
+describe('authored subjects (R-UX5 §8, D6)', () => {
+  const A: Vec3 = [10, 2.4, 0];
+  const B: Vec3 = [10, 1.7, -40];
+  const AIMED: Rail = { stops: [aimed('a', [0, 1.7, 0], A), aimed('b', [0, 1.7, -10], B)] };
+  it('returns the stop’s subject by reference at the stop (the golden fence)', () => {
+    expect(samplePose(AIMED, restingAt(0)).target).toBe(AIMED.stops[0]?.subject);
+    expect(samplePose(AIMED, restingAt(1)).target).toBe(AIMED.stops[1]?.subject);
+  });
+  it('interpolates the TARGET POINT in world space, smootherstep over the segment', () => {
+    const mid = samplePose(AIMED, restingAt(0.5)).target;
+    expect(mid[0]).toBeCloseTo(10);
+    expect(mid[1]).toBeCloseTo(2.05);
+    expect(mid[2]).toBeCloseTo(-20);
+    // smootherstep(¼) = 6/4⁵ − 15/4⁴ + 10/4³
+    const w = 0.103515625;
+    const q = samplePose(AIMED, restingAt(0.25)).target;
+    expect(q[1]).toBeCloseTo(2.4 + (1.7 - 2.4) * w);
+    expect(q[2]).toBeCloseTo(-40 * w);
+  });
+  it('locks on a shared subject for the whole segment (a dolly with a subject)', () => {
+    const A2: Vec3 = [10, 2.4, 0]; // equal by value, a distinct object
+    const LOCK: Rail = { stops: [aimed('a', [0, 1.7, 0], A), aimed('b', [0, 1.7, -10], A2)] };
+    for (const u of [0.1, 0.37, 0.5, 0.9]) {
+      expect(samplePose(LOCK, restingAt(u)).target).toEqual(A);
+    }
+  });
+  it('keeps the angle blend when either end of a segment is subjectless', () => {
+    const MIXED: Rail = { stops: [aimed('a', [0, 1.6, 0], A), stop('b', [0, 1.6, -10])] };
+    expect(samplePose(MIXED, restingAt(0)).target).toBe(A);
+    expect(samplePose(MIXED, restingAt(1)).target).toEqual(MIXED.stops[0]?.position);
+    const pose = samplePose(MIXED, restingAt(0.5));
+    const d = pose.target.map((v, k) => v - (pose.position[k] ?? 0));
+    expect(Math.hypot(d[0] ?? 0, d[1] ?? 0, d[2] ?? 0)).toBeCloseTo(1);
   });
 });
 
@@ -206,12 +242,11 @@ describe('square rail (design §6.1, declared data)', () => {
     expect(SQUARE_RAIL.stops[1]?.look).toEqual({ yaw: 25, pitchUp: 20, pitchDown: 10 });
     expect(t(SQUARE_RAIL.stops[1]?.caption ?? 'caption.s1')).toBe('the arch opens');
   });
-  it('keeps the authored S0 gaze and the authored arch-mouth gaze at S1 (R-UX3, D7)', () => {
-    const gaze: readonly Vec3[] = [SQUARE_S0_GAZE, SQUARE_S1_GAZE];
-    const s0 = samplePose(SQUARE_RAIL, restingAt(0), gaze);
-    expect(s0.target).toEqual(SQUARE_S0_GAZE);
-    const s1 = samplePose(SQUARE_RAIL, restingAt(1), gaze);
-    expect(s1.target).toEqual(SQUARE_S1_GAZE);
+  it('carries the S0 gaze and the arch-mouth gaze as the stops’ subjects (R-UX3 D7, R-UX5)', () => {
+    expect(SQUARE_RAIL.stops[0]?.subject).toEqual(SQUARE_S0_GAZE);
+    expect(SQUARE_RAIL.stops[1]?.subject).toEqual(SQUARE_S1_GAZE);
+    expect(samplePose(SQUARE_RAIL, restingAt(0)).target).toEqual(SQUARE_S0_GAZE);
+    expect(samplePose(SQUARE_RAIL, restingAt(1)).target).toEqual(SQUARE_S1_GAZE);
     expect(SQUARE_S1_GAZE).toEqual([0, 6.6, 92]);
   });
 });

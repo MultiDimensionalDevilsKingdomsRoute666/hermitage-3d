@@ -10,6 +10,9 @@
  * Round-16a adjudication: a room entry carries its contract statically — contracts are tiny
  * data and the module stays behind the thunk — so the list is the single source of truth
  * (DEC-013) and the whole graph fences at boot.
+ * R-UX5 (design-walkthrough-ux §7/§8, D6): Stop carries the required subject: Vec3 | null —
+ * the authored world-space gaze; 'bad-subject' fences a non-finite subject or one coincident
+ * with its stop's eye.
  */
 import type { RoomLedger } from '../engine/ledger';
 import type { CaptionKey, Key } from '../i18n/keys';
@@ -29,6 +32,12 @@ export type LightmapIntensity = Readonly<Record<LightState, number>>;
 export type Stop = Readonly<{
   id: string;
   position: Vec3;
+  /**
+   * §7/§8 committed target (R-UX5). Non-null: the eye looks at this world point, and between
+   * two subject-bearing stops the target point interpolates in world space (equal subjects
+   * lock). Null: the pose law — the next stop's position; the last stop looks back.
+   */
+  subject: Vec3 | null;
   look: Readonly<{ yaw: number; pitchUp: number; pitchDown: number }>;
   /** The caption's i18n key; the host resolves it to text at the dictionary boundary. */
   caption: CaptionKey;
@@ -149,7 +158,8 @@ export type RegistryIssue =
   | 'bad-hold'
   | 'contract-mismatch'
   | 'no-stops'
-  | 'bad-look-limit';
+  | 'bad-look-limit'
+  | 'bad-subject';
 export function routeKeyOf(
   fragment: string,
 ): Readonly<{ route: string; issues: readonly RouteIssue[] }> {
@@ -166,6 +176,11 @@ export function resolveRoute(
   const hit = list.find((entry) => entry.route === route);
   if (hit) return { node: hit.id, route, issues: [] };
   return { node: 'square', route, issues: ['unknown-route'] };
+}
+/** A subject is usable when finite and not coincident with its stop's eye (a degenerate lookAt). */
+function isUsableSubject(subject: Vec3, position: Vec3): boolean {
+  if (!subject.every((v) => Number.isFinite(v))) return false;
+  return subject[0] !== position[0] || subject[1] !== position[1] || subject[2] !== position[2];
 }
 export function validateRegistry(
   list: readonly RegistryEntry[],
@@ -218,6 +233,8 @@ export function validateRegistry(
       for (const stop of entry.contract.rail.stops) {
         const limits = [stop.look.yaw, stop.look.pitchUp, stop.look.pitchDown];
         if (!limits.every((v) => Number.isFinite(v) && v >= 0)) issues.push('bad-look-limit');
+        if (stop.subject !== null && !isUsableSubject(stop.subject, stop.position))
+          issues.push('bad-subject');
       }
     }
   }

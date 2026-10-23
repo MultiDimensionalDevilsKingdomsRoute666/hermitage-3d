@@ -33,6 +33,10 @@ const SHOT = {
 // design-staircase §4.4 room goldens: one stop per interior room at the three §4 det times.
 // `stop` is the dev-only `?stop=` switch (src/world/stop-param.ts); the det times are the same
 // instants the smoke and the room look review use. Six scenes = 2 rooms × 3 light states.
+// R-UX5: J4 is RE-SITED onto the landing slab with an authored subject (the east portal) —
+// its three baselines re-baseline ONCE, recorded in the round row; G1's position and gaze
+// direction are bit-identical (its subject lies due east on the same ray), so its three
+// baselines HOLD; the four square scenes hold (poses unchanged).
 const DET_AT = {
   day: '2026-06-22T03:18:00Z',
   dusk: '2026-06-20T21:50:00Z',

@@ -41,12 +41,20 @@ export const en = {
   'caption.s0': 'the facade and the hour',
   'caption.s1': 'the arch opens',
   'caption.g0': 'dark; the square behind',
+  'caption.gj':
+    'Where the passage meets the gallery the way turns east and runs unbroken: pilaster after pilaster, sconce after sconce, pacing the forty-odd metres to the far door.',
   'caption.g1': 'compression',
   'caption.g2': 'the door (airlock)',
   'caption.j0': 'looking up into light',
   'caption.j1': 'the flight',
-  'caption.j2': 'portholes mirror the windows',
-  'caption.j3': 'the gallery above',
+  'caption.j1b':
+    'Halfway up the first flight the gilded sconce of the upper run shows across the well. Rastrelli lights the turn before you reach it.',
+  'caption.j2':
+    'On the landing the stair divides. The sconce above the second flight marks where the two runs meet again beneath the painted ceiling.',
+  'caption.j2b':
+    'Halfway up the second flight the upper tier of windows opens over the climb. The Neva light enters high here and carries the last run of the stair up to the landing.',
+  'caption.j3':
+    'Near the top the eastern portal comes square to the eye: the doorway to the state rooms, framed in gilt between columns of grey granite.',
   'caption.j4': 'arrival; the portal (landing airlock)',
 
   'notes.title': 'How the south facade is built',

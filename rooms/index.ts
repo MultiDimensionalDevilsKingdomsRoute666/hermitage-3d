@@ -29,7 +29,10 @@ export const AIRLOCKS: readonly AirlockDef[] = [
     from: 'rastrelli-gallery',
     to: 'jordan',
     portalFrom: { min: [43, 0, 70], max: [44, 3.6, 76] },
-    portalTo: { min: [78, 0, -66], max: [80, 3.6, -62] },
+    // R-UX5 (§6, D6): the box moves with J0 — the arrival is a 2.5 m push-in up the flight's
+    // own axis (centre (67.2, 1.7, −63.6), 4.0 m south of J0); the vestibule drops out of
+    // the visit. Declared by the specialist, orchestrator-owned data, framed by capture.
+    portalTo: { min: [66.2, 0, -64.6], max: [68.2, 3.4, -62.6] },
     transit: 'doorway',
     holdMs: 300,
   },
@@ -37,7 +40,9 @@ export const AIRLOCKS: readonly AirlockDef[] = [
     id: 'landing-airlock',
     from: 'jordan',
     to: null,
-    portalFrom: { min: [71.5, 10, -68], max: [74.5, 13.5, -64] },
+    // R-UX5: the box re-declared to enclose J4 on the landing slab (x ≥ 80). The dead-end
+    // beat (transit 'cut', holdMs 600) is untouched (DEC-025 retargets it later).
+    portalFrom: { min: [81, 10, -80], max: [84, 13.5, -77] },
     portalTo: null,
     transit: 'cut',
     holdMs: 600,

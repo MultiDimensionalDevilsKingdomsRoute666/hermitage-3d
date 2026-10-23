@@ -23,6 +23,7 @@ const box: Bounds = { min: [0, 0, 0], max: [1, 1, 1] };
 const stop: Stop = {
   id: 's0',
   position: [0, 1.6, 0],
+  subject: null, // the pose law: the next stop's position, the last stop looks back
   look: { yaw: 45, pitchUp: 20, pitchDown: 15 },
   caption: 'caption.s0', // fixtures never resolve captions; the key just has to typecheck
 };

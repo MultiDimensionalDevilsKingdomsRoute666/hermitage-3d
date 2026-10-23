@@ -33,11 +33,14 @@ export type CaptionKey =
   | 'caption.s0'
   | 'caption.s1'
   | 'caption.g0'
+  | 'caption.gj'
   | 'caption.g1'
   | 'caption.g2'
   | 'caption.j0'
   | 'caption.j1'
+  | 'caption.j1b'
   | 'caption.j2'
+  | 'caption.j2b'
   | 'caption.j3'
   | 'caption.j4';
 

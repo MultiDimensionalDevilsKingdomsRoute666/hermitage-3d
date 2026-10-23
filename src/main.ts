@@ -28,7 +28,7 @@ import {
   seedState,
   stepStop,
 } from './camera/rail';
-import { SQUARE_RAIL, SQUARE_S0_GAZE, SQUARE_S1_GAZE } from './camera/square-rail';
+import { SQUARE_RAIL } from './camera/square-rail';
 import { WHEEL_EDGE_START, type WheelEdgeState, wheelEdge } from './camera/wheel-edge';
 import { SOUTH_FACADE, WINDOW_ROWS } from './content/facade-spec';
 import { TIME } from './content/sky-time';
@@ -659,9 +659,10 @@ const dwellTitle = (): string | null => {
   return t(roomEntryOf(st.to).contract.title);
 };
 
-// The square's gaze is its authored framing, not the room pose law: S0 up at the cornice line
-// (the goldens' pin) and S1 into the arch mouth (R-UX3) — both square data, no room data read.
-const SQUARE_GAZE: readonly Vec3[] = [SQUARE_S0_GAZE, SQUARE_S1_GAZE];
+// The square's gaze is its authored framing, now the stops' own SUBJECTS (R-UX5 §8): S0 up at
+// the cornice line (the goldens' pin) and S1 into the arch mouth (R-UX3) — both square data,
+// read by samplePose from the stop data; the host feeds nothing.
+
 let captionStops: readonly CaptionStop[] = rail.stops.map((s) => ({
   id: s.id,
   caption: t(s.caption),
@@ -747,7 +748,7 @@ const doorTangent = (pose: BeatPose, u: number): Vec3 => {
   return [raw[0] / len, raw[1] / len, raw[2] / len];
 };
 const applyRailPose = (): void => {
-  const pose = samplePose(rail, railState, railNode === 'square' ? SQUARE_GAZE : undefined);
+  const pose = samplePose(rail, railState);
   // R-UX2 (§2): the wheel pass's lean dollies the resting camera a fraction of a metre into
   // the door; at 0 leanPose hands back the pose object — the never-pushed poses stay
   // bit-identical (the golden fence).
@@ -776,7 +777,7 @@ const applyBeatPose = (): boolean => {
   if (open === null || st === undefined || st.phase === 'idle' || st.phase === 'exit') {
     return false;
   }
-  const pose = samplePose(rail, railState, railNode === 'square' ? SQUARE_GAZE : undefined);
+  const pose = samplePose(rail, railState);
   let beat: BeatPose;
   if (st.phase === 'depart') {
     // The door pose + the end tangent lock on the first depart frame (continuity above).

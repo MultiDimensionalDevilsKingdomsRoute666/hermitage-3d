@@ -194,16 +194,29 @@ describe('en dictionary', () => {
   it('keeps the U+2019 apostrophe of the committed notes link', () => {
     expect(en['chrome.notesLink']).toBe('How it’s built →');
   });
-  it('pins the ten stop captions the e2e asserts', () => {
+  it('pins the thirteen stop captions the e2e asserts (R-UX5: Gj, J1b, J2b new; J2, J3 re-authored)', () => {
     expect(en['caption.s0']).toBe('the facade and the hour');
     expect(en['caption.s1']).toBe('the arch opens');
     expect(en['caption.g0']).toBe('dark; the square behind');
+    expect(en['caption.gj']).toBe(
+      'Where the passage meets the gallery the way turns east and runs unbroken: pilaster after pilaster, sconce after sconce, pacing the forty-odd metres to the far door.',
+    );
     expect(en['caption.g1']).toBe('compression');
     expect(en['caption.g2']).toBe('the door (airlock)');
     expect(en['caption.j0']).toBe('looking up into light');
     expect(en['caption.j1']).toBe('the flight');
-    expect(en['caption.j2']).toBe('portholes mirror the windows');
-    expect(en['caption.j3']).toBe('the gallery above');
+    expect(en['caption.j1b']).toBe(
+      'Halfway up the first flight the gilded sconce of the upper run shows across the well. Rastrelli lights the turn before you reach it.',
+    );
+    expect(en['caption.j2']).toBe(
+      'On the landing the stair divides. The sconce above the second flight marks where the two runs meet again beneath the painted ceiling.',
+    );
+    expect(en['caption.j2b']).toBe(
+      'Halfway up the second flight the upper tier of windows opens over the climb. The Neva light enters high here and carries the last run of the stair up to the landing.',
+    );
+    expect(en['caption.j3']).toBe(
+      'Near the top the eastern portal comes square to the eye: the doorway to the state rooms, framed in gilt between columns of grey granite.',
+    );
     expect(en['caption.j4']).toBe('arrival; the portal (landing airlock)');
   });
   it('keeps the quoted id of the provenance failure string (notes-view renders it quoted)', () => {

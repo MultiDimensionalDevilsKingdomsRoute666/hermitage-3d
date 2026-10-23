@@ -1,18 +1,28 @@
 /**
  * Camera rail — pure core.
  * Implements design-staircase §6 «Cinematography — the rail», §6.1 (path, look limits, inputs,
- * reduced motion, boundary intents) and the seed half of §1.2 (?stop= / ?cam= precedence).
+ * reduced motion, boundary intents), the seed half of §1.2 (?stop= / ?cam= precedence) and
+ * design-walkthrough-ux §8 (the movement law: authored subjects, R-UX5, D6).
  *
  * Laws:
  * - u ∈ [0, 1] spans the ACTIVE node's stop list; stop i sits at u = i / (n - 1); a single-stop
  *   node is the point u = 0. A parameter within STOP_EPS of a stop snaps to it, so stops are
  *   bit-identical to the committed data.
  * - Path: centripetal Catmull-Rom through the stop positions. The only synthesised control
- *   points are the two end phantoms (mirror of the neighbour through the end stop).
- * - Default gaze = committed pose law: stop i looks at stop i + 1, the last stop looks back at
- *   the previous one. Between stops the committed yaw/pitch of the bounding stops blend with the
- *   smootherstep law (yaw by shortest arc; a half-turn tie turns positive). An optional per-stop
- *   gaze override (the square's authored framing, golden-pinned) replaces the law where given.
+ *   points are the two end phantoms (mirror of the neighbour through the end stop). The path
+ *   turns only at stops: corners (the corridor junction, the mezzanine turn) and every slope
+ *   break (a flight's foot or top) are knots in the stop data.
+ * - Gaze at a stop = the committed pose law: a stop with an authored SUBJECT (Stop.subject, a
+ *   world-space point) looks at it; a stop without one looks at stop i + 1, the last looks back
+ *   at i − 1. At t = 0 / t = 1 the target IS the committed object, so never-dragged stop poses
+ *   stay bit-identical to the data (the golden fence).
+ * - Gaze between stops: when BOTH bounding stops carry a subject the TARGET POINT interpolates
+ *   in world space — target = subject_i + (subject_i+1 − subject_i) · smootherstep(t) — so the
+ *   gaze sweeps across the room's surfaces rather than through angle space; two equal subjects
+ *   hand back the same point for the whole segment (a locked dolly). Every other segment (no
+ *   subject, or only one end authored) keeps the angle blend: the bounding stops' committed
+ *   yaw/pitch (subject or law) blend with smootherstep — yaw by shortest arc (a half-turn tie
+ *   turns positive), pitch lerped — and the target reconstructs as position + forward.
  * - Look limits blend linearly between the bounding stops; user offsets are re-clamped on every
  *   transition. Offsets are degrees: yaw > 0 turns right, pitch > 0 looks up.
  * - Motion: a glide is (from, to, durationMs, elapsedMs) eased by smootherstep; advance() is
@@ -87,6 +97,7 @@ const lerp3 = (a: Vec3, b: Vec3, w: number): Vec3 => [
 ];
 const mirror = (a: Vec3, b: Vec3): Vec3 => [2 * a[0] - b[0], 2 * a[1] - b[1], 2 * a[2] - b[2]];
 const dist = (a: Vec3, b: Vec3): number => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
+const samePoint = (a: Vec3, b: Vec3): boolean => a[0] === b[0] && a[1] === b[1] && a[2] === b[2];
 const smootherstep = (x: number): number => {
   const t = clamp(x, 0, 1);
   return t * t * t * (t * (t * 6 - 15) + 10);
@@ -171,14 +182,20 @@ export function samplePosition(rail: Rail, u: number): Vec3 {
   );
 }
 
-function committedTarget(rail: Rail, index: number, gaze?: readonly Vec3[]): Vec3 {
-  const pinned = gaze?.[index];
-  if (pinned !== undefined) return pinned;
+/** The committed gaze target of stop `index`: its subject, else the pose law (next / back). */
+export function committedTarget(rail: Rail, index: number): Vec3 {
+  const stop = stopAt(rail, index);
+  if (stop.subject !== null) return stop.subject;
   const n = stopCount(rail);
-  const p = stopAt(rail, index).position;
+  const p = stop.position;
   if (n < 2) return [p[0], p[1], p[2] - 1];
   return stopAt(rail, index === n - 1 ? index - 1 : index + 1).position;
 }
+
+/** Two authored subjects: the same point for the whole segment when equal (the lock), else
+ * the world-space interpolation at the eased weight. */
+const subjectBetween = (a: Vec3, b: Vec3, w: number): Vec3 =>
+  samePoint(a, b) ? a : lerp3(a, b, w);
 
 function anglesTo(from: Vec3, to: Vec3): Angles {
   const dx = to[0] - from[0];
@@ -210,16 +227,21 @@ const settle = (rail: Rail, s: RailState): RailState => ({
   ...settleLook(s, sampleLimits(rail, s.u)),
 });
 
-export function samplePose(rail: Rail, state: RailState, gaze?: readonly Vec3[]): Pose {
+export function samplePose(rail: Rail, state: RailState): Pose {
   const { i, t } = locate(rail, state.u);
   const position = samplePosition(rail, state.u);
   const limits = sampleLimits(rail, state.u);
   const look = clampLook(state.look, limits);
-  if (t === 0) return { position, target: committedTarget(rail, i, gaze), limits, look };
-  if (t === 1) return { position, target: committedTarget(rail, i + 1, gaze), limits, look };
-  const a = anglesTo(stopAt(rail, i).position, committedTarget(rail, i, gaze));
-  const b = anglesTo(stopAt(rail, i + 1).position, committedTarget(rail, i + 1, gaze));
+  if (t === 0) return { position, target: committedTarget(rail, i), limits, look };
+  if (t === 1) return { position, target: committedTarget(rail, i + 1), limits, look };
+  const from = stopAt(rail, i);
+  const to = stopAt(rail, i + 1);
   const w = smootherstep(t);
+  if (from.subject !== null && to.subject !== null) {
+    return { position, target: subjectBetween(from.subject, to.subject, w), limits, look };
+  }
+  const a = anglesTo(from.position, committedTarget(rail, i));
+  const b = anglesTo(to.position, committedTarget(rail, i + 1));
   const d = forward({ yaw: a.yaw + wrapArc(b.yaw - a.yaw) * w, pitch: lerp(a.pitch, b.pitch, w) });
   const target: Vec3 = [position[0] + d[0], position[1] + d[1], position[2] + d[2]];
   return { position, target, limits, look };
