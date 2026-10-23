@@ -93,6 +93,13 @@ import {
 import { parseLmParam } from './world/lm-mode';
 import { WINDOW_WARM_LINEAR, warmGround } from './world/night-facade';
 import {
+  emptyPrefetchState,
+  noteManifest,
+  type PrefetchState,
+  type PrefetchUnit,
+  planPrefetch,
+} from './world/prefetch';
+import {
   type AirlockDef,
   airlockEntering,
   type NodeHandle,
@@ -102,6 +109,7 @@ import {
   type RoomId,
   type RoomLoadContext,
   type RoomModule,
+  type RoomNeighbor,
   type RoomScene,
   resolveRoute,
   type Vec3,
@@ -470,6 +478,14 @@ let beatTangent: Vec3 | null = null;
 let beatFromExposure = 1;
 let beatToExposure = 1;
 
+// The prefetch chain's host side (§4.6): the pure scheduler plans one unit per idle frame; this
+// host kicks the neighbours' manifests + lazy chunks at every arrival settle and stages each
+// planned unit into the loaders' session cache. `pendingChains` gates the scheduler on: settled,
+// no open transit, no in-flight chain (the never-while-pending law). A failed unit leaves the
+// plan marked and the byte cache empty — the hold's fetchRoom fetches on demand (safe degrade).
+let prefetchState: PrefetchState = emptyPrefetchState;
+let pendingChains = 0;
+
 // The room whose baked light applies this frame: the node being entered during a transit,
 // otherwise the active node. The square owns none; unregistered rooms no-op in blend-gl.
 const blendRoom = (): RoomId | null => {
@@ -486,9 +502,46 @@ const roomEntryOf = (id: RoomId): RoomEntry => {
   return hit;
 };
 
+// The settled node's committed neighbours (both directions; the scheduler skips the dead end
+// and the resident).
+const neighborsOf = (node: NodeHandle): readonly RoomNeighbor[] => {
+  const entry = ENTRIES.find((e) => e.id === node);
+  if (entry === undefined) return [];
+  return entry.kind === 'resident' ? entry.neighbors : entry.contract.neighbors;
+};
+
+// The arrival-settle kick (§4.6): each non-resident neighbour room's manifest + lazy chunk
+// resolve together (unserialised); the manifest's file rows note the scheduler's stage. Once
+// per room per session — the manifest fetcher and the browser module cache memoise the rest.
+const kicked = new Set<RoomId>();
+const kickPrefetch = (node: NodeHandle): void => {
+  for (const neighbor of neighborsOf(node)) {
+    const to = neighbor.to;
+    if (to === null || to === 'square' || kicked.has(to)) continue;
+    kicked.add(to);
+    pendingChains += 1;
+    void fetchManifest(to, new AbortController().signal)
+      .then((manifest) => {
+        void roomEntryOf(to).thunk();
+        if (prefetchState.rooms.get(to)?.manifest !== true) {
+          prefetchState = noteManifest(prefetchState, to, manifest.files);
+        }
+      })
+      .then(
+        () => {
+          pendingChains -= 1;
+        },
+        () => {
+          pendingChains -= 1; // the card's fetchManifest re-fetches today's shape
+        },
+      );
+  }
+};
+
 const ensureRoom = (id: RoomId): Promise<void> => {
   const existing = roomWork.get(id);
   if (existing) return existing;
+  pendingChains += 1; // the scheduler never plans while a load chain is pending (§4.6)
   const promise = (async () => {
     // r16 interim: no external abort source exists until the rail prefetch lands (r18).
     const controller = new AbortController();
@@ -500,10 +553,15 @@ const ensureRoom = (id: RoomId): Promise<void> => {
     await renderer.compileAsync(scene, camera);
   })();
   roomWork.set(id, promise);
-  void promise.catch((error: unknown) => {
-    console.error(`zimny: room ${id} failed`, error); // the transit dwells on the dark card
-    roomWork.delete(id); // a later entry may start the chain again
-  });
+  void promise
+    .then(() => {
+      pendingChains -= 1;
+    })
+    .catch((error: unknown) => {
+      pendingChains -= 1;
+      console.error(`zimny: room ${id} failed`, error); // the transit dwells on the dark card
+      roomWork.delete(id); // a later entry may start the chain again
+    });
   return promise;
 };
 
@@ -1354,6 +1412,7 @@ const tick = (timeMs: number): void => {
     transitStarted = true;
     const target = queuedTarget ?? resolveRoute(ENTRIES, location.hash).node;
     queuedTarget = null;
+    kickPrefetch(target); // §4.6: the boot node's neighbours start resolving (idle planning below)
     if (target !== 'square') beginTransitTo(target);
   }
 
@@ -1384,6 +1443,8 @@ const tick = (timeMs: number): void => {
     if (advanced.state.phase === 'exit') {
       const { target } = transit;
       activeNode = advanced.state.to;
+      // The arrival-settle kick (§4.6): the entered node's neighbours begin resolving.
+      if (activeNode !== null) kickPrefetch(activeNode);
       // The beat's last write was the pre-transition frame (slightly under the destination's
       // exposure), and a cut's black card ends here with the drain still at zero: restore
       // the destination constant on the exit frame — both paths, one write (§4.3/§4.4).
@@ -1402,6 +1463,33 @@ const tick = (timeMs: number): void => {
       const next = queuedTarget ?? target;
       queuedTarget = null;
       if (activeNode !== next) beginTransitTo(next); // next hop of the chain
+    }
+  }
+
+  // The prefetch chain (§4.6): on idle frames the pure scheduler plans one unit and the host
+  // stages it into the loaders' session cache — one unit per frame (the 2-core stutter guard);
+  // busy = an open transit or a pending chain, per the never-while-pending law.
+  if (arrival.phase === 'settled' && transit === null && pendingChains === 0) {
+    const settledNode = activeNode ?? 'square';
+    const plan = planPrefetch(prefetchState, {
+      settled: settledNode,
+      neighbors: neighborsOf(settledNode),
+      busy: false,
+    });
+    prefetchState = plan.state;
+    const unit: PrefetchUnit | null = plan.unit;
+    if (unit !== null) {
+      pendingChains += 1;
+      void fetchManifest(unit.roomId, new AbortController().signal)
+        .then((manifest) => assets.stageUnit(unit, manifest))
+        .then(
+          () => {
+            pendingChains -= 1;
+          },
+          () => {
+            pendingChains -= 1; // the plan marks the unit; the hold re-fetches on demand
+          },
+        );
     }
   }
 

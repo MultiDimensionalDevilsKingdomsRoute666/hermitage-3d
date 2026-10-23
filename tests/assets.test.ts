@@ -16,7 +16,38 @@ import {
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { afterAll, describe, expect, it } from 'vitest';
+import { afterAll, describe, expect, it, vi } from 'vitest';
+
+// The cache-law tests below run the loaders in node: the KTX2 transcoder and the meshopt
+// worker pool are replaced by fakes — the law under test is the CACHE's, not basis-universal's.
+// Each parse resolves a FRESH fake texture, so the single-use staging law is observable.
+vi.mock('three/examples/jsm/loaders/KTX2Loader.js', () => {
+  let parsed = 0;
+  class FakeKTX2Loader {
+    setTranscoderPath(): FakeKTX2Loader {
+      return this;
+    }
+    setWorkerLimit(): FakeKTX2Loader {
+      return this;
+    }
+    detectSupport(): FakeKTX2Loader {
+      return this;
+    }
+    parse(
+      _bytes: unknown,
+      onLoad: (texture: unknown) => void,
+      _onError?: (error: unknown) => void,
+    ): void {
+      parsed += 1;
+      onLoad({ isTexture: true, name: `fake/${parsed}` });
+    }
+    dispose(): void {}
+  }
+  return { KTX2Loader: FakeKTX2Loader };
+});
+vi.mock('three/examples/jsm/libs/meshopt_decoder.module.js', () => ({
+  MeshoptDecoder: { useWorkers: () => undefined },
+}));
 
 type FileRow = { path: string; bytes: number; sha256: string; kind: 'glb' | 'ktx2' | 'manifest' };
 type Geometry = {
@@ -358,5 +389,280 @@ describe('budget payload rows (tools/common.mjs collectPayloadRows)', () => {
     expect(rowOf(rows, 'exterior')).toMatchObject({ bytes: 4000001, ok: false });
     expect(rowOf(rows, 'basis')).toMatchObject({ bytes: 1234, ok: true });
     expect(rows.some((r) => r.id === 'exterior' && r.row === 'room')).toBe(false);
+  });
+});
+
+// --- §4.6 cache laws (R-UX1 slice 2): the loaders' per-session cache + the one-unit staging.
+
+import { createLoaders } from '../src/assets/loaders';
+import type { PrefetchUnit } from '../src/world/prefetch';
+import type { RoomLedger, RoomManifest } from '../src/world/registry';
+
+/** The ledger spy — the cache and the staging must leave it empty (§8.3 registers on load only). */
+const spyLedger = (): RoomLedger => {
+  const calls: string[] = [];
+  return {
+    register: (scope: string, kind: string, bytes: number, label: string) => {
+      calls.push(`${scope}/${kind}/${bytes}/${label}`);
+    },
+    release: (scope: string) => {
+      calls.push(`release/${scope}`);
+    },
+    bytesByScope: (scope: string) => (calls.some((c) => c.startsWith(`${scope}/`)) ? 1 : 0),
+    snapshot: () => [],
+  } as unknown as RoomLedger;
+};
+
+const fakeRenderer = () =>
+  ({
+    capabilities: { isWebGL2: true },
+    extensions: { has: () => true },
+    initTexture: () => undefined,
+    getContext: () => ({}),
+  }) as never;
+
+const stagingManifest = (id: string): RoomManifest =>
+  ({
+    id,
+    files: [
+      { path: `${id}.glb`, bytes: 4, sha256: 'a', kind: 'glb' },
+      { path: 'lm/steps.ktx2', bytes: 8, sha256: 'b', kind: 'ktx2' },
+      { path: 'probe/dusk.ktx2', bytes: 16, sha256: 'c', kind: 'ktx2' },
+    ],
+    lightmaps: { states: ['day'], res: null, intensity: null },
+    budget: { trianglesMax: 1, drawsMax: 1, textureBytesMax: 1, payloadBytesMax: 1 },
+    toolchain: {},
+  }) as unknown as RoomManifest;
+
+const bytesOf = (n: number): ArrayBuffer => new ArrayBuffer(n);
+/** A live, never-aborted signal — the fetchRoom signature requires one. */
+const SIGNAL = new AbortController().signal;
+
+/** A fetch double answering from a path → byteLength table; counts every call. */
+const fetchDouble = (sizes: ReadonlyMap<string, number>) => {
+  const paths: string[] = [];
+  const impl = ((url: string) => {
+    paths.push(String(url));
+    const row = [...sizes].find(([path]) => String(url).endsWith(`/${path}`));
+    if (row === undefined) return Promise.resolve({ ok: false, status: 404 } as never);
+    return Promise.resolve({
+      ok: true,
+      status: 200,
+      arrayBuffer: () => Promise.resolve(bytesOf(row[1])),
+    } as never);
+  }) as unknown as typeof fetch;
+  return { impl, paths };
+};
+
+describe('createLoaders — the session cache (§4.6)', () => {
+  it('a full hit fetches nothing on the second fetchRoom', async () => {
+    const double = fetchDouble(
+      new Map([
+        ['jordan.glb', 4],
+        ['lm/steps.ktx2', 8],
+        ['probe/dusk.ktx2', 16],
+      ]),
+    );
+    const loaders = createLoaders(fakeRenderer(), spyLedger(), double.impl);
+    const first = await loaders.fetchRoom(stagingManifest('jordan'), SIGNAL);
+    expect(double.paths).toHaveLength(3);
+    const second = await loaders.fetchRoom(stagingManifest('jordan'), SIGNAL);
+    expect(double.paths).toHaveLength(3); // no further network
+    expect(second.ktx2.get('lm/steps.ktx2')).toBe(first.ktx2.get('lm/steps.ktx2'));
+    loaders.dispose();
+  });
+
+  it('a partial hit fetches only the missing rows', async () => {
+    const double = fetchDouble(
+      new Map([
+        ['jordan.glb', 4],
+        ['lm/steps.ktx2', 8],
+        ['probe/dusk.ktx2', 16],
+      ]),
+    );
+    const loaders = createLoaders(fakeRenderer(), spyLedger(), double.impl);
+    await loaders.stageUnit({ kind: 'glb', roomId: 'jordan' }, stagingManifest('jordan'));
+    expect(double.paths).toHaveLength(1);
+    await loaders.fetchRoom(stagingManifest('jordan'), SIGNAL);
+    expect(double.paths).toHaveLength(3); // the glb row was not re-fetched
+    loaders.dispose();
+  });
+
+  it('a staged row is a hit — the second identical unit fetches nothing', async () => {
+    const double = fetchDouble(new Map([['jordan.glb', 4]]));
+    const loaders = createLoaders(fakeRenderer(), spyLedger(), double.impl);
+    await loaders.stageUnit({ kind: 'glb', roomId: 'jordan' }, stagingManifest('jordan'));
+    await loaders.stageUnit({ kind: 'glb', roomId: 'jordan' }, stagingManifest('jordan'));
+    expect(double.paths).toHaveLength(1);
+    loaders.dispose();
+  });
+});
+
+describe('createLoaders — stageUnit laws (§4.6)', () => {
+  it('a ktx2 unit fetches exactly that row and no sibling', async () => {
+    const double = fetchDouble(new Map([['lm/steps.ktx2', 8]]));
+    const loaders = createLoaders(fakeRenderer(), spyLedger(), double.impl);
+    const unit: PrefetchUnit = { kind: 'ktx2', roomId: 'jordan', path: 'lm/steps.ktx2' };
+    await loaders.stageUnit(unit, stagingManifest('jordan'));
+    expect(double.paths).toEqual(['/assets/jordan/lm/steps.ktx2']);
+    loaders.dispose();
+  });
+
+  it('a decode unit refuses a non-lm row — the probe is mountEnvironment\u2019s', async () => {
+    const double = fetchDouble(new Map([['probe/dusk.ktx2', 16]]));
+    const loaders = createLoaders(fakeRenderer(), spyLedger(), double.impl);
+    const fetchUnit: PrefetchUnit = { kind: 'ktx2', roomId: 'jordan', path: 'probe/dusk.ktx2' };
+    await loaders.stageUnit(fetchUnit, stagingManifest('jordan'));
+    await expect(
+      loaders.stageUnit(
+        { kind: 'decode', roomId: 'jordan', path: 'probe/dusk.ktx2' },
+        stagingManifest('jordan'),
+      ),
+    ).rejects.toThrow(/not an lm row/);
+    loaders.dispose();
+  });
+
+  it('a decode unit throws loud without cached bytes, and never fetches', async () => {
+    const double = fetchDouble(new Map([['lm/steps.ktx2', 8]]));
+    const loaders = createLoaders(fakeRenderer(), spyLedger(), double.impl);
+    await expect(
+      loaders.stageUnit(
+        { kind: 'decode', roomId: 'jordan', path: 'lm/steps.ktx2' },
+        stagingManifest('jordan'),
+      ),
+    ).rejects.toThrow(/no cached bytes/);
+    expect(double.paths).toHaveLength(0); // decode never fetches
+    loaders.dispose();
+  });
+
+  it('refuses a unit whose roomId does not match the manifest', async () => {
+    const double = fetchDouble(new Map([['jordan.glb', 4]]));
+    const loaders = createLoaders(fakeRenderer(), spyLedger(), double.impl);
+    await expect(
+      loaders.stageUnit({ kind: 'glb', roomId: 'rastrelli-gallery' }, stagingManifest('jordan')),
+    ).rejects.toThrow(/does not match manifest/);
+    expect(double.paths).toHaveLength(0);
+    loaders.dispose();
+  });
+
+  it('refuses a ktx2 unit with no matching manifest row', async () => {
+    const double = fetchDouble(new Map([['lm/ghost.ktx2', 8]]));
+    const loaders = createLoaders(fakeRenderer(), spyLedger(), double.impl);
+    await expect(
+      loaders.stageUnit(
+        { kind: 'ktx2', roomId: 'jordan', path: 'lm/ghost.ktx2' },
+        stagingManifest('jordan'),
+      ),
+    ).rejects.toThrow(/no row for this unit/);
+    loaders.dispose();
+  });
+
+  it('propagates a failed fetch loudly and caches nothing', async () => {
+    const double = fetchDouble(new Map()); // every path 404s
+    const loaders = createLoaders(fakeRenderer(), spyLedger(), double.impl);
+    await expect(
+      loaders.stageUnit({ kind: 'glb', roomId: 'jordan' }, stagingManifest('jordan')),
+    ).rejects.toThrow(/404/);
+    loaders.dispose();
+  });
+
+  it('rejects a row whose bytes do not match the manifest size', async () => {
+    const double = fetchDouble(new Map([['jordan.glb', 99]]));
+    const loaders = createLoaders(fakeRenderer(), spyLedger(), double.impl);
+    await expect(
+      loaders.stageUnit({ kind: 'glb', roomId: 'jordan' }, stagingManifest('jordan')),
+    ).rejects.toThrow(/size mismatch/);
+    loaders.dispose();
+  });
+
+  it('writes NOTHING to the ledger — staging is off-ledger by design (§8.3)', async () => {
+    const double = fetchDouble(
+      new Map([
+        ['jordan.glb', 4],
+        ['lm/steps.ktx2', 8],
+        ['probe/dusk.ktx2', 16],
+      ]),
+    );
+    const ledger = spyLedger();
+    const loaders = createLoaders(fakeRenderer(), ledger, double.impl);
+    await loaders.stageUnit({ kind: 'glb', roomId: 'jordan' }, stagingManifest('jordan'));
+    await loaders.stageUnit(
+      { kind: 'ktx2', roomId: 'jordan', path: 'lm/steps.ktx2' },
+      stagingManifest('jordan'),
+    );
+    await loaders.stageUnit(
+      { kind: 'ktx2', roomId: 'jordan', path: 'probe/dusk.ktx2' },
+      stagingManifest('jordan'),
+    );
+    expect(ledger.snapshot()).toHaveLength(0);
+    loaders.dispose();
+  });
+
+  it('creates no blob URLs — staging holds bytes only', async () => {
+    const createSpy = vi.spyOn(URL, 'createObjectURL');
+    const double = fetchDouble(new Map([['jordan.glb', 4]]));
+    const loaders = createLoaders(fakeRenderer(), spyLedger(), double.impl);
+    await loaders.stageUnit({ kind: 'glb', roomId: 'jordan' }, stagingManifest('jordan'));
+    expect(createSpy).not.toHaveBeenCalled();
+    createSpy.mockRestore();
+    loaders.dispose();
+  });
+});
+
+describe('createLoaders — single-use staging (§4.6, the unmount-disposes law)', () => {
+  it('a staged decode is consumed exactly once: the second decode re-transcodes', async () => {
+    const double = fetchDouble(
+      new Map([
+        ['jordan.glb', 4],
+        ['lm/steps.ktx2', 8],
+        ['probe/dusk.ktx2', 16],
+      ]),
+    );
+    const loaders = createLoaders(fakeRenderer(), spyLedger(), double.impl);
+    await loaders.stageUnit(
+      { kind: 'ktx2', roomId: 'jordan', path: 'lm/steps.ktx2' },
+      stagingManifest('jordan'),
+    );
+    await loaders.stageUnit(
+      { kind: 'decode', roomId: 'jordan', path: 'lm/steps.ktx2' },
+      stagingManifest('jordan'),
+    );
+    const payload = await loaders.fetchRoom(stagingManifest('jordan'), SIGNAL);
+    const first = await loaders.decodeRoomTextures('jordan', payload);
+    const staged = first.get('lm/steps.ktx2');
+    expect(staged).toBeDefined();
+    expect((staged as { name: string }).name).toContain('fake/');
+    const second = await loaders.decodeRoomTextures('jordan', payload);
+    // The staged object was consumed; a fresh parse answers — a DIFFERENT object, so a
+    // room's unmount may dispose its textures without poisoning the next hold.
+    expect(second.get('lm/steps.ktx2')).not.toBe(staged);
+    loaders.dispose();
+  });
+
+  it('the byte cache survives the consumption — a third decode still transcodes from bytes', async () => {
+    const double = fetchDouble(
+      new Map([
+        ['jordan.glb', 4],
+        ['lm/steps.ktx2', 8],
+        ['probe/dusk.ktx2', 16],
+      ]),
+    );
+    const loaders = createLoaders(fakeRenderer(), spyLedger(), double.impl);
+    const payload = await loaders.fetchRoom(stagingManifest('jordan'), SIGNAL);
+    expect(double.paths).toHaveLength(3);
+    await loaders.decodeRoomTextures('jordan', payload);
+    await loaders.decodeRoomTextures('jordan', payload);
+    await loaders.decodeRoomTextures('jordan', payload);
+    expect(double.paths).toHaveLength(3); // re-transcodes, never re-fetches
+    loaders.dispose();
+  });
+
+  it('still throws loud when a payload carries no lm row', async () => {
+    const double = fetchDouble(new Map());
+    const loaders = createLoaders(fakeRenderer(), spyLedger(), double.impl);
+    await expect(
+      loaders.decodeRoomTextures('jordan', { glb: bytesOf(4), ktx2: new Map() }),
+    ).rejects.toThrow(/has no lm rows/);
+    loaders.dispose();
   });
 });

@@ -3,9 +3,21 @@
  * Three-bound loader service — docs/design-staircase.md §8.2 (fetch/decode off the render
  * path; parse + GPU upload inside the hold), §8.3 (dispose once, in exit), §8.4 (no GPU
  * allocation in the frame loop). Implements RoomAssetService from src/world/registry.
+ * Extended by docs/design-walkthrough-ux.md §4.6 + §12 R-UX1: a per-session cache keyed by room
+ * id holds the prefetched bytes and the staged lm/* transcodes, never evicted in-session.
  *
  * Laws: fetchRoom never touches the renderer; mountParsed is hold-only and uploads every
  * texture before returning; blob URLs live until disposeParsed, never revoked per frame.
+ * Cache laws: fetchRoom consults the cache before every fetch and fills it after every fetch;
+ * a row whose bytes mismatch the manifest size is re-fetched; stageUnit performs exactly one
+ * unit, never touches the ledger, never parses the glb, never allocates GPU memory and never
+ * creates blob URLs; nothing is ever evicted — dispose() ends the session and clears the cache.
+ * SINGLE-USE STAGING: a staged lm transcode is consumed exactly once — decodeRoomTextures
+ * removes it from the cache on return, because a room's unmount disposes textures (state A
+ * rides material.lightMap, disposeParsed's traverse reaches it) and a kept object would come
+ * back disposed on re-entry. Revisits re-transcode from the byte cache; only the first entry
+ * after a prefetch rides the staged decode. A failed stage marks the plan but leaves the byte
+ * cache empty — the hold's fetchRoom fetches the row on demand (today's shape, safe degrade).
  */
 import {
   LoadingManager,
@@ -20,17 +32,27 @@ import {
 import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
 import { type GLTF, GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { KTX2Loader } from 'three/examples/jsm/loaders/KTX2Loader.js';
+import type { PrefetchUnit } from '../world/prefetch';
 import type {
   RoomAssetService,
   RoomId,
   RoomLedger,
+  RoomManifest,
   RoomObject,
   RoomPayload,
 } from '../world/registry';
 
 export interface Loaders extends RoomAssetService {
+  /** §4.6: stage exactly one prefetch unit — bytes or one lm transcode, nothing GPU-side. */
+  stageUnit(unit: PrefetchUnit, manifest: RoomManifest): Promise<void>;
   dispose(): void;
 }
+
+type RoomCache = {
+  glb: ArrayBuffer | null;
+  ktx2: Map<string, ArrayBuffer>;
+  decoded: Map<string, RoomObject>;
+};
 
 const materialsOf = (object: Object3D): Material[] => {
   const mesh = object as Mesh;
@@ -54,7 +76,11 @@ const vramBytes = (texture: Texture): number => {
   return Math.ceil(image.width * image.height * 4 * (4 / 3));
 };
 
-export function createLoaders(renderer: WebGLRenderer, ledger: RoomLedger): Loaders {
+export function createLoaders(
+  renderer: WebGLRenderer,
+  ledger: RoomLedger,
+  fetchImpl: typeof fetch = fetch,
+): Loaders {
   MeshoptDecoder.useWorkers(1);
   const ktx2 = new KTX2Loader()
     .setTranscoderPath('/basis/')
@@ -64,17 +90,55 @@ export function createLoaders(renderer: WebGLRenderer, ledger: RoomLedger): Load
   const blobsByRoot = new WeakMap<Object3D, string[]>();
   const envByRoom = new Map<string, WebGLRenderTarget>(); // §5/ADR-0013: one bake per mount
   const pmrem = new PMREMGenerator(renderer);
+  // §4.6: the per-session cache — keyed by room id, never evicted (≈ 10 MB declared, off-ledger).
+  const cache = new Map<string, RoomCache>();
+  const cacheOf = (roomId: string): RoomCache => {
+    const existing = cache.get(roomId);
+    if (existing !== undefined) return existing;
+    const fresh: RoomCache = { glb: null, ktx2: new Map(), decoded: new Map() };
+    cache.set(roomId, fresh);
+    return fresh;
+  };
   const parseGlb = (data: ArrayBuffer, path: string): Promise<GLTF> =>
     new Promise((resolve, reject) => gltf.parse(data, path, resolve, reject));
+  const fetchRow = (
+    roomId: string,
+    row: Readonly<{ path: string; bytes: number }>,
+    signal: AbortSignal | undefined,
+  ): Promise<ArrayBuffer> => {
+    const res =
+      signal === undefined
+        ? fetchImpl(`/assets/${roomId}/${row.path}`)
+        : fetchImpl(`/assets/${roomId}/${row.path}`, { signal });
+    return res.then(async (response) => {
+      if (!response.ok) throw new Error(`fetchRoom: ${response.status} for ${row.path}`);
+      const bytes = await response.arrayBuffer();
+      if (bytes.byteLength !== row.bytes) throw new Error(`fetchRoom: size mismatch ${row.path}`);
+      return bytes;
+    });
+  };
+  /** A cached row counts only when its size still matches the manifest — a mismatch re-fetches. */
+  const cachedRow = (
+    entry: RoomCache,
+    row: Readonly<{ path: string; bytes: number; kind: 'glb' | 'ktx2' }>,
+  ): ArrayBuffer | null => {
+    const hit = row.kind === 'glb' ? entry.glb : (entry.ktx2.get(row.path) ?? null);
+    if (hit === null) return null;
+    return hit.byteLength === row.bytes ? hit : null;
+  };
+  const decodeRow = (bytes: ArrayBuffer): Promise<RoomObject> =>
+    new Promise<RoomObject>((resolve, reject) => {
+      ktx2.parse(bytes, (texture: unknown) => resolve(texture as RoomObject), reject);
+    });
   return {
     async fetchRoom(manifest, signal) {
+      const entry = cacheOf(manifest.id);
       const rows = await Promise.all(
         manifest.files.map(async (row) => {
-          const res = await fetch(`/assets/${manifest.id}/${row.path}`, { signal });
-          if (!res.ok) throw new Error(`fetchRoom: ${res.status} for ${row.path}`);
-          const bytes = await res.arrayBuffer();
-          if (bytes.byteLength !== row.bytes)
-            throw new Error(`fetchRoom: size mismatch ${row.path}`);
+          const hit = cachedRow(entry, row);
+          const bytes = hit ?? (await fetchRow(manifest.id, row, signal));
+          if (row.kind === 'glb') entry.glb = bytes;
+          else entry.ktx2.set(row.path, bytes);
           return [row, bytes] as const;
         }),
       );
@@ -84,28 +148,51 @@ export function createLoaders(renderer: WebGLRenderer, ledger: RoomLedger): Load
       for (const [row, bytes] of rows) if (row.kind === 'ktx2') ktx2Map.set(row.path, bytes);
       return { glb: glbRow[1], ktx2: ktx2Map };
     },
-    /** §4: decode only the lm rows — the glb's own ktx2 albedos already decoded inside parse. */
+    /** §4: decode only the lm rows — the glb's own ktx2 albedos already decoded inside parse.
+     * §4.6: a staged decode is consumed exactly once (removed on return — see the header law). */
     async decodeRoomTextures(roomId, payload) {
+      const entry = cacheOf(roomId);
       const out = new Map<string, RoomObject>();
       await Promise.all(
         [...payload.ktx2]
           .filter(([path]) => path.startsWith('lm/'))
-          .map(
-            ([path, bytes]) =>
-              new Promise<void>((resolve, reject) => {
-                ktx2.parse(
-                  bytes,
-                  (texture: unknown) => {
-                    out.set(path, texture);
-                    resolve();
-                  },
-                  reject,
-                );
-              }),
-          ),
+          .map(async ([path, bytes]) => {
+            const staged = entry.decoded.get(path);
+            entry.decoded.delete(path); // consumed — never handed back twice
+            if (staged !== undefined) {
+              out.set(path, staged);
+              return;
+            }
+            out.set(path, await decodeRow(bytes));
+          }),
       );
       if (out.size === 0) throw new Error(`decodeRoomTextures: ${roomId} has no lm rows`);
       return out;
+    },
+    /** §4.6: one unit, bytes-or-transcode only — no ledger, no parse, no GPU, no blob URLs. */
+    async stageUnit(unit: PrefetchUnit, manifest: RoomManifest): Promise<void> {
+      if (unit.roomId !== manifest.id)
+        throw new Error(`stageUnit: ${unit.roomId} does not match manifest ${manifest.id}`);
+      const entry = cacheOf(unit.roomId);
+      if (unit.kind === 'decode') {
+        if (!unit.path.startsWith('lm/'))
+          throw new Error(`stageUnit: ${unit.path} is not an lm row`);
+        if (entry.decoded.has(unit.path)) return;
+        const bytes = entry.ktx2.get(unit.path);
+        if (bytes === undefined)
+          throw new Error(`stageUnit: decode of ${unit.path} has no cached bytes`);
+        entry.decoded.set(unit.path, await decodeRow(bytes));
+        return;
+      }
+      const row =
+        unit.kind === 'glb'
+          ? manifest.files.find((candidate) => candidate.kind === 'glb')
+          : manifest.files.find((candidate) => candidate.path === unit.path);
+      if (row === undefined) throw new Error(`stageUnit: ${unit.roomId} has no row for this unit`);
+      if (cachedRow(entry, row) !== null) return;
+      const bytes = await fetchRow(unit.roomId, row, undefined);
+      if (row.kind === 'glb') entry.glb = bytes;
+      else entry.ktx2.set(row.path, bytes);
     },
     async mountParsed(roomId: RoomId, payload: RoomPayload): Promise<RoomObject> {
       const blobUrls = new Map<string, string>();
@@ -184,6 +271,7 @@ export function createLoaders(renderer: WebGLRenderer, ledger: RoomLedger): Load
     dispose() {
       pmrem.dispose();
       ktx2.dispose();
+      cache.clear(); // the session ends with the loaders — the only legal clear
     },
   };
 }
