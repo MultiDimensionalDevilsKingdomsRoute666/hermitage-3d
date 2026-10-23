@@ -1631,6 +1631,9 @@ const tick = (timeMs: number): void => {
   if (captionDiff.title) {
     captionTitle.textContent = captionNext.title;
     captionTitle.dataset.visible = String(captionNext.title !== '');
+    // The e2e breadcrumb (the CI poll-cadence lesson): a staged room's card lives exactly
+    // holdMs — a poll can miss the whole window — the attr STICKS with the last shown title.
+    if (captionNext.title !== '') captionTitle.dataset.shown = captionNext.title;
   }
   if (captionDiff.announcement) captionLive.textContent = captionNext.announcement;
   captionView = captionNext;

@@ -116,10 +116,14 @@ test('smoke walk: the graph returns the ledger to boot values', async ({ page })
   await expect(hud).toHaveAttribute('data-room', 'rastrelli-gallery', { timeout: 60_000 });
   await expect(hud).not.toHaveAttribute('data-ledger-bytes', '0', { timeout: 60_000 });
   // §8.4/§1.2 + §4 (DEC-017 rewritten): the black card carries the destination's room title
-  // above the seed-stop caption — the cold entry's card-first shape, now titled.
-  await expect(page.locator('#caption-title')).toHaveText('Rastrelli Gallery — the way in', {
-    timeout: 60_000,
-  });
+  // above the seed-stop caption — the cold entry's card-first shape, now titled. The sticky
+  // data-shown breadcrumb catches the card no matter how short its window is (a staged
+  // room's card lives exactly holdMs — CI polls at ~500 ms and can miss the whole window).
+  await expect(page.locator('#caption-title')).toHaveAttribute(
+    'data-shown',
+    'Rastrelli Gallery — the way in',
+    { timeout: 60_000 },
+  );
   // §8.4/§1.2: the dwell shows the destination's seed-stop caption and hands over to the
   // rest frame on the same stop — the dark card never flashes a second text.
   await expect(page.locator('#caption')).toHaveText('dark; the square behind', { timeout: 60_000 });
@@ -127,6 +131,12 @@ test('smoke walk: the graph returns the ledger to boot values', async ({ page })
   // gallery → jordan: the heaviest room must render within the whole-frame budgets.
   await nav('/jordan');
   await expect(hud).toHaveAttribute('data-room', 'jordan', { timeout: 60_000 });
+  // The transit's card titled the destination — the sticky breadcrumb proves the shape.
+  await expect(page.locator('#caption-title')).toHaveAttribute(
+    'data-shown',
+    'Jordan Staircase — the ascent',
+    { timeout: 60_000 },
+  );
   await expectWithinBudgets(hud);
 
   // Re-target DURING the open transit: the queued chain still ends where the URL says,
@@ -179,8 +189,11 @@ test('wheel walk: the boundary prompt and the sustained wheel enter both airlock
   await edgePrompt.click();
   // The threshold beat (§4, DEC-017 rewritten): the black card shows the destination's room
   // title (the words the door label will click), then empties with the first lit frame.
+  // The sticky data-shown breadcrumb (the CI poll-cadence lesson) catches the short window.
   const captionTitle = page.locator('#caption-title');
-  await expect(captionTitle).toHaveText('Rastrelli Gallery — the way in', { timeout: 60_000 });
+  await expect(captionTitle).toHaveAttribute('data-shown', 'Rastrelli Gallery — the way in', {
+    timeout: 60_000,
+  });
   await expect(captionTitle).toHaveAttribute('data-visible', 'false', { timeout: 60_000 });
   // The URL is the state: the swap rewrites the hash to the room's route (DEC-031).
   await expect(page).toHaveURL(/#\/gallery/, { timeout: 60_000 });
