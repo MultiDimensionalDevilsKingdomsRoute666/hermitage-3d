@@ -194,3 +194,8 @@ r19: §9 + docs/architecture.md (room contract) + ROADMAP.
 **Ops.** Session start: `cd ~/Documents/hermitage-3d && /usr/bin/git pull --ff-only origin main`,
 then read this file. Network git ops via /usr/bin/git only (local /usr/local/bin/git is broken for
 network — known, do not diagnose). Stage own files by name; never .DS_Store, dist, probes/.
+**The quiet-machine law (owner, 2026-10-23, standing):** this IS the 2-core reference device the
+owner works on — "quiet" means no other agent sessions AND no owner interactive load (browsing,
+preview, anything); any co-tenant eats the gate margins and a full gate run is valid only quiet.
+Before a gate run, ask the owner if unsure; the owner's own `pnpm preview` sits on 4173 where e2e's
+`reuseExistingServer` would grab it — never gate-run while it is up.
