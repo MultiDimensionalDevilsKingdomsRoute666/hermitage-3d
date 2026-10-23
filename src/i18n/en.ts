@@ -18,8 +18,11 @@ export const en = {
   // The travel hint (design §9, ruled in the r23 freeze) and the language toggle (§1.2):
   // the toggle shows the TARGET language in its own script; the accessible name is the
   // target language's name.
-  'chrome.travelHint': 'Drag to move closer',
-  'chrome.edgePrompt': 'Keep scrolling to enter',
+  // The travel hint (design-walkthrough-ux §2, D1: the verb is the gesture) and the door label
+  // verbs (§2: «Enter · <room>» / «Back out · <room>», composed in src/ui/edge-prompt.ts).
+  'chrome.travelHint': 'Scroll to walk · drag to look around',
+  'chrome.doorEnter': 'Enter',
+  'chrome.doorBack': 'Back out',
   'chrome.toggleLabel': 'RU',
   'chrome.toggleAria': 'Русский',
   'chrome.scrubLabel': 'Petersburg time, ±24 hours around the scene time',

@@ -173,6 +173,8 @@ test('wheel walk: the boundary prompt and the sustained wheel enter both airlock
   // The square's one segment into S1's clamp; the glide settles and the prompt appears.
   await wheel(16);
   await expect(edgePrompt).toHaveAttribute('data-visible', 'true', { timeout: 30_000 });
+  // The label names the room through the door (§2/D1): verb + ' · ' + the room's NAME.
+  await expect(edgePrompt).toHaveText('Enter · Rastrelli Gallery', { timeout: 30_000 });
   // Road 1 — the prompt: the click travels the same boundary step the arrows use.
   await edgePrompt.click();
   // The threshold beat (§4, DEC-017 rewritten): the black card shows the destination's room
@@ -187,10 +189,22 @@ test('wheel walk: the boundary prompt and the sustained wheel enter both airlock
   // caption shows DURING the hold — it names the destination, not the arrival).
   await expect(hud).toHaveAttribute('data-hold-ms', '0', { timeout: 60_000 });
   await expectWithinBudgets(hud);
+  // The entry stop's first settled frame shows the caption only (§9): the door label waits
+  // for a backward push.
+  await expect(edgePrompt).toHaveAttribute('data-visible', 'false');
+  // The backward push — the door answers (§2/§9): one event latches it, the text names home.
+  await page.evaluate(() => {
+    document
+      .querySelector('#scene')
+      ?.dispatchEvent(new WheelEvent('wheel', { deltaY: -80, cancelable: true, bubbles: true }));
+  });
+  await expect(edgePrompt).toHaveAttribute('data-visible', 'true');
+  await expect(edgePrompt).toHaveText('Back out · Palace Square');
   // Road 2 — the sustained wheel: the gallery's two segments into G2's clamp, then the
   // pass spans its sustain window; the airlock fires mid-batch.
   await wheel(34);
   await expect(edgePrompt).toHaveAttribute('data-visible', 'true', { timeout: 30_000 });
+  await expect(edgePrompt).toHaveText('Enter · Jordan Staircase', { timeout: 30_000 });
   await wheel(14);
   await expect(hud).toHaveAttribute('data-room', 'jordan', { timeout: 60_000 });
   await expect(hud).toHaveAttribute('data-hold-ms', '0', { timeout: 60_000 });

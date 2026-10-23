@@ -25,7 +25,7 @@
  *   gesture — a sustained, slow, sustained-scroll pass past a rail end also surfaces a
  *   boundary intent (src/camera/wheel-edge.ts: three declared thresholds; a momentum burst
  *   restarts the pass) — and the host shows a keyed chrome prompt at a settled rail end
- *   (src/ui/edge-prompt.ts; chrome.edgePrompt); activating it travels through the same
+ *   (src/ui/edge-prompt.ts; the door label keys); activating it travels through the same
  *   boundary chain the arrows use. Stop data, look limits and glide durations untouched.
  * - Seed precedence on node entry: ?stop= (known id) > ?cam= (finite, clamped) > entry (u = 0).
  * - r21 look response: target/current split; the sensitivity and damping laws live in look.ts

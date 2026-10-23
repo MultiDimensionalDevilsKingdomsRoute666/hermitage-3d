@@ -9,6 +9,13 @@ import { applyWeights } from './assets/blend-gl';
 import { createLoaders } from './assets/loaders';
 import { fetchManifest } from './assets/manifests';
 import { parseCamParam } from './camera/cam-param';
+import {
+  advanceLean,
+  LEAN_FRESH_MS,
+  LEAN_START,
+  type LeanState,
+  leanPose,
+} from './camera/door-lean';
 import { toPointerType } from './camera/look';
 import {
   advance,
@@ -56,7 +63,7 @@ import {
   EMPTY_CAPTION,
   presentCaption,
 } from './ui/captions';
-import { edgePromptView } from './ui/edge-prompt';
+import { type DoorBoundary, doorLabel, edgePromptView, pushMemory } from './ui/edge-prompt';
 import {
   createHintState,
   HINT_HOLD_MS,
@@ -188,7 +195,8 @@ const bindChrome = (): void => {
   canvas.setAttribute('aria-label', t('chrome.canvasLabel'));
   notesLink.textContent = t('chrome.notesLink');
   travelHint.textContent = t('chrome.travelHint'); // §9: swaps in place, timers untouched
-  edgePrompt.textContent = t('chrome.edgePrompt'); // §6.1 amendment: same swap law
+  // The door label's text composes in the frame block (it names the current boundary's
+  // destination); the language swap re-composes on the next visible frame.
   // The clock labels bind per minute-change; a fixed ?at= boot has no live resample, so
   // the language switch re-applies the epoch itself (idempotent: the same instant, the
   // new language's day line).
@@ -710,10 +718,30 @@ bindLangToggle((target) => {
 
 const UP_AXIS = new THREE.Vector3(0, 1, 0);
 const RIGHT_AXIS = new THREE.Vector3(1, 0, 0);
+/** The unit tangent INTO the boundary the camera is pushing: the same derivation the
+ * threshold beat locks on its first depart frame (§4.1) — one helper, both consumers, so
+ * the lean's direction and the departure glide's direction agree by construction. */
+const doorTangent = (pose: BeatPose, u: number): Vec3 => {
+  const step = 1e-4;
+  const inner = samplePosition(rail, Math.min(1, Math.max(0, u >= 0.5 ? u - step : u + step)));
+  const raw: Vec3 = [
+    pose.position[0] - inner[0],
+    pose.position[1] - inner[1],
+    pose.position[2] - inner[2],
+  ];
+  const len = Math.hypot(raw[0], raw[1], raw[2]);
+  if (len <= 0) throw new Error('zimny: the door stop has a degenerate rail tangent');
+  return [raw[0] / len, raw[1] / len, raw[2] / len];
+};
 const applyRailPose = (): void => {
   const pose = samplePose(rail, railState, railNode === 'square' ? SQUARE_GAZE : undefined);
-  camera.position.set(pose.position[0], pose.position[1], pose.position[2]);
-  camera.lookAt(pose.target[0], pose.target[1], pose.target[2]);
+  // R-UX2 (§2): the wheel pass's lean dollies the resting camera a fraction of a metre into
+  // the door; at 0 leanPose hands back the pose object — the never-pushed poses stay
+  // bit-identical (the golden fence).
+  const leaned =
+    leanState.metres > 0 ? leanPose(pose, doorTangent(pose, railState.u), leanState.metres) : pose;
+  camera.position.set(leaned.position[0], leaned.position[1], leaned.position[2]);
+  camera.lookAt(leaned.target[0], leaned.target[1], leaned.target[2]);
   // User look offsets compose on top of the default gaze: yaw around world up (yaw > 0 turns
   // right, a negative rotation about +Y), pitch around the camera's right (pitch > 0 up).
   if (pose.look.yaw !== 0) {
@@ -742,17 +770,15 @@ const applyBeatPose = (): boolean => {
     if (beatDoor === null || beatTangent === null) {
       const u = railState.u;
       // The door stop sits at a rail end; the tangent points INTO the boundary being pushed.
-      const step = 1e-4;
-      const inner = samplePosition(rail, Math.min(1, Math.max(0, u >= 0.5 ? u - step : u + step)));
-      const raw: Vec3 = [
-        pose.position[0] - inner[0],
-        pose.position[1] - inner[1],
-        pose.position[2] - inner[2],
-      ];
-      const len = Math.hypot(raw[0], raw[1], raw[2]);
-      if (len <= 0) throw new Error('zimny: the door stop has a degenerate rail tangent');
-      beatDoor = { position: pose.position, target: pose.target };
-      beatTangent = [raw[0] / len, raw[1] / len, raw[2] / len];
+      beatTangent = doorTangent(pose, u);
+      // R-UX2 (§2): the pass's lean continues seamlessly into the departure glide — the
+      // locked door pose carries the lean the camera arrived with; the glide then travels
+      // the same tangent from there (departPose measures its plane distance from the lean).
+      beatDoor =
+        leanAtFireM > 0
+          ? leanPose({ position: pose.position, target: pose.target }, beatTangent, leanAtFireM)
+          : { position: pose.position, target: pose.target };
+      leanAtFireM = 0; // consumed
     }
     const doorPortal =
       st.from !== null && st.from === open.def.from
@@ -844,6 +870,11 @@ const beginTransitTo = (target: NodeHandle): void => {
     return;
   }
   const state = beginTransit({ airlock: def, from: activeNode, reducedMotion });
+  // R-UX2 (§2): the lean the camera arrived with rides into the depart's locked door pose;
+  // the lean state resets with the transit so the arrival is unleaned. (A cut has no depart
+  // — but under reduced motion the lean is always 0, so nothing is lost there.)
+  leanAtFireM = leanState.metres;
+  leanState = LEAN_START;
   // Entering through the airlock's home side (gallery ← jordan, square ← gallery) seeds the
   // far stop: the journey continues in the direction of travel (§6.1 seed law).
   seedAtFarStop = def.from === target;
@@ -1179,6 +1210,8 @@ canvas.addEventListener(
       nowMs: performance.now(),
     });
     wheelEdgeState = step.state;
+    lastBoundaryWheelAtMs = performance.now(); // the lean's freshness read (R-UX2)
+    framePush = direction; // §2: the push the door answers (the label + the lean's target)
     if (step.fire) enterBoundary(direction);
   },
   { passive: false },
@@ -1239,6 +1272,7 @@ document.addEventListener('keydown', (event) => {
   if (result.boundary === null) return;
   const at = RAIL_CHAIN.indexOf(railNode);
   const next = result.boundary === 'forward' ? RAIL_CHAIN[at + 1] : RAIL_CHAIN[at - 1];
+  framePush = result.boundary; // §2: an arrow boundary step is a push too (the same law)
   if (next !== undefined) beginTransitTo(next);
 });
 
@@ -1251,6 +1285,18 @@ document.addEventListener('keydown', (event) => {
 // past the clamp — the momentum-immunity thresholds are declared tuning constants.
 let wheelEdgeState: WheelEdgeState = WHEEL_EDGE_START;
 let edgePromptShown = false;
+// R-UX2 (§2): the push memory the label answers, the frame's push-intent slot (set by the
+// wheel/arrow/click listeners, consumed by the tick's boundary block and cleared), and the
+// lean's state + the magnitude captured when a transit begins (folded into the depart's
+// locked door pose — the glide starts where the lean left the camera). The freshness read:
+// the pass's budget persists across silent gaps (the fire law survives a scroll stream's
+// glide), so the lean reads the LAST boundary wheel event's age itself — past
+// LEAN_FRESH_MS the lean releases even though the pass keeps its budget.
+let pushedBoundary: DoorBoundary | null = null;
+let framePush: DoorBoundary | null = null;
+let leanState: LeanState = LEAN_START;
+let leanAtFireM = 0;
+let lastBoundaryWheelAtMs = 0;
 const EDGE_SETTLE_EPS = 1e-9; // the rail's snapped stops sit at parameters 0 and 1 exactly
 const boundaryNext = (direction: 'forward' | 'backward'): NodeHandle | null => {
   const at = RAIL_CHAIN.indexOf(railNode);
@@ -1298,6 +1344,7 @@ edgePrompt.addEventListener('click', () => {
   const boundary = railPushBoundary();
   hintTravel(); // a prompt click IS travel (§9: the one definition)
   if (boundary === null) return;
+  framePush = boundary; // §2: the click is a push under the same law
   enterBoundary(boundary);
 });
 function returnToNow(): void {
@@ -1504,6 +1551,24 @@ const tick = (timeMs: number): void => {
     applyEpoch(Date.now());
   }
 
+  // The boundary laws' per-frame reads (R-UX2, §2): the lean follows the pass's budget only
+  // while the last boundary wheel event is fresh (the pass's budget persists across silent
+  // gaps — the fire law survives a scroll stream's glide — so the lean reads the event age
+  // itself and releases past the freshness window); inputs act only when idle (a transit
+  // owns the camera — the lean it captured rides into the depart's locked pose); the push
+  // memory survives a scroll stream (the glide-tolerant clamped-target read) and drops when
+  // the target leaves the end. The frame's push intent (the listeners) is consumed + cleared.
+  if (railInputReady()) {
+    leanState = advanceLean(leanState, {
+      budget: wheelEdgeState.budget,
+      fresh: timeMs - lastBoundaryWheelAtMs <= LEAN_FRESH_MS,
+      deltaMs,
+      reducedMotion,
+    });
+    pushedBoundary = pushMemory(pushedBoundary, { end: railPushBoundary(), push: framePush });
+  }
+  framePush = null;
+
   // Camera rail (§6.1): advance the glide (a cut already settled) and apply the pose — the
   // rail owns position and gaze every frame; the inputs below mutate its state in listeners.
   // During an open threshold beat the beat owns the pose and the exposure instead (§4).
@@ -1570,16 +1635,29 @@ const tick = (timeMs: number): void => {
   if (captionDiff.announcement) captionLive.textContent = captionNext.announcement;
   captionView = captionNext;
 
-  // The boundary prompt (DEC-031): one pure view per frame, the node written on change
-  // (the caption law's harmless brother). The visibility belongs to the law; the text
-  // rides the language setter.
+  // The door label (R-UX2, §2): one pure view per frame, the node written on change (the
+  // caption law's harmless brother). The visibility belongs to the law; the TEXT composes
+  // per visible frame on change — verb + ' · ' + the destination's room NAME (the door says
+  // the name; the black card keeps the sentence title) — and stays in place while hiding
+  // (the fade keeps its words). The language swap re-composes on the next visible frame.
   const edgeNext = edgePromptView({
     settled: arrival.phase === 'settled' && transit === null,
+    atRest: railState.glide === null,
     boundary: railSettledBoundary(),
+    pushed: pushedBoundary,
   });
   if (edgeNext.visible !== edgePromptShown) {
     edgePromptShown = edgeNext.visible;
     edgePrompt.dataset.visible = edgeNext.visible ? 'true' : 'false';
+  }
+  if (edgeNext.visible && edgeNext.boundary !== null) {
+    const next = boundaryNext(edgeNext.boundary);
+    if (next === null) throw new Error('zimny: a visible door label names a nonexistent door');
+    const label = doorLabel({
+      verb: edgeNext.boundary === 'forward' ? t('chrome.doorEnter') : t('chrome.doorBack'),
+      title: next === 'square' ? t('data.titleSquare') : t(roomEntryOf(next).contract.title),
+    });
+    if (edgePrompt.textContent !== label) edgePrompt.textContent = label;
   }
   if (perfLog) {
     if (!firstSkyLogged) {

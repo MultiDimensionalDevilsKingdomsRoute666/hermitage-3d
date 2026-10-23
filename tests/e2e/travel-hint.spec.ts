@@ -16,15 +16,15 @@ test('(a) S0 en: the hint shows at the settle beat with the EN copy', async ({ p
   await settled(page, `${AT}&lang=en`);
   const hint = page.locator(HINT);
   await expect(hint).toHaveAttribute('data-visible', 'true', { timeout: 10_000 });
-  await expect(hint).toHaveText('Drag to move closer');
+  await expect(hint).toHaveText('Scroll to walk · drag to look around');
   await expect(hint).toHaveAttribute('data-dismissed', 'none');
 });
 
-test('(b) S0 ru: «Потяните, чтобы подойти ближе»', async ({ page }) => {
+test('(b) S0 ru: «Прокрутите, чтобы идти · потяните, чтобы осмотреться»', async ({ page }) => {
   await settled(page, `${AT}&lang=ru`);
   const hint = page.locator(HINT);
   await expect(hint).toHaveAttribute('data-visible', 'true', { timeout: 10_000 });
-  await expect(hint).toHaveText('Потяните, чтобы подойти ближе');
+  await expect(hint).toHaveText('Прокрутите, чтобы идти · потяните, чтобы осмотреться');
 });
 
 test('(c) the first travel intent dismisses with data-dismissed=travel', async ({ page }) => {
@@ -113,13 +113,15 @@ test('the language toggle flips the overlay and the page (§1.2)', async ({ page
   const toggle = page.locator('#lang-toggle');
   await expect(toggle).toHaveText('EN'); // the TARGET language in its own script
   await expect(toggle).toHaveAttribute('lang', 'en');
-  await expect(page.locator(HINT)).toHaveText('Потяните, чтобы подойти ближе');
+  await expect(page.locator(HINT)).toHaveText(
+    'Прокрутите, чтобы идти · потяните, чтобы осмотреться',
+  );
   await toggle.click();
   await expect(page.locator('html')).toHaveAttribute('lang', 'en', {
     timeout: 10_000,
   });
   await expect(page).toHaveTitle('Winter Palace in the browser');
-  await expect(page.locator(HINT)).toHaveText('Drag to move closer'); // swaps in place
+  await expect(page.locator(HINT)).toHaveText('Scroll to walk · drag to look around'); // swaps in place
   await expect(page.locator('#notes-link')).toHaveText('How it’s built →');
   // The URL carries the written lang= (replaceState, no history entry) and the toggle
   // now names the OTHER language.

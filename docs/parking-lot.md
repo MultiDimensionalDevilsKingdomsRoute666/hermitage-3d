@@ -14,5 +14,18 @@ Ideas parked on purpose. Each carries a "why parked" line.
   budget. The host's only lever today is to stop calling `planPrefetch` (in-flight units finish).
   Menu: a fourth `signal?: AbortSignal` parameter, or an internal per-room AbortController exposed
   via `cancelStaging(roomId)`. Worth wiring before or during R-UX6's device pass.
+- **Momentum-tail accumulation vs the quiet gap** (R-UX2, the specialist's challenge): a decaying
+  momentum tail of sub-`EDGE_MAX_EVENT_PX` events at ~16 ms cadence can still accumulate the full
+  budget inside the sustain window — `EDGE_QUIET_MS` does not address this; a tail that looks like
+  a deliberate press can fire. The §2 «re-tune against a measured time-to-fire» item stands;
+  re-tune (or add a per-event count gate) with the R-UX6 device-pass numbers.
+- **The door label's em-dash convention** (R-UX2): `roomName()` reads the name as the title's head
+  before « — »; a future room title without an em dash would put the whole sentence on the door
+  (the test pins the convention, not the data). If sentence titles are retired or reworded, move
+  the name into its own dictionary key.
+- **The RU travel-hint's nowrap at 360 px** (R-UX2): «Прокрутите, чтобы идти · потяните, чтобы
+  осмотреться» is ~2.5× the old copy under `white-space: nowrap` at `--hint-size`; the hint's CSS
+  was untouched this round. If the new RU copy clips at 360, allow a two-line wrap (or
+  `text-wrap: balance`) for it — the R007 mobile corner law holds either way.
 
 Adding an item requires a "why parked" line; promoting one requires a phase slot and charter compatibility.

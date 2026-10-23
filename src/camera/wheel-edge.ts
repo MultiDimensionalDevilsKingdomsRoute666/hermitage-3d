@@ -10,6 +10,11 @@
  * fast), and a sustained stream for >= EDGE_SUSTAIN_MS (a momentum tail dies
  * before the window opens). The host owns the DOM and calls feed(); the law is
  * pure and DOM-free. Thresholds are declared tuning constants (DEC-031).
+ * The pass's budget persists across silent gaps by design: the CI wheel walk's
+ * janked event delivery (SwiftShader clusters a stream into per-frame bursts)
+ * must still be able to fire, and a real visitor's slow deliberate accumulation
+ * at a door stays one pass. The lean (src/camera/door-lean.ts) owns its own
+ * freshness window instead of borrowing the pass's reset.
  */
 
 /* The deliberate-overshoot budget past the clamp, px. */
