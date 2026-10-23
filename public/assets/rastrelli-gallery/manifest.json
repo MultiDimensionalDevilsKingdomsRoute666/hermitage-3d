@@ -3,8 +3,8 @@
   "files": [
     {
       "path": "lm/day.ktx2",
-      "bytes": 38056,
-      "sha256": "ac3e8923998647acc506a1d149d2518b5702e291025acf170c819bc13bd26716",
+      "bytes": 48025,
+      "sha256": "4ebf6569395a094d745019c91049fc7e26acabb270275d8896ea54ae533f38ec",
       "kind": "ktx2"
     },
     {
@@ -87,7 +87,7 @@
     ],
     "res": 1024,
     "intensity": {
-      "day": 0.03,
+      "day": 0.2,
       "dusk": 0.2,
       "nightChandeliers": 0.2
     }

@@ -196,6 +196,28 @@ The transit beat, in order:
 - Touches: the G1 day golden re-baselines (recorded). Owner disposition D5.
 - Open authoring fact: what the east door shows when faced (whether a lit slab must
   be baked there for G2's new gaze) — closed by capture at implementation.
+- **R-UX4 LANDED (2026-10-23, this round's integration notes; D5 executed as the fast
+  path):** the three states re-designed by the creative relay to "one lamp field with three
+  different mouths" — day = night + day rigs composed linearly at scale 1
+  (tools/lm_compose.py + tools/lm-recipes.mjs, the dispatch rides tools/reencode.mjs), all
+  gallery states encode at the shared white point 0.2 (the lamp field byte-identical across
+  atlases — the shared-white-point law), gains day 3 / dusk 3 / night 2.75 (the ceiling law:
+  max eff = 0.6 = the accepted dusk; night ≤ day holds per texel). Verified: dusk/night
+  re-encodes reproduced the committed sha256 byte-identically from the surviving EXRs; the
+  composite EXR byte-identical across runs; capture gates at G1 (probe frames): day 32.34%
+  below lum 10/255 (was 99.84%), day mean 20.26 / dusk 12.87 / night 11.89 — the ~1.5× band
+  reads ~1.57× (day/dusk) and ~1.70× (day/night): the reply's band rule spent its step
+  (night gain 2.5 → 2.75) and sits at its ceiling g(night) < g(day) — the residual is
+  recorded, amending the criteria number is an owner call. "Sconces remain the brightest
+  thing" gated precisely: the top 0.05% luminance pixels of every G1 frame fall inside the
+  sconce-glass screen mask (night-frame threshold >100/255) in all three states. Fresh fact
+  for the record: the §1.4 "cool bounce" byte does not exist — the day EXR is mildly WARM
+  (R/G 1.107); the 56% (<0.001) bisect figure vs the fresh 34.31% read of the denoised day
+  EXR is unresolved in provenance (raw-vs-denoised is the working hypothesis). G0/G2 ×3
+  fact rows captured: the junction is lamp-lit in every state, but the committed pose law
+  still frames the passage's east wall band at G0 and looks back west at G2 — the G0 arrival
+  and the east door's faced view remain R-UX5's authored gazes (?cam= is a rail-u parameter
+  and cannot face the door).
 
 ## 6. The stair arrival (reply §2.5, adopted + geometry)
 

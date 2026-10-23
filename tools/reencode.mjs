@@ -5,6 +5,8 @@
 // (toktx single-threaded, no mips, no clock, no network). Publish is all-or-nothing per state.
 // The manifest's lightmaps.intensity record is the single source of truth for the white points;
 // changing a white point means editing the manifest first, then re-encoding.
+// R-UX4 (walkthrough-UX pass): a state carrying a compose recipe (tools/lm-recipes.mjs) first
+// composes its source EXRs linearly (tools/lm_compose.py) and encodes the composed EXR.
 //
 //   node tools/reencode.mjs <room> <state|all>     state aliases: night → nightChandeliers
 //
@@ -31,9 +33,11 @@ import {
   STAGE_ROOT,
   sha256,
 } from './common.mjs';
+import { composeArgs, composeRecipeFor } from './lm-recipes.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ENCODE_PY = join(HERE, 'reencode-encode.py');
+const COMPOSE_PY = join(HERE, 'lm_compose.py');
 const TOKTX_INSTALL = 'install KTX-Software 4.4.2 (brew install ktx) so `toktx` is on PATH';
 
 const STATES = ['day', 'dusk', 'nightChandeliers'];
@@ -102,7 +106,31 @@ function denoisedExr(room, state) {
 
 function reencodeState(room, state, manifest, work) {
   const whitePoint = whitePointOf(manifest, room, state);
-  const exr = denoisedExr(room, state);
+  let exr = denoisedExr(room, state);
+  // R-UX4 compose law (tools/lm-recipes.mjs): a state with a recipe encodes the linear sum of
+  // its declared sources (staged denoised EXRs, the driver's own path convention) produced by
+  // lm_compose.py; the composed EXR then feeds the UNCHANGED single-input encode/transcode/
+  // publish path. Sources resolve by bake-rig state id, so aliases flow through FILE_BY_STATE.
+  const recipe = composeRecipeFor(room, state);
+  if (recipe !== null) {
+    const resolved = recipe.map((term) => ({
+      path: denoisedExr(room, term.source),
+      scale: term.scale,
+    }));
+    const composed = join(STAGE_ROOT, `${room}.${state}.composite.exr`);
+    const terms = recipe.map((t) => `${t.source}×${t.scale}`).join(' + ');
+    console.log(`== ${room} ${state}: compose ${terms}`);
+    run(BLENDER, [
+      '-b',
+      '--factory-startup',
+      '-noaudio',
+      '-P',
+      COMPOSE_PY,
+      '--',
+      ...composeArgs(composed, resolved),
+    ]);
+    exr = composed;
+  }
   const file = FILE_BY_STATE[state];
   const png = join(work, `${file}.png`);
   const ktx2 = join(work, `${file}.ktx2`);

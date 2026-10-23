@@ -5,7 +5,9 @@ import { describe, expect, it, vi } from 'vitest';
 import { effectiveIntensities } from '../src/assets/blend-gl';
 
 const JORDAN = { day: 0.1, dusk: 0.1, nightChandeliers: 3.0 } as const;
-const GALLERY = { day: 0.03, dusk: 0.2, nightChandeliers: 0.2 } as const;
+// The committed gallery record (R-UX4): all three states encode at the shared white point 0.2
+// (public/assets/rastrelli-gallery/manifest.json is the source of truth this fixture mirrors).
+const GALLERY = { day: 0.2, dusk: 0.2, nightChandeliers: 0.2 } as const;
 const PRECISION = 12;
 
 describe('effectiveIntensities', () => {
@@ -15,11 +17,16 @@ describe('effectiveIntensities', () => {
     expect(eff.dusk).toBeCloseTo(0.3, PRECISION);
     expect(eff.nightChandeliers).toBeCloseTo(3.0, PRECISION);
   });
-  it('rastrelli-gallery: white points × gains 4/3/1', () => {
+  it('rastrelli-gallery: shared white point × gains 3/3/2.75', () => {
     const eff = effectiveIntensities('rastrelli-gallery', GALLERY);
-    expect(eff.day).toBeCloseTo(0.12, PRECISION);
+    expect(eff.day).toBeCloseTo(0.6, PRECISION);
     expect(eff.dusk).toBeCloseTo(0.6, PRECISION);
-    expect(eff.nightChandeliers).toBeCloseTo(0.2, PRECISION);
+    expect(eff.nightChandeliers).toBeCloseTo(0.55, PRECISION);
+  });
+  it('R-UX4 ceiling law: gallery max eff = the dusk value, and night < day per texel', () => {
+    const eff = effectiveIntensities('rastrelli-gallery', GALLERY);
+    expect(eff.dusk).toBe(Math.max(eff.day, eff.dusk, eff.nightChandeliers));
+    expect(eff.nightChandeliers).toBeLessThan(eff.day);
   });
   it('returns a fresh record covering exactly the three states', () => {
     const eff = effectiveIntensities('jordan', JORDAN);
