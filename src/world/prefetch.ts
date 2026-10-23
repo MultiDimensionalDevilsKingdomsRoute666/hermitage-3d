@@ -52,8 +52,7 @@ export function noteManifest(
 ): PrefetchState {
   if (!isRoomId(roomId)) throw new Error(`noteManifest: unknown roomId ${String(roomId)}`);
   const existing = state.rooms.get(roomId);
-  if (existing?.manifest === true)
-    throw new Error(`noteManifest: duplicate note for ${roomId}`);
+  if (existing?.manifest === true) throw new Error(`noteManifest: duplicate note for ${roomId}`);
   if (rows.length === 0) throw new Error(`noteManifest: ${roomId} has no rows`);
   let glbPath: string | null = null;
   const files = new Map<string, Stage>();
