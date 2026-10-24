@@ -1,6 +1,6 @@
 # Winter Palace in the browser
 
-A stylized 3D recreation of the Winter Palace (the Hermitage, Saint Petersburg) for the web. You walk into a 215-metre Baroque facade and the palace is lit by the real Saint Petersburg sky at the moment the page opens - white nights in June, a six-hour day in December.
+A stylized 3D recreation of the Winter Palace, Saint Petersburg, for the web. You walk into a 215-metre Baroque facade and the palace is lit by the real Saint Petersburg sky at the moment the page opens - white nights in June, a six-hour day in December.
 
 Status: **Phase 2 · The Staircase - shipped** (Phase 0 · Mass & Sky and Phase 1 · The Facade shipped; Phase 2b · Night Windows is next). Plan: [ROADMAP.md](ROADMAP.md). Every phase ends at a public URL.
 
