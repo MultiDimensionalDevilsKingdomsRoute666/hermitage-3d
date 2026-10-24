@@ -12,6 +12,12 @@
       "bytes": 12782,
       "sha256": "58ed868308d009cbd30de8ed7f55bcded78ef759dbf7bf7bd609e376ba2d090c",
       "kind": "ktx2"
+    },
+    {
+      "path": "tex/military-gallery-portraits.ktx2",
+      "bytes": 418982,
+      "sha256": "3b53033f21cb01eb926d8e430a7fa64f631fcf63354e34f51dae3b143fbe1db7",
+      "kind": "ktx2"
     }
   ],
   "geometry": {
