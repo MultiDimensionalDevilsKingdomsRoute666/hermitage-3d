@@ -315,6 +315,51 @@ inside the promise.
   the path turns only on the mezzanine/land corners. Free look still returns
   bit-identical poses when never dragged (golden fence).
 
+> Executed headed on the reference device in R-UX6 (2026-10-24; devlog #0004); the
+> execution record is §9.1.
+
+### 9.1 Execution record (R-UX6 device pass, 2026-10-24)
+
+Headed Chromium 156, det noon, T1 1280×720, mains; the per-phase split read from the new
+`zimny: transit` console lines (the perfLog instrument, absent from normal builds); medians
+of 3 runs unless stated.
+
+| Clause | Method | Measured | Verdict |
+|---|---|---|---|
+| Invitation · the hint + scroll arrive at the gate; the label settles in; click enters | observed + the begin line | the label click fires the transit (begin lines at every click) | pass |
+| Invitation · no label during motion or a threshold | observed across 2+ transits | — | pass |
+| Invitation · entry stop: caption only; «Back out» on a backward push; silent walk-in | observed (the smoke's contract, live) | — | pass |
+| Invitation · a calm roll leans and enters ~0.7 s; a flick never enters | observed + begin line | the healthy wheel-through's begin `lean` **0.325 m** at fire | pass |
+| Invitation · reduced motion: no lean, enter fires | the cut transit | begin `lean` 0.000 m; card 284 ms, total 317 ms | pass |
+| Approach · S1 day ≤ 15% below lum 10/255, the darkest band inside the arch | probe (Rec. 709 luma) | **13.20%** (was ~40% at R-UX3's ruling; 0.77% recorded there pre-R-UX5) · mean 63.92/255 · darkest band #8 of 10 (the floor band before the arch mouth), 39.37/255 | pass |
+| Threshold · warm card ≤ 0.5 s | the transit split | card **283–316 ms** / 300 nominal (at-begin 284 on the resident; data +117–151 ms on the HTTP-cached rooms) | pass |
+| Threshold · the camera in motion except the black card; nothing frozen | the split's max @phase + long tasks | max @depart ≤ 18.9 ms, @arrive ≤ 18.9 ms (1–2 vsync frames); long tasks in the glides: **0** | pass |
+| Threshold · the card = title + caption, never a spinner | observed (the S-A cold card, 317–717 ms) | — | pass |
+| Threshold · cold deep-link first frame not worse than recorded | the split's `lit t` | gallery **736 / 947 / 1180 ms** (median 947), jordan **939 / 1014 / 1053** (median 1014) unthrottled; @10 Mbps + 40 ms: **1844** (gallery) / **2539** (jordan) — r19's row read 1,713–1,867 unthrottled and 1,869/2,860 @10 Mbps under the 1,500 ms hold law (today 300) | pass |
+| Threshold · reduced motion: two cuts, title readable | the cut transit | depart skipped · arrive skipped; card 284.1/300 | pass |
+| Threshold · det stop captures unchanged | goldens | 26/26 | pass |
+| Threshold · the hash updates at the first lit frame | observed | the write lands on the EXIT frame: the same frame under 'cut'; ≈ +900 ms after `lit t` under 'doorway' — the §9 wording vs the R-UX1 completion law: an owner wording call (open item) | recorded |
+| Corridor light · G1 day ≤ 60% below 10/255; sconces the brightest | probe + the R-UX4 fence | **32.03%** (mean 19.47/255); sconces-remain-brightest 100% ×3 states (the R-UX4 unit fence) | pass |
+| Corridor light · the three G1 means within ~1.5×; night ≤ day | probe | day 19.47 · dusk 11.89 · night 10.90 → **1.79×** day/night (R-UX4's record read 1.70× — the same residual under a different luma reader); night ≤ day per texel ✓ | recorded (owner call) |
+| Corridor light · G0: a vault to a lit junction; «dark; the square behind» true-dark, not black | probe + observed | mean **24.19/255**, 7.99% below 10/255; the bands 19.5–28.7 — the junction reads lit, the back is true-dark | pass |
+| Stair arrival · the first lit frame shows the flight rising to the window wall; no single wall > ~30%; the vestibule behind | observed (the J0 arrival frame) | the push-in composes the flight to the window wall (devlog hero candidate) | pass |
+| Movement · G0→G2 never passes through geometry | observed (the stop captures + a wheel walk) | — | pass |
+| Movement · J0→J4: swing ≤ ~90°, eye 1.7 ± 0.3, turns only at corners | tests/stops.test.ts | the eye fence over 256 samples/segment, the ≤ 90° swing fence, the walkable-rect fence — green | pass |
+| Movement · the window light stays in frame J0→J4 | the complete r-ux5 shots | the seven jordan stops × day captured 7/7 | pass |
+| Movement · free look bit-identical when never dragged | goldens | 26/26 | pass |
+
+The per-phase split matrix (the medians of 3 runs; T1, det noon): warm room-to-room
+depart 683–700/700 · card 283–316/300 · arrive 900–917/900 · total ≈ **1,917 ms**; the
+cold `null→room` entry (depart skipped): card = the data wait (gallery 484–817, jordan
+650–717 unthrottled; 1,283/2,050 @10 Mbps), arrive 917–950, total 1,233–1,784 (2,234/3,000
+@10 Mbps); the post-swap frame (the first draw with the new resources) **15.6–66 ms** warm,
+**33–66 ms** cold; the resident's own entry reads `data at-begin`. The settle cadence at
+the eleven stops: **16.5–16.8 ms** everywhere (the vsync floor), draws 5–124 (≤ 250), tris
+5,102–11,046 (≤ 1,000,000), zero post-settle long tasks. The paused-pass quirk (R-UX2's
+parked item): reproduced — the pass's budget persists across the pause, so a single nudge
+after a 1.0/0.5/2.0 s pause FIRES the door with the lean **0.008 / 0.057 / 0.000 m**
+(the healthy wheel-through: 0.325 m) — the numbers recorded for the owner's re-tune call.
+
 ## 10. Dispositions (RULING — owner, 2026-10-22: **all eight defaults accepted**)
 
 - **D1 — Chrome copy:** door label «Enter/Back out · <room title>» replacing the
@@ -369,6 +414,6 @@ inside the promise.
   stops + feet-on-treads + J0/vestibule; capture-framed; goldens + e2e updated).
 - **R-UX6 — close-out** (DEVICE PASS: per-phase transit timing split logged via
   perfLog — the last open NEED; devlog; STATE/ROUNDS sync; the acceptance script of
-  §9 executed headed on the reference device).
+  §9 executed headed on the reference device) — landed 2026-10-24, devlog #0004.
 - Forbidden in all: the §8 weight law, the URL grammar, tier semantics, budgets
   (fixed by art/tier only), Blender-in-CI, the basis row.

@@ -47,6 +47,7 @@ import {
 import { t } from './i18n';
 import { formatDate, formatTime, PETERSBURG_OFFSET_LABEL } from './i18n/format';
 import { activateLang, activeLang, onLangChange, resolveLang } from './i18n/locale';
+import { noteTransitFrame, openTransitLog, type TransitLog } from './perf/transit-log';
 import { buildFacade } from './procedural/facade-builder';
 import { solveSouthFacade } from './procedural/facade-solver';
 import { buildNightLattice } from './procedural/night-lattice';
@@ -873,6 +874,22 @@ const disposeFrom = (from: NodeHandle | null): void => {
   roomWork.delete(from); // the next entry re-runs load+mount
 };
 
+// §12 instrument: opt-in at build time — `VITE_PERF_LOG=1 pnpm build && pnpm preview`.
+// Console-only readout for the device-gate report; absent from normal builds, never UI.
+// The declaration MUST precede every reference (beginTransitTo below): the bundler folds
+// `if (perfLog)` to dead branches only where the const is already initialized — a reference
+// that precedes the declaration keeps its branch (and the imported instrument) in the build
+// (the R-UX6 first-build lesson: the transit-log module survived exactly so).
+const perfLog = import.meta.env.VITE_PERF_LOG === '1';
+let perfWindowStart: number | null = null;
+let perfFrames = 0;
+let perfSumDeltaMs = 0;
+let perfMaxDeltaMs = 0;
+let firstSkyLogged = false;
+// R-UX6 (§12, the last open NEED): the per-phase transit split rides the same opt-in; the
+// ledger is only ever assigned inside `if (perfLog)` branches, so a normal build drops it.
+let transitLog: TransitLog | null = null;
+
 const beginTransitTo = (target: NodeHandle): void => {
   const def =
     activeNode === null
@@ -905,6 +922,11 @@ const beginTransitTo = (target: NodeHandle): void => {
     void ensureRoom(state.to).then(() => {
       ready = true;
     });
+  }
+  if (perfLog) {
+    const opened = openTransitLog(state, { nowMs: performance.now(), ready, leanAtFireM });
+    transitLog = opened.log;
+    console.log(opened.line);
   }
 };
 
@@ -1030,15 +1052,6 @@ let lastLiveSampleAt = performance.now();
 let lastLabelEpochMs = -1;
 let resizePending = false;
 let titleShown = false;
-
-// §12 instrument: opt-in at build time — `VITE_PERF_LOG=1 pnpm build && pnpm preview`.
-// Console-only readout for the device-gate report; absent from normal builds, never UI.
-const perfLog = import.meta.env.VITE_PERF_LOG === '1';
-let perfWindowStart: number | null = null;
-let perfFrames = 0;
-let perfSumDeltaMs = 0;
-let perfMaxDeltaMs = 0;
-let firstSkyLogged = false;
 
 const applyPresentation = (): void => {
   const presentation = presentationForArrival(arrival, isDeterministic(timeState));
@@ -1496,11 +1509,30 @@ const tick = (timeMs: number): void => {
   if (transit !== null) {
     const advanced = advanceTransit(transit.state, deltaMs, ready);
     transit = { ...transit, state: advanced.state };
+    let swapCostMs: number | null = null;
+    let disposeCostMs: number | null = null;
     for (const event of advanced.events) {
       // Events imply a hold/exit state — the FSM never fires from idle.
       if (advanced.state.phase === 'idle') break;
+      const eventStartMs = perfLog ? performance.now() : 0;
       if (event === 'upload-swap') applySwap(advanced.state.to);
       else disposeFrom(advanced.state.from);
+      if (perfLog) {
+        const costMs = performance.now() - eventStartMs;
+        if (event === 'upload-swap') swapCostMs = costMs;
+        else disposeCostMs = costMs;
+      }
+    }
+    if (perfLog && transitLog !== null) {
+      const noted = noteTransitFrame(transitLog, advanced, {
+        deltaMs,
+        nowMs: timeMs,
+        ready,
+        costs: { swapCostMs, disposeCostMs },
+      });
+      // The ledger closes on the exit frame; a chained hop's beginTransitTo (below) reopens it.
+      transitLog = advanced.state.phase === 'exit' ? null : noted.log;
+      for (const line of noted.lines) console.log(line);
     }
     if (advanced.state.phase === 'exit') {
       const { target } = transit;
