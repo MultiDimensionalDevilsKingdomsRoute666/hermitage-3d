@@ -11,6 +11,7 @@
  * its portal box, forward and backward.
  */
 import type { AirlockDef, RegistryEntry } from '../src/world/registry';
+import { contract as militaryContract } from './1812/contract';
 import { contract as jordanContract } from './jordan/contract';
 import { contract as galleryContract } from './rastrelli-gallery/contract';
 
@@ -39,11 +40,12 @@ export const AIRLOCKS: readonly AirlockDef[] = [
   {
     id: 'landing-airlock',
     from: 'jordan',
-    to: null,
-    // R-UX5: the box re-declared to enclose J4 on the landing slab (x ≥ 80). The dead-end
-    // beat (transit 'cut', holdMs 600) is untouched (DEC-025 retargets it later).
+    // DEC-025: the dead end retargets to the 1812 room; the transit stays a cut. The jordan
+    // box does not move (golden protection, §9); the 1812 box is 2×2×3 m enclosing M0's eye
+    // (86.25, 11.65, −38) — the committed J0 convention (the box moves with the entry stop).
+    to: 'military-gallery',
     portalFrom: { min: [81, 10, -80], max: [84, 13.5, -77] },
-    portalTo: null,
+    portalTo: { min: [85.25, 10, -39], max: [87.25, 13, -37] },
     transit: 'cut',
     holdMs: 600,
   },
@@ -69,5 +71,12 @@ export const ENTRIES: readonly RegistryEntry[] = [
     route: '/jordan',
     contract: jordanContract,
     thunk: () => import('./jordan/room').then((m) => m.room),
+  },
+  {
+    kind: 'room',
+    id: 'military-gallery',
+    route: '/1812',
+    contract: militaryContract,
+    thunk: () => import('./1812/room').then((m) => m.room),
   },
 ];

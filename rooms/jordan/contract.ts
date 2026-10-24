@@ -98,7 +98,9 @@ export const contract: RoomContract = {
   lighting: { states: ['day', 'dusk', 'nightChandeliers'], blend: 'lightmapBlend' },
   neighbors: [
     { to: 'rastrelli-gallery', airlock: 'gallery-airlock' },
-    { to: null, airlock: 'landing-airlock' },
+    // The landing airlock retargets to the 1812 room (DEC-025; contract DATA rides §7, the
+    // room module stays untouched).
+    { to: 'military-gallery', airlock: 'landing-airlock' },
   ],
   budget: {
     trianglesMax: 380_000,

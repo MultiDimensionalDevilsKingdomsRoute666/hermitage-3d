@@ -131,9 +131,17 @@ export function repackBin(json, bin) {
   const ranges = [];
   for (const old of keep) {
     const bv = bvs[old];
-    ranges.push({ old: bv.byteOffset ?? 0, len: bv.byteLength });
     const ext = bv.extensions?.EXT_meshopt_compression;
-    if (ext) ranges.push({ old: ext.byteOffset ?? 0, len: ext.byteLength });
+    // A meshopt view's OUTER byteOffset/byteLength describe the DECODED data's place in the
+    // dropped fallback buffer — real bytes live only in the extension's compressed range.
+    // Pushing the outer range too used to advance the cursor past bytes that subarray
+    // clamped away (outer offsets exceed this bin), shifting every later mapped offset and
+    // leaving the tail compressed chunks beyond the written BIN (the R3 1812/canary bug).
+    if (ext) {
+      ranges.push({ old: ext.byteOffset ?? 0, len: ext.byteLength });
+      continue;
+    }
+    ranges.push({ old: bv.byteOffset ?? 0, len: bv.byteLength });
   }
   ranges.sort((a, b) => a.old - b.old);
   const parts = [];
@@ -147,15 +155,23 @@ export function repackBin(json, bin) {
       cursor += pad;
     }
     offsetMap.set(r.old, cursor);
-    parts.push(bin.subarray(r.old, r.old + r.len));
+    const slice = bin.subarray(r.old, r.old + r.len);
+    if (slice.length !== r.len) {
+      throw new RangeError(
+        `repackBin: range ${r.old}+${r.len} exceeds the source BIN (${bin.length})`,
+      );
+    }
+    parts.push(slice);
     cursor += r.len;
   }
   const bin2 = Buffer.concat(parts);
   json.bufferViews = keep.map((old) => {
     const bv = bvs[old];
     const copy = { ...bv };
-    copy.byteOffset = offsetMap.get(bv.byteOffset ?? 0) ?? 0;
-    const ext = copy.extensions?.EXT_meshopt_compression;
+    const ext = bv.extensions?.EXT_meshopt_compression;
+    // The outer byteOffset is a decoded-data coordinate (the fallback buffer), not a
+    // position in the repacked BIN: copied verbatim for meshopt views, remapped otherwise.
+    copy.byteOffset = ext ? (bv.byteOffset ?? 0) : (offsetMap.get(bv.byteOffset ?? 0) ?? 0);
     if (ext) {
       copy.extensions = {
         ...copy.extensions,

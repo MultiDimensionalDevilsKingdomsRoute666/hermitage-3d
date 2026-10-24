@@ -1281,8 +1281,14 @@ canvas.addEventListener('pointerup', endDrag);
 canvas.addEventListener('pointercancel', endDrag);
 // The rail graph is the linear chain of §1.1, so a boundary intent past an end stop IS the
 // keyboard's airlock: forward from the square is the gallery, backward from it is the square;
-// the landing's far end is inert (the dead end has no neighbor to transit to).
-const RAIL_CHAIN: readonly NodeHandle[] = ['square', 'rastrelli-gallery', 'jordan'];
+// forward from the landing is the retargeted 1812 room (DEC-025), and M4 — the route's far
+// end, the doors — is inert (the 1812 box's airlock side is at M0, the room's entry stop).
+const RAIL_CHAIN: readonly NodeHandle[] = [
+  'square',
+  'rastrelli-gallery',
+  'jordan',
+  'military-gallery',
+];
 document.addEventListener('keydown', (event) => {
   if (event.target === scrub) return; // the scrub owns its keys
   const direction =

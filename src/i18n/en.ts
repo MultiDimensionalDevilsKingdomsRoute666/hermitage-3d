@@ -45,6 +45,12 @@ export const en = {
     'Where the passage meets the gallery the way turns east and runs unbroken: pilaster after pilaster, sconce after sconce, pacing the forty-odd metres to the far door.',
   'caption.g1': 'compression',
   'caption.g2': 'the door (airlock)',
+  'caption.m0':
+    'The threshold — the long view south along the axis, toward the portraits of the heroes of 1812.',
+  'caption.m1': 'The west wall — a block of portraits in gilt frames.',
+  'caption.m2': 'The lantern — the vault and the glazing bars above the gallery.',
+  'caption.m3': 'The monarchs — the end wall, the large portraits above the small.',
+  'caption.m4': 'The doors are closed; beyond them — St George\u2019s Hall.',
   'caption.j0': 'looking up into light',
   'caption.j1': 'the flight',
   'caption.j1b':
@@ -241,6 +247,7 @@ export const en = {
   'notes.errorIntro': 'The facade spec does not close. {issues}',
 
   'data.titleGallery': 'Rastrelli Gallery — the way in',
+  'data.title1812': 'Military Gallery of 1812 — through the Armorial Hall',
   'data.titleJordan': 'Jordan Staircase — the ascent',
   'data.titleSquare': 'Palace Square',
   'data.kindCornerRisalit': 'cornerRisalit',

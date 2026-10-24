@@ -20,6 +20,7 @@
  * cache empty — the hold's fetchRoom fetches the row on demand (today's shape, safe degrade).
  */
 import {
+  type CompressedTexture,
   LoadingManager,
   type Material,
   type Mesh,
@@ -168,6 +169,28 @@ export function createLoaders(
       );
       if (out.size === 0) throw new Error(`decodeRoomTextures: ${roomId} has no lm rows`);
       return out;
+    },
+    /**
+     * R3 (design-gallery §2.4): decode ONE named non-lm row — the portrait atlas. It is
+     * neither an lm row (decodeRoomTextures refuses those) nor a glb-referenced image
+     * (mountParsed decodes only those). The GPU upload + the honest texture row happen
+     * here, inside the hold, as mountParsed's images do; no colour-space tagging — the
+     * binder owns it (§2.4's CANVAS law).
+     */
+    async decodeRoomTexture(roomId, payload, path) {
+      if (path.startsWith('lm/')) {
+        throw new Error(
+          `decodeRoomTexture: ${roomId} ${path} is an lm row — decodeRoomTextures owns it`,
+        );
+      }
+      const bytes = payload.ktx2.get(path);
+      if (bytes === undefined) throw new Error(`decodeRoomTexture: ${roomId} has no row ${path}`);
+      const texture = await new Promise<CompressedTexture>((resolve, reject) =>
+        ktx2.parse(bytes, resolve, reject),
+      );
+      renderer.initTexture(texture); // the GPU upload inside the hold, as mountParsed's images
+      ledger.register(roomId, 'texture', vramBytes(texture), path);
+      return texture;
     },
     /** §4.6: one unit, bytes-or-transcode only — no ledger, no parse, no GPU, no blob URLs. */
     async stageUnit(unit: PrefetchUnit, manifest: RoomManifest): Promise<void> {

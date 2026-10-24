@@ -18,10 +18,10 @@ import type { RoomLedger } from '../engine/ledger';
 import type { CaptionKey, Key } from '../i18n/keys';
 
 export type { RoomLedger } from '../engine/ledger';
-export type RoomId = 'rastrelli-gallery' | 'jordan';
+export type RoomId = 'rastrelli-gallery' | 'jordan' | 'military-gallery';
 export type NodeHandle = RoomId | 'square';
 export type AirlockId = 'arch-portal' | 'gallery-airlock' | 'landing-airlock';
-export type RouteKey = '/gallery' | '/jordan';
+export type RouteKey = '/gallery' | '/jordan' | '/1812';
 export type Vec3 = readonly [number, number, number];
 export type Bounds = Readonly<{ min: Vec3; max: Vec3 }>;
 export type StateId = 'day' | 'dusk' | 'nightChandeliers';
@@ -114,6 +114,12 @@ export interface RoomAssetService {
     roomId: RoomId,
     payload: RoomPayload,
   ): Promise<ReadonlyMap<string, RoomTexture>>;
+  /**
+   * R3 (design-gallery §2.4): decode ONE named non-lm row — the portrait atlas is neither an
+   * lm row (decodeRoomTextures refuses those by law) nor a glb-referenced image (mountParsed
+   * decodes only those). Refuses lm/ rows loudly; tags no colour space — the binder owns it.
+   */
+  decodeRoomTexture(roomId: RoomId, payload: RoomPayload, path: string): Promise<RoomTexture>;
   /** §5/ADR-0013: decode the dusk probe and bake PMREM once, inside the hold. Returns the env texture. */
   mountEnvironment(roomId: RoomId, payload: RoomPayload): Promise<RoomObject>;
   disposeEnvironment(roomId: RoomId): void;

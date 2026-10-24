@@ -243,6 +243,9 @@ test('wheel walk: the boundary prompt and the sustained wheel enter both airlock
 // technique (no reload between configurations — the round-17 measurement trap).
 test('keyboard walk: every stop reachable, reduced-motion cuts', async ({ page }) => {
   test.slow(); // same data-bound dwell per transit, on top of the instant reduced-motion cuts
+  // The R3 walk crosses TWO extra airlocks (the 1812 cut and its reverse) and walks 34 landings:
+  // every room entry is a full mount behind the card — 10 minutes is the honest data-bound budget.
+  test.setTimeout(600_000);
   await page.emulateMedia({ reducedMotion: 'reduce' });
   const hud = await bootDeterministic(page, `${AT}&det=1&hud=1&lang=en`);
   // Press-and-poll one stop at a time. data-stop re-binds at most every 500 ms and a press
@@ -268,6 +271,12 @@ test('keyboard walk: every stop reachable, reduced-motion cuts', async ({ page }
     J2b: 'Halfway up the second flight the upper tier of windows opens over the climb. The Neva light enters high here and carries the last run of the stair up to the landing.',
     J3: 'Near the top the eastern portal comes square to the eye: the doorway to the state rooms, framed in gilt between columns of grey granite.',
     J4: 'arrival; the portal (landing airlock)',
+    // R3 (DEC-025): the five 1812 landings join the walk — the EN corpus verbatim.
+    M0: 'The threshold — the long view south along the axis, toward the portraits of the heroes of 1812.',
+    M1: 'The west wall — a block of portraits in gilt frames.',
+    M2: 'The lantern — the vault and the glazing bars above the gallery.',
+    M3: 'The monarchs — the end wall, the large portraits above the small.',
+    M4: 'The doors are closed; beyond them — St George’s Hall.',
   };
   const walkTo = (stop: string, key = 'ArrowRight'): Promise<void> =>
     expect
@@ -304,17 +313,163 @@ test('keyboard walk: every stop reachable, reduced-motion cuts', async ({ page }
   await expect(page.locator('#caption-live')).toHaveText(
     'J4 · arrival; the portal (landing airlock)',
   );
-  // The landing's far end is inert: a press past J4 fires the boundary intent, but the
-  // dead end has no neighbor to transit to (§1.1) — the stop stays, no room row changes.
+  // DEC-025: the landing's far end is no longer inert — the same forward press crosses the
+  // retargeted airlock into the 1812 room (a cut: the card, then the M0 seed), and the walk
+  // lands M0–M4 the same way it landed the phase-2 stops.
+  for (const stop of ['M0', 'M1', 'M2', 'M3', 'M4']) {
+    await walkTo(stop);
+  }
+  // The route's end (M4, the closed doors) is the new inert end: a press past it changes
+  // nothing — the room's only airlock side sits at M0, the entry stop (§1.1's chain end).
   await page.keyboard.press('ArrowRight');
   await page.waitForTimeout(2000);
-  await expect(hud).toHaveAttribute('data-stop', 'J4');
-  // Backward: the whole way home through both airlocks — the backward entries seed the
-  // far stop (G2, then S1), so the direction of travel is preserved (§6.1 seed law).
-  for (const stop of ['J3', 'J2b', 'J2', 'J1b', 'J1', 'J0', 'G2', 'G1', 'Gj', 'G0', 'S1', 'S0']) {
+  await expect(hud).toHaveAttribute('data-stop', 'M4');
+  await expect(hud).toHaveAttribute('data-room', 'military-gallery');
+  // Backward: the whole way home through both airlocks — M0's backward push is the landing
+  // airlock's reverse (the cut back to jordan), and the backward entries seed the far stop
+  // (J4, then G2, then S1) so the direction of travel is preserved (§6.1 seed law).
+  for (const stop of [
+    'M3',
+    'M2',
+    'M1',
+    'M0',
+    'J4',
+    'J3',
+    'J2b',
+    'J2',
+    'J1b',
+    'J1',
+    'J0',
+    'G2',
+    'G1',
+    'Gj',
+    'G0',
+    'S1',
+    'S0',
+  ]) {
     await walkTo(stop, 'ArrowLeft');
   }
   await expect(page.locator('#caption-live')).toHaveText('S0 · the facade and the hour');
   await expect(hud).toHaveAttribute('data-room', 'square');
   await expect(hud).toHaveAttribute('data-ledger-bytes', '0', { timeout: 60_000 });
 });
+
+// R3 (design-gallery.md §7.3; DEC-025/029): the new edge both ways + the two cold deep-link
+// starts, the ledger back at boot every time. The card carries the destination's room title —
+// the full sentence, the compression note riding it as the second clause (DEC-025); the
+// arrival captions are the EN corpus. Smoke asserts contracts, never cadence.
+test('smoke walk: the 1812 edge runs both ways, the ledger returns at boot', async ({ page }) => {
+  test.slow(); // four more transits, each data-bound on a starved page
+  const query = `${AT}&det=1&hud=1&lang=en`;
+  const hud = await bootDeterministic(page, query);
+  const nav = (path: string): Promise<void> =>
+    page.evaluate((hash) => {
+      location.hash = hash;
+    }, `#${path}?${query}`);
+
+  // The committed legs to jordan (unchanged shape; the ledger rows prove the rooms mount).
+  await nav('/gallery');
+  await expect(hud).toHaveAttribute('data-room', 'rastrelli-gallery', { timeout: 60_000 });
+  await expect(hud).not.toHaveAttribute('data-ledger-bytes', '0', { timeout: 60_000 });
+  await expect(page.locator('#caption-title')).toHaveAttribute(
+    'data-shown',
+    'Rastrelli Gallery — the way in',
+    { timeout: 60_000 },
+  );
+  await nav('/jordan');
+  await expect(hud).toHaveAttribute('data-room', 'jordan', { timeout: 60_000 });
+  // The capture point: the hold's zero means the mount COMPLETED — the ledger stops growing.
+  await expect(hud).toHaveAttribute('data-hold-ms', '0', { timeout: 60_000 });
+  await expectWithinBudgets(hud);
+  const atJordan = await readInteger(hud, 'data-ledger-bytes');
+
+  // jordan → 1812 (forward): the retargeted landing airlock — a cut whose card carries the
+  // title sentence; the arrival seeds M0, the threshold stop.
+  await nav('/1812');
+  await expect(page.locator('#caption-title')).toHaveAttribute(
+    'data-shown',
+    'Military Gallery of 1812 — through the Armorial Hall',
+    { timeout: 60_000 },
+  );
+  await expect(hud).toHaveAttribute('data-room', 'military-gallery', { timeout: 60_000 });
+  await expect(page).toHaveURL(/#\/1812/, { timeout: 60_000 });
+  await expect(page.locator('#caption')).toHaveText(
+    'The threshold — the long view south along the axis, toward the portraits of the heroes of 1812.',
+    { timeout: 60_000 },
+  );
+  await expect(hud).toHaveAttribute('data-hold-ms', '0', { timeout: 60_000 });
+  await expectWithinBudgets(hud); // the dark interim renders within the whole-frame budgets
+
+  // 1812 → jordan (backward through the same airlock): the entry seeds the far stop (J4)
+  // and the 1812 room releases whole — the ledger reads its jordan value again.
+  await nav('/jordan');
+  await expect(page.locator('#caption-title')).toHaveAttribute(
+    'data-shown',
+    'Jordan Staircase — the ascent',
+    { timeout: 60_000 },
+  );
+  await expect(hud).toHaveAttribute('data-room', 'jordan', { timeout: 60_000 });
+  await expect(page.locator('#caption')).toHaveText('arrival; the portal (landing airlock)', {
+    timeout: 60_000,
+  });
+  await expect
+    .poll(async () => readInteger(hud, 'data-ledger-bytes'), { timeout: 60_000 })
+    .toBe(atJordan);
+
+  // Home through the remaining chain; the ledger returns to boot (all scopes empty).
+  await nav('/gallery');
+  await expect(hud).toHaveAttribute('data-room', 'rastrelli-gallery', { timeout: 60_000 });
+  await nav('/');
+  await expect(hud).toHaveAttribute('data-room', 'square', { timeout: 60_000 });
+  await expect(hud).toHaveAttribute('data-ledger-bytes', '0', { timeout: 60_000 });
+  await expect(hud).toHaveAttribute('data-hold-ms', '0', { timeout: 60_000 });
+});
+
+// §7.3's two deep-link starts: a fresh page load AT the room route is the cold entry
+// (from = null; the sky renders until the room is ready, r16 interim), then the hops home
+// ride the same chained transits the arrows fire, and the square reads the boot ledger.
+const DEEP_LINK_QUERY = `${AT}&det=1&hud=1&lang=en`;
+
+async function bootDeepLink(page: Page, path: string): Promise<Locator> {
+  await page.goto(`/#${path}?${DEEP_LINK_QUERY}`);
+  await expect(page.locator('#title')).toBeVisible({ timeout: FIRST_FRAME_TIMEOUT_MS });
+  // The cold transit cannot settle before the room's data is ready (the card dwells on the
+  // mount), so the scrub wait is the load-dwell class, not the resident boot's.
+  await expect(page.locator('#scrub')).toBeVisible({ timeout: 90_000 });
+  const hud = page.locator('#hud');
+  await expect(hud).toHaveAttribute('data-frame-ms', POSITIVE_FRAME_MS, {
+    timeout: HUD_BIND_TIMEOUT_MS,
+  });
+  return hud;
+}
+
+for (const [label, hops] of [
+  ['cold #/1812 → #/gallery → square', ['#/gallery', '#/']],
+  ['cold #/1812 → #/jordan → #/gallery → square', ['#/jordan', '#/gallery', '#/']],
+] as const) {
+  test(`deep link: ${label}`, async ({ page }) => {
+    test.slow();
+    const hud = await bootDeepLink(page, '/1812');
+    await expect(hud).toHaveAttribute('data-room', 'military-gallery', { timeout: 60_000 });
+    await expect(page.locator('#caption-title')).toHaveAttribute(
+      'data-shown',
+      'Military Gallery of 1812 — through the Armorial Hall',
+      { timeout: 60_000 },
+    );
+    await expect(page.locator('#caption')).toHaveText(
+      'The threshold — the long view south along the axis, toward the portraits of the heroes of 1812.',
+      { timeout: 60_000 },
+    );
+    await expect(page).toHaveURL(/#\/1812/, { timeout: 60_000 });
+    await expect(hud).toHaveAttribute('data-hold-ms', '0', { timeout: 90_000 });
+    await expectWithinBudgets(hud);
+    for (const hash of hops) {
+      await page.evaluate(([target, query]) => {
+        location.hash = `${target}?${query}`;
+      }, [hash, DEEP_LINK_QUERY]);
+    }
+    await expect(hud).toHaveAttribute('data-room', 'square', { timeout: 90_000 });
+    await expect(hud).toHaveAttribute('data-ledger-bytes', '0', { timeout: 90_000 });
+    await expect(hud).toHaveAttribute('data-hold-ms', '0', { timeout: 90_000 });
+  });
+}

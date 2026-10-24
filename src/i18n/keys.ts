@@ -36,6 +36,11 @@ export type CaptionKey =
   | 'caption.gj'
   | 'caption.g1'
   | 'caption.g2'
+  | 'caption.m0'
+  | 'caption.m1'
+  | 'caption.m2'
+  | 'caption.m3'
+  | 'caption.m4'
   | 'caption.j0'
   | 'caption.j1'
   | 'caption.j1b'
@@ -169,6 +174,7 @@ export type NotesKey =
 
 export type DataKey =
   | 'data.titleGallery'
+  | 'data.title1812'
   | 'data.titleJordan'
   | 'data.titleSquare'
   | 'data.kindCornerRisalit'

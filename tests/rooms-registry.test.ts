@@ -26,15 +26,21 @@ describe('rooms/index.ts (committed registry)', () => {
   it('fences clean: routes, ids, airlocks, bidirectional edges, stops, looks, holds', () => {
     expect(validateRegistry(ENTRIES, AIRLOCKS)).toEqual([]);
   });
-  it('is exactly the §1.1 chain', () => {
-    expect(ENTRIES.map((e) => e.id)).toEqual(['square', 'rastrelli-gallery', 'jordan']);
-    expect(ENTRIES.map((e) => e.route)).toEqual(['/', '/gallery', '/jordan']);
+  it('is exactly the §1.1 chain, extended by DEC-025', () => {
+    expect(ENTRIES.map((e) => e.id)).toEqual([
+      'square',
+      'rastrelli-gallery',
+      'jordan',
+      'military-gallery',
+    ]);
+    expect(ENTRIES.map((e) => e.route)).toEqual(['/', '/gallery', '/jordan', '/1812']);
     expect(AIRLOCKS.map((a) => a.id)).toEqual([
       'arch-portal',
       'gallery-airlock',
       'landing-airlock',
     ]);
-    expect(AIRLOCKS[2]?.to).toBeNull();
+    // DEC-025: the landing airlock retargets to the 1812 room (a cut with a destination).
+    expect(AIRLOCKS[2]?.to).toBe('military-gallery');
   });
   it('contract budgets equal the generated manifests', () => {
     for (const entry of roomEntries) {

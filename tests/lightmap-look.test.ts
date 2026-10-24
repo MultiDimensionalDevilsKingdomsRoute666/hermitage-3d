@@ -13,8 +13,17 @@ describe('LIGHT_STATES', () => {
 });
 
 describe('INTERIOR_LOOK_GAIN', () => {
-  it('covers exactly the two interior rooms', () => {
-    expect(Object.keys(INTERIOR_LOOK_GAIN).sort()).toEqual([...INTERIOR_ROOMS].sort());
+  it('covers every interior room id (the Record keys on the registry union)', () => {
+    expect(Object.keys(INTERIOR_LOOK_GAIN).sort()).toEqual(
+      [...INTERIOR_ROOMS, 'military-gallery'].sort(),
+    );
+  });
+  it('the unbaked room\u2019s row is the neutral unset (1/1/1) — R4\u2019s bake declares the real gains', () => {
+    expect(INTERIOR_LOOK_GAIN['military-gallery']).toEqual({
+      day: 1,
+      dusk: 1,
+      nightChandeliers: 1,
+    });
   });
   it('every state entry is a finite positive number', () => {
     for (const room of INTERIOR_ROOMS) {

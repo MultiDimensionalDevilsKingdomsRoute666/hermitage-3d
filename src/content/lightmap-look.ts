@@ -21,4 +21,8 @@ export const INTERIOR_LOOK_GAIN: Readonly<Record<RoomId, Readonly<Record<LightSt
   // The night gain is the band rule's knob (raise in 0.25 steps while it stays under g(day)):
   // at 2.5 the captured day/night G1 mean ratio read 1.87 — the rule's step 1 → 2.75.
   'rastrelli-gallery': { day: 3, dusk: 3, nightChandeliers: 2.75 },
+  // R3: the room mounts UNBAKED (the manifest's lightmaps row is empty — the all-or-nothing
+  // gate never reaches applyTechnique), so this row is inert until R4's bake declares the
+  // real gains. 1/1/1 is the honest unset value: no gain, never fake-lit.
+  'military-gallery': { day: 1, dusk: 1, nightChandeliers: 1 },
 };

@@ -666,3 +666,102 @@ describe('createLoaders — single-use staging (§4.6, the unmount-disposes law)
     loaders.dispose();
   });
 });
+
+// --- R3 (design-gallery §2.4): decodeRoomTexture — the ONE named non-lm row (the portrait
+// atlas). It refuses lm rows (decodeRoomTextures owns those), refuses a row the payload
+// does not carry, uploads inside the hold (initTexture, as mountParsed's images) and
+// registers the honest texture row; it tags no colour space (the binder owns it) and never
+// fetches (the bytes come from the payload fetchRoom already staged).
+
+describe('createLoaders — decodeRoomTexture (the R3 atlas hook)', () => {
+  const payload = {
+    glb: bytesOf(4),
+    ktx2: new Map([
+      ['tex/military-gallery-portraits.ktx2', bytesOf(8)],
+      ['lm/day.ktx2', bytesOf(8)],
+    ]),
+  };
+
+  /** The ledger double that EXPOSES its rows (spyLedger\u2019s snapshot stays empty by design). */
+  const rowLedger = () => {
+    const rows: string[] = [];
+    const ledger = {
+      register: (scope: string, kind: string, bytes: number, label: string) => {
+        rows.push(`${scope}/${kind}/${bytes}/${label}`);
+      },
+      release: () => undefined,
+      bytesByScope: () => 0,
+      snapshot: () => [],
+    } as unknown as RoomLedger;
+    return { ledger, rows };
+  };
+
+  /** The renderer double whose initTexture records every call — the upload law is observable. */
+  const rendererWithUploads = () => {
+    const uploads: unknown[] = [];
+    const renderer = {
+      capabilities: { isWebGL2: true },
+      extensions: { has: () => true },
+      initTexture: (texture: unknown) => {
+        uploads.push(texture);
+      },
+      getContext: () => ({}),
+    } as never;
+    return { renderer, uploads };
+  };
+
+  it('refuses an lm row — decodeRoomTextures owns those', async () => {
+    const loaders = createLoaders(fakeRenderer(), spyLedger(), fetchDouble(new Map()).impl);
+    await expect(
+      loaders.decodeRoomTexture('military-gallery', payload, 'lm/day.ktx2'),
+    ).rejects.toThrow(/is an lm row/);
+    loaders.dispose();
+  });
+
+  it('refuses a row the payload does not carry', async () => {
+    const loaders = createLoaders(fakeRenderer(), spyLedger(), fetchDouble(new Map()).impl);
+    await expect(
+      loaders.decodeRoomTexture('military-gallery', payload, 'tex/missing.ktx2'),
+    ).rejects.toThrow(/has no row tex\/missing\.ktx2/);
+    loaders.dispose();
+  });
+
+  it('decodes a non-lm row, uploads it in the hold and registers the honest row', async () => {
+    const { ledger, rows } = rowLedger();
+    const { renderer, uploads } = rendererWithUploads();
+    const loaders = createLoaders(renderer, ledger, fetchDouble(new Map()).impl);
+    const texture = await loaders.decodeRoomTexture(
+      'military-gallery',
+      payload,
+      'tex/military-gallery-portraits.ktx2',
+    );
+    expect((texture as { name: string }).name).toContain('fake/');
+    expect(uploads).toContain(texture); // the GPU upload inside the hold, as mountParsed\u2019s
+    // The fake texture carries no image, so the honest size reads 0 — the ROW is the law.
+    expect(rows).toEqual(['military-gallery/texture/0/tex/military-gallery-portraits.ktx2']);
+    loaders.dispose();
+  });
+
+  it('never fetches — the bytes come from the staged payload', async () => {
+    const double = fetchDouble(new Map());
+    const loaders = createLoaders(fakeRenderer(), spyLedger(), double.impl);
+    await loaders.decodeRoomTexture(
+      'military-gallery',
+      payload,
+      'tex/military-gallery-portraits.ktx2',
+    );
+    expect(double.paths).toHaveLength(0);
+    loaders.dispose();
+  });
+
+  it('tags no colour space — the binder owns it (§2.4\u2019s CANVAS law)', async () => {
+    const loaders = createLoaders(fakeRenderer(), spyLedger(), fetchDouble(new Map()).impl);
+    const texture = (await loaders.decodeRoomTexture(
+      'military-gallery',
+      payload,
+      'tex/military-gallery-portraits.ktx2',
+    )) as Record<string, unknown>;
+    expect('colorSpace' in texture).toBe(false);
+    loaders.dispose();
+  });
+});

@@ -34,7 +34,11 @@ export type RoomStage = Readonly<{
 
 export type PrefetchState = Readonly<{ rooms: ReadonlyMap<RoomId, RoomStage> }>;
 
-const ROOM_IDS = ['rastrelli-gallery', 'jordan'] as const satisfies readonly RoomId[];
+const ROOM_IDS = [
+  'rastrelli-gallery',
+  'jordan',
+  'military-gallery',
+] as const satisfies readonly RoomId[];
 
 const isRoomId = (handle: NodeHandle): handle is RoomId =>
   (ROOM_IDS as readonly NodeHandle[]).includes(handle);
