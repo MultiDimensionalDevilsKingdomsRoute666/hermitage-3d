@@ -35,7 +35,10 @@ ARCH_CHART_PAD_PX = 2  # the adopted Block 2 LM_PAD_PX (both charts); jordan's c
 # D-10's FILL, resolved against the real pack: the draft's 36 px/m demanded 4,132,894 px2
 # of 4,194,304 (98.5% — the shelf packer overflowed at the 60th patch of 1898); 32 px/m
 # (2048/64) demands ~3.27M (78%) and keeps one density across the whole chart (D-10).
-ARCH_DENSITY_PX_PER_M = 32.0
+# R4c re-resolution: the closed vault (the shell + the folded-soffit bottoms + the tympani
+# and the wells' throats) pushed 32 px/m to 4,196,212 px2 demanded — over capacity by
+# 1,908 px2 even with both folds; 31 px/m demands 3,966,038 (94.6%) and packs.
+ARCH_DENSITY_PX_PER_M = 31.0
 MIN_PATCH_PX = 8
 
 

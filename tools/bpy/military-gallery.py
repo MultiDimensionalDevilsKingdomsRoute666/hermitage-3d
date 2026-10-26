@@ -63,7 +63,7 @@ LANTERN_KERB_H = 0.3
 LANTERN_PITCH_H = 0.8      # lantern ridge at floor+9.6 (bounds Y max 19.7)
 
 # ---- vault                                                                   -
-VAULT_SEGMENTS = 16
+VAULT_SEGMENTS = 40         # 8 segments per coffer row: mouths on profile vertices (R4c)
 COFFER_ROWS = 5
 COFFER_COLS = 22
 COFFER_INSET = 0.18
@@ -541,6 +541,16 @@ def build_walls(collection, materials):
               (mid_x - half_x, SPRING_Y, wall_z),
               ((0.0, 0.0), (span_x, 0.0), (span_x, wall_h), (0.0, wall_h)),
               nz < 0.0, patch)
+        # R4c: the wall meets the barrel — the tympanum closes the wall's flat top
+        # (SPRING_Y) against the arc, whose sub-segments are the soffit's edge here.
+        # Vertex order (arc west->east, chord return) winds the normal to -z; the
+        # north end wall must face +z (south, into the hall), so it flips alone.
+        tym = CHART.add('wall_plaster', span_x, VAULT_RISE, tag.replace('end', 'tympanum'))
+        arc = list(vault_profile())
+        ty = bm_p.faces.new([bm_p.verts.new(_wm(px, py, wall_z)) for px, py in arc])
+        if nz > 0.0:
+            ty.normal_flip()
+        _bind(bm_p, ty, tym, [(p[0] - (mid_x - half_x), p[1] - SPRING_Y) for p in arc])
     obj2 = _finish(plaster, bm_p, True)
     obj2.data.materials.append(materials['plaster'])
     return [obj, obj2]
@@ -571,81 +581,210 @@ def vault_profile():
     return tuple(pts)
 
 
+def arc_angle(p):
+    """The arc angle (0 at the west springing .. pi at the east one) of a barrel point."""
+    half = hall_span()[0] * 0.5
+    return math.atan2((p[1] - SPRING_Y) / VAULT_RISE, (hall_mid_x() - p[0]) / half)
+
+
+def arc_at(x):
+    """The barrel point at a given x: the profile's law at an arbitrary x (R4c)."""
+    half = hall_span()[0] * 0.5
+    c = max(-1.0, min(1.0, (x - hall_mid_x()) / half))
+    return (x, SPRING_Y + VAULT_RISE * math.sin(math.acos(c)))
+
+
+def vault_arc():
+    """The deterministic arc-vertex table (R4c): the uniform profile vertices plus the
+    lantern-wall intersections (the wells' cut lines), sorted along the arc."""
+    mid = hall_mid_x()
+    half_w = LANTERN_WIDTH * 0.5
+    pts = [tuple(vault_profile()[i]) for i in range(VAULT_SEGMENTS + 1)]
+    for x_line in (mid - half_w, mid + half_w):
+        pts.append(arc_at(x_line))
+    return tuple(sorted(pts, key=arc_angle))
+
+
 def build_vault(collection, materials):
-    """Barrel soffit with a coffer grid; columns under the lantern footprints
-    stay bare (the kit-chart skip the specialist caught in its challenge).
-    The coffer bottoms share ONE (arc-length, z-band) patch (D-10); every pan
-    is its own patch."""
+    """CLOSED barrel soffit with a coffer grid (R4c law: the shell closes; the coffers are
+    true recesses cut radially into the barrel; the lantern wells stay open as the light's
+    path and the lantern's glazed drum seals their sides).
+    The surface and the recess bottoms bind to (z, arc) patches; every recess wall binds
+    to its own per-(row, column, end) patch — no two faces share a uv region (the D-10
+    write law: a shared rect would let the bake's last-rasterized face clone one
+    column's response to every coffer)."""
     obj, bm = _new_part(collection, 'vault')
     uv, _ = _layers(bm)
-    profile = vault_profile()
-    # Cumulative arc lengths along the profile — the deterministic (s, t) table.
-    cum = [0.0]
-    for i in range(VAULT_SEGMENTS):
-        ax, ay = profile[i]
-        bx, by = profile[i + 1]
-        cum.append(cum[-1] + math.hypot(bx - ax, by - ay))
-    arc_total = cum[-1]
-    overlaps = lantern_overlaps()
-    col_step = (WALL_Z_SOUTH - WALL_Z_NORTH) / float(COFFER_COLS)
-    row_step = VAULT_SEGMENTS / float(COFFER_ROWS)
-    mid = hall_mid_x()
     half = hall_span()[0] * 0.5
+    mid = hall_mid_x()
+    north, south = WALL_Z_NORTH, WALL_Z_SOUTH
+    pts = vault_arc()
+    cum = [0.0]
+    for i in range(len(pts) - 1):
+        cum.append(cum[-1] + math.hypot(pts[i + 1][0] - pts[i][0], pts[i + 1][1] - pts[i][1]))
+    arc_total = cum[-1]
+    assert VAULT_SEGMENTS % COFFER_ROWS == 0, 'the mouths must sit on profile vertices'
 
-    def za_of(ci):
-        return WALL_Z_NORTH + col_step * ci + COFFER_MARGIN
-
-    def zb_of(ci):
-        return WALL_Z_NORTH + col_step * (ci + 1) - COFFER_MARGIN
+    half_w = LANTERN_WIDTH * 0.5
+    west_i = next(i for i, p in enumerate(pts) if abs(p[0] - (mid - half_w)) < 1e-9)
+    east_i = next(i for i, p in enumerate(pts) if abs(p[0] - (mid + half_w)) < 1e-9)
+    wells = tuple((zc - LANTERN_LEN * 0.5, zc + LANTERN_LEN * 0.5) for zc in LANTERN_Z)
 
     live = []
+    col_step = (south - north) / float(COFFER_COLS)
     for ci in range(COFFER_COLS):
-        za = za_of(ci)
-        zb = zb_of(ci)
-        zc = (za + zb) * 0.5
-        if any(lo <= zc <= hi for lo, hi in overlaps):
+        za = north + col_step * ci + COFFER_MARGIN
+        zb = north + col_step * (ci + 1) - COFFER_MARGIN
+        if any(lo <= (za + zb) * 0.5 <= hi for lo, hi in lantern_overlaps()):
             continue
-        live.append((ci, za, zb))
-    band = zb_of(0) - za_of(0)
+        live.append((za, zb))
+    band = col_step - 2.0 * COFFER_MARGIN
+    row_rib = math.pi / float(VAULT_SEGMENTS)
+    row_span = math.pi / float(COFFER_ROWS)
 
-    def arc_s(px, py):
-        a = math.atan2((py - SPRING_Y) / VAULT_RISE, (mid - px) / half)
-        i = int(round(a * VAULT_SEGMENTS / math.pi))
-        return cum[max(0, min(VAULT_SEGMENTS, i))]
+    def well_cell(si, z_mid):
+        return west_i <= si < east_i and any(lo < z_mid < hi for lo, hi in wells)
 
-    patch = CHART.add('vault', arc_total, band * len(live), 'soffit')
-    for live_index, (ci, za, zb) in enumerate(live):
-        t0 = live_index * band
+    def mouth_cell(si, z_mid):
+        if not any(za < z_mid < zb for za, zb in live):
+            return False
+        a_mid = (arc_angle(pts[si]) + arc_angle(pts[si + 1])) * 0.5
         for ri in range(COFFER_ROWS):
-            i0 = int(round(row_step * ri))
-            i1 = int(round(row_step * (ri + 1)))
-            xa, ya = profile[i0]
-            xb, yb = profile[i1]
-            pans = []
-            for x, y in ((xa, ya), (xb, yb)):
-                dx = x - mid
-                dy = y - SPRING_Y
-                length = math.hypot(dx, dy)
-                k = (length - COFFER_INSET) / length if length > 0.0 else 1.0
-                pans.append((mid + dx * k, SPRING_Y + dy * k))
-            (pxa, pya), (pxb, pyb) = pans
-            for corners in (
-                    ((xa, ya, za), (xb, yb, za), (pxb, pyb, za), (pxa, pya, za)),
-                    ((xa, ya, zb), (pxa, pya, zb), (pxb, pyb, zb), (xb, yb, zb)),
-                    ((xa, ya, za), (pxa, pya, za), (pxa, pya, zb), (xa, ya, zb)),
-                    ((pxb, pyb, za), (xb, yb, za), (xb, yb, zb), (pxb, pyb, zb))):
-                pan_face = bm.faces.new([bm.verts.new(_wm(px, py, zz))
-                                         for px, py, zz in corners])
-                pan_face.smooth = False
-                face_patch(bm, pan_face, 'vault')
-            bottom = bm.faces.new([bm.verts.new(_wm(px, py, zz)) for px, py, zz in
-                                   ((pxa, pya, za), (pxb, pyb, za),
-                                    (pxb, pyb, zb), (pxa, pya, zb))])
-            _bind(bm, bottom, patch,
-                  [(arc_s(pxa, pya), t0),
-                   (arc_s(pxb, pyb), t0),
-                   (arc_s(pxb, pyb), t0 + (zb - za)),
-                   (arc_s(pxa, pya), t0 + (zb - za))])
+            if ri * row_span + row_rib <= a_mid <= (ri + 1) * row_span - row_rib:
+                return True
+        return False
+
+    # R4c: the shell field FOLDS the arc — only the built faces' sub-bands occupy the
+    # t axis (the mouths and wells are skipped faces; a raw-cum field would allocate
+    # their texels and overflow the chart). Per z-cut the fold re-bases the t origin on
+    # the built si's only; a face's span rides its own arc length, seam-free.
+    def shell_fold(z_mid):
+        built = [si for si in range(len(pts) - 1)
+                 if not (well_cell(si, z_mid) or mouth_cell(si, z_mid))]
+        span = {si: math.hypot(pts[si + 1][0] - pts[si][0], pts[si + 1][1] - pts[si][1])
+                for si in built}
+        fold = {}
+        run = 0.0
+        for si in built:
+            fold[si] = run
+            run += span[si]
+        return built, fold, span, run
+
+    z_cuts = tuple(sorted(
+        {north, south} | {cut for span in live for cut in span}
+        | {cut for span in wells for cut in span}))
+    folds = {zi: shell_fold((z_cuts[zi] + z_cuts[zi + 1]) * 0.5)
+             for zi in range(len(z_cuts) - 1)}
+    surface_patch = CHART.add('vault', south - north,
+                              max(f[3] for f in folds.values()), 'shell')
+    for zi, (built, fold, span, _) in folds.items():
+        z0, z1 = z_cuts[zi], z_cuts[zi + 1]
+        for si in built:
+            p0, p1 = pts[si], pts[si + 1]
+            face = bm.faces.new([bm.verts.new(_wm(px, py, zz)) for px, py, zz in
+                                 ((p0[0], p0[1], z0), (p1[0], p1[1], z0),
+                                  (p1[0], p1[1], z1), (p0[0], p0[1], z1))])
+            face.smooth = False
+            t0, t1 = fold[si], fold[si] + span[si]
+            _bind(bm, face, surface_patch, [(z0 - north, t0), (z0 - north, t1),
+                                        (z1 - north, t1), (z1 - north, t0)])
+
+    def pushed(p):
+        """A mouth point pushed radially OUTWARD: the recess's true depth."""
+        dx, dy = p[0] - mid, p[1] - SPRING_Y
+        length = math.hypot(dx, dy)
+        k = (length + COFFER_INSET) / length
+        return (mid + dx * k, SPRING_Y + dy * k)
+
+    # R4c: the soffit field FOLDS the arc like the shell's — every row's bottoms cover
+    # the row's mouth arcs only; a raw-cum t axis would allocate the rib arcs' texels
+    # no bottom face ever samples (the same overflow the shell fold removes).
+    rows = []
+    for ri in range(COFFER_ROWS):
+        band_lo = ri * row_span + row_rib
+        band_hi = (ri + 1) * row_span - row_rib
+        rows.append((next(si for si in range(len(pts) - 1)
+                          if abs(arc_angle(pts[si]) - band_lo) < 1e-9),
+                     next(si for si in range(len(pts) - 1)
+                          if abs(arc_angle(pts[si + 1]) - band_hi) < 1e-9)))
+    row_base = [0.0]
+    for si0, si1 in rows:
+        row_base.append(row_base[-1] + (cum[si1 + 1] - cum[si0]))
+    soffit_patch = CHART.add('vault', band * len(live), row_base[-1], 'soffit')
+    wall_classes = {}
+    for gi, (za, zb) in enumerate(live):
+        for ri, (si0, si1) in enumerate(rows):
+            mouth = pts[si0:si1 + 2]
+            bottom = tuple(pushed(p) for p in mouth)
+            chord = cum[si1 + 1] - cum[si0]
+            for bi in range(len(mouth) - 1):
+                t0 = row_base[ri] + (cum[si0 + bi] - cum[si0])
+                t1 = row_base[ri] + (cum[si0 + bi + 1] - cum[si0])
+                mb = bm.faces.new([bm.verts.new(_wm(px, py, zz)) for px, py, zz in
+                                   ((bottom[bi][0], bottom[bi][1], za),
+                                    (bottom[bi + 1][0], bottom[bi + 1][1], za),
+                                    (bottom[bi + 1][0], bottom[bi + 1][1], zb),
+                                    (bottom[bi][0], bottom[bi][1], zb))])
+                mb.smooth = False
+                _bind(bm, mb, soffit_patch, [(gi * band, t0), (gi * band, t1),
+                                         ((gi + 1) * band, t1), ((gi + 1) * band, t0)])
+                for zz in (za, zb):
+                    key = ('z-end', ri, gi, zz)
+                    if key not in wall_classes:
+                        wall_classes[key] = (CHART.add('vault', chord, COFFER_INSET),
+                                             cum[si0])
+                    zwall, base = wall_classes[key]
+                    mz = bm.faces.new([bm.verts.new(_wm(px, py, zz)) for px, py, zz in
+                                       ((mouth[bi][0], mouth[bi][1], zz),
+                                        (mouth[bi + 1][0], mouth[bi + 1][1], zz),
+                                        (bottom[bi + 1][0], bottom[bi + 1][1], zz),
+                                        (bottom[bi][0], bottom[bi][1], zz))])
+                    mz.smooth = False
+                    _bind(bm, mz, zwall, [(cum[si0 + bi] - base, 0.0), (cum[si0 + bi + 1] - base, 0.0),
+                                      (cum[si0 + bi + 1] - base, COFFER_INSET),
+                                      (cum[si0 + bi] - base, COFFER_INSET)])
+            for ei, (edge, flip) in enumerate(((mouth[0], False), (mouth[-1], True))):
+                # R4c: the honest (radial, z) net — the wall's 0.18 x band metres at the
+                # uniform density (the session draft's transposed bind crushed the
+                # wall's z-variation into COFFER_INSET's 6 texels; this restores it).
+                key = ('arc-end', ri, gi, ei)
+                if key not in wall_classes:
+                    wall_classes[key] = CHART.add('vault', COFFER_INSET, band)
+                awall = wall_classes[key]
+                pb = pushed(edge)
+                ms = bm.faces.new([bm.verts.new(_wm(px, py, zz)) for px, py, zz in
+                                   ((edge[0], edge[1], zb), (edge[0], edge[1], za),
+                                    (pb[0], pb[1], za), (pb[0], pb[1], zb))])
+                if flip:
+                    ms.normal_flip()
+                ms.smooth = False
+                _bind(bm, ms, awall, [(0.0, band), (0.0, 0.0),
+                                      (COFFER_INSET, 0.0), (COFFER_INSET, band)])
+    # R4c: the wells' throats — the drum's sides run down to the arc rim and seal the
+    # well (the lantern law): two x-side walls plus the two arc-bounded end walls,
+    # normals inward (the hall sees them through the well; the D-10 per-face rects).
+    # The x-side walls rise to the kerb and so overlap the committed drum wall's
+    # crown..kerb band with an opposite-facing twin — coincident, never co-visible.
+    kerb = SPRING_Y + VAULT_RISE + LANTERN_KERB_H
+    rim_y = arc_at(mid - half_w)[1]
+    for za, zb in wells:
+        for sx in (-1.0, 1.0):
+            x_line = mid + sx * half_w
+            tw = bm.faces.new([bm.verts.new(_wm(x_line, yy, zz)) for yy, zz in
+                               ((rim_y, za), (rim_y, zb), (kerb, zb), (kerb, za))])
+            if sx < 0.0:
+                tw.normal_flip()
+            tw.smooth = False
+            face_patch(bm, tw, 'vault')
+        for z_end, flip in ((za, False), (zb, True)):
+            ty = bm.faces.new(
+                [bm.verts.new(_wm(px, py, z_end)) for px, py in pts[west_i:east_i + 1]]
+                + [bm.verts.new(_wm(mid + half_w, kerb, z_end)),
+                   bm.verts.new(_wm(mid - half_w, kerb, z_end))])
+            if flip:
+                ty.normal_flip()
+            ty.smooth = False
+            face_patch(bm, ty, 'vault')
     obj.data.materials.append(materials['vault'])
     return _finish(obj, bm, False)
 

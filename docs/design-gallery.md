@@ -167,11 +167,39 @@ Phase 3 ships room three, the Military Gallery of 1812 (route `#/1812`), and wit
   lm + the atlas's 419 K). Encoder-side levers measured and rejected: the white
   point moves the size ~0.6%, the ETC1S qlevel 128 → 100 moves it ~9% with
   banding risk.
+- **R4c (2026-10-26): the CI luminance fences (run 40268449538) — measurement wins.** The
+  first CI read of the committed M0 baselines failed both original fences: day 0.0456 <
+  dusk 0.0485, and day/night 2.17 < the declared ratio floor 3. Mechanism: M0 stands at the
+  north (lantern-less) end of the hall — the day's sun patches live under the mid-hall
+  lanterns, while the dusk is the composed candelabra third (candles along ALL walls), so at
+  the north stop the dusk composite genuinely out-reads the day. Owner ruling: both numbers
+  are sanity fences, not art targets. The order law reformulates to «day > night ∧
+  dusk > night» (tests/goldens-1812-luminance.test.ts); the ratio floor lands at 2 — the
+  honest room dynamic at the wp-1.5 day; the M0 dusk > day exception is recorded here. The
+  §4.3 prose (the order-of-magnitude floor→frame drop) stays untouched. Run-order lesson:
+  tests reading the baselines must run AFTER their capture — the local validate skipped the
+  suite while the baselines were absent and CI measured the committed PNGs honestly.
+- **R4c close (2026-10-26): the black vault was the missing barrel; the M0 fences re-ruled
+  on the honest light.** The defect was the MESH: build_vault never created the barrel
+  surface — the runtime saw the clear colour through the holes (the magenta proof). The
+  geometry landed (room.ts untouched): the closed shell folds the arc (built faces only;
+  mouths on profile vertices, VAULT_SEGMENTS 40 = 8 per row), the tympani close the end
+  walls, the wells' throats seal the shafts, the coffers are true radial recesses with
+  per-face D-10 rects. The arch chart re-resolved against the real pack: the soffit field
+  folds the arc like the shell's (the bottoms cover the mouth arcs only), the density
+  32→31 px/m (94.6% packed; the 36→32 precedent above). The 3 M0 goldens re-baselined and
+  read — the vault lit in all three states. The honest means (day 0.022239 / dusk 0.012466
+  / night 0.020330; the old day and dusk rode the leak) re-ruled the fences: the order law
+  is «day > night», the dusk > night leg and the day/night ratio floor retire at M0.
 - **Open residuals (owner's eyeball at M1):** the monarch/portal crown (the
   canvas top sits 0.3-0.7 m behind the valance/pediment band — "centred under
   the pediment" by design, the 34% share is the owner's call); the portrait
   atlas's v orientation (`_basis`'s v points down — check the hang at runtime);
-  the end walls' night bounce dimness (the torchères are side-wall only).
+  the end walls' night bounce dimness (the torchères are side-wall only);
+  the day's sun pools died with the leak — the closed barrel leaves the
+  lanterns' light path weak (the low sun behind the glazing), the floor reads
+  lamp-less by day (a light-design call: the DET time, the pane law or the
+  well path — an owner ruling, not a fence).
 
 ## 5. Environment
 

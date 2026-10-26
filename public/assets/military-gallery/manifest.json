@@ -3,50 +3,50 @@
   "files": [
     {
       "path": "lm/day.ktx2",
-      "bytes": 188306,
-      "sha256": "43e30e8eba8a95814ba714c53dd8a5bc4fa169867ef09ba0f9c682ed570c8f2b",
+      "bytes": 140583,
+      "sha256": "d2147353a5c53e9ffa77d5e02b5db97bbb9638384e79c51f051e1aaa5857d2f4",
       "kind": "ktx2"
     },
     {
       "path": "lm/dusk.ktx2",
-      "bytes": 179900,
-      "sha256": "7d38abdaa6ebc8e45e79d756594e497ad7d09c703b344b39abc5c6f219f6c101",
+      "bytes": 115842,
+      "sha256": "896af9993c860dda66593f1a6f00183c41e2425c70f87fbf045c7707e0257659",
       "kind": "ktx2"
     },
     {
       "path": "lm/kit-day.ktx2",
-      "bytes": 40651,
-      "sha256": "de40c18eba9f4acefbdc4d9cf7f9415d0c7bc21c2b2214db79e41895da2e219c",
+      "bytes": 24877,
+      "sha256": "878ff1f71d6c1e5ef71d6821f85b59292c53fad3666b5c9cdd1d4ccc5da28903",
       "kind": "ktx2"
     },
     {
       "path": "lm/kit-dusk.ktx2",
-      "bytes": 43057,
-      "sha256": "e4a7e67eeb0ecda4d43f8ca62e1987cb0ae225f756be7ad8984c8b642fe2ce43",
+      "bytes": 18833,
+      "sha256": "44b37db7eb361936fa94b7bb2b3f0d08b03d572a4a56fcb056fb87a7347e45ab",
       "kind": "ktx2"
     },
     {
       "path": "lm/kit-night.ktx2",
-      "bytes": 67843,
-      "sha256": "673ff6ad7d737ef925a9193e426b609c21c5ccf78a4a0529c4d6dca796ea2fe8",
+      "bytes": 66324,
+      "sha256": "931e7dfb61babd82a3483f0fa3b26b041c385e91bf18a2d4eafadff40a97ce2c",
       "kind": "ktx2"
     },
     {
       "path": "lm/night.ktx2",
-      "bytes": 171733,
-      "sha256": "5df195ddfc43089de67f5b93e987ea9b4f660e8e419ec51eaea3567f582d9057",
+      "bytes": 187060,
+      "sha256": "4c76d1fcbbda495dfe860bcea4fdbfa7cdbddf8a8d1fb87fb03330ef9c823b15",
       "kind": "ktx2"
     },
     {
       "path": "military-gallery.glb",
-      "bytes": 827316,
-      "sha256": "0b01af5023a4f9cc4c77e9837db2641f69430c3b4a9cb1b7cf6be2b7b35f46f1",
+      "bytes": 867276,
+      "sha256": "e38bf92d8f75f2288b13367465eb476b63afd6db836ac9b5d756c220b073a77a",
       "kind": "glb"
     },
     {
       "path": "probe/dusk.ktx2",
-      "bytes": 8119,
-      "sha256": "1cfd73acd2c5ccfa0b099dc5cb7c877058168656cf1f87e0bb4016e4254717b2",
+      "bytes": 7549,
+      "sha256": "b83fb3d924722e84e169517b9b4e81349f0cee946f292b45e9dd4c87f4fc4a38",
       "kind": "ktx2"
     },
     {
@@ -80,13 +80,13 @@
         "name": "wall_plaster",
         "instances": 1,
         "primitives": 1,
-        "triangles": 8
+        "triangles": 86
       },
       {
         "name": "vault",
         "instances": 1,
         "primitives": 1,
-        "triangles": 500
+        "triangles": 3550
       },
       {
         "name": "lantern_glazing",
@@ -4187,8 +4187,8 @@
         "triangles": 2
       }
     ],
-    "trianglesUnique": 27962,
-    "trianglesDrawn": 27962,
+    "trianglesUnique": 31090,
+    "trianglesDrawn": 31090,
     "extensionsRequired": [
       "EXT_meshopt_compression",
       "KHR_mesh_quantization",
