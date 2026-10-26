@@ -29,6 +29,9 @@ export type ChromeKey =
   | 'chrome.backLink'
   | 'chrome.noscriptNotes';
 
+/** Room index (design-gallery §6.2–6.4): the chrome button, the dialog heading, the current marker. */
+export type IndexKey = 'index.open' | 'index.title' | 'index.current';
+
 export type CaptionKey =
   | 'caption.s0'
   | 'caption.s1'
@@ -205,6 +208,6 @@ export type DataKey =
   | 'data.siblingNoteMillionnaya'
   | 'data.siblingNoteCentralPavilion';
 
-export type Key = ChromeKey | CaptionKey | NotesKey | DataKey;
+export type Key = ChromeKey | IndexKey | CaptionKey | NotesKey | DataKey;
 
 export type Dictionary = Readonly<Record<Key, string>>;

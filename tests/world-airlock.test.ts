@@ -24,7 +24,7 @@ const def: AirlockDef = {
 };
 const deadEnd: AirlockDef = { ...def, from: 'square', to: null, portalTo: null };
 const begin = (from: 'rastrelli-gallery' | null = 'rastrelli-gallery', reducedMotion = false) =>
-  beginTransit({ airlock: def, from, reducedMotion });
+  beginTransit({ airlock: def, from, reducedMotion, cold: false });
 const DT = 100;
 const departFrames = DEPART_MS / DT;
 const cardFrames = def.holdMs / DT;
@@ -61,9 +61,33 @@ describe('beginTransit', () => {
     });
   });
   it('derives the far side relative to from — one def serves both directions', () => {
-    const back = beginTransit({ airlock: def, from: 'jordan', reducedMotion: false });
+    const back = beginTransit({ airlock: def, from: 'jordan', reducedMotion: false, cold: false });
     expect(back).toMatchObject({ to: 'rastrelli-gallery' });
     expect(begin(null)).toMatchObject({ phase: 'card', to: 'jordan', from: null });
+  });
+  it('a cold jump from a mounted room skips the depart but keeps the from (§6.4)', () => {
+    // The index jump IS a deep link: the card opens over the mounted room; the from stays
+    // so the exit still fires dispose-from (the specialist draft's activeNode = null would
+    // leak the mounted room — the FSM's dispose law keys on from ≠ null).
+    const jumped = beginTransit({
+      airlock: def,
+      from: 'rastrelli-gallery',
+      reducedMotion: false,
+      cold: true,
+    });
+    expect(jumped).toMatchObject({ phase: 'card', from: 'rastrelli-gallery', to: 'jordan' });
+  });
+  it('a cold doorway jump plays card → arrive in full and disposes at the exit (§6.4)', () => {
+    const jumped = beginTransit({
+      airlock: def,
+      from: 'rastrelli-gallery',
+      reducedMotion: false,
+      cold: true,
+    });
+    const r = drive(jumped, cardFrames + arriveFrames + 2, true);
+    expect(r.phases[0]).toBe('card');
+    expect(r.phases).toContain('arrive');
+    expect(r.events).toContain('exit:dispose-from');
   });
 });
 
@@ -122,7 +146,12 @@ describe('advanceTransit', () => {
     expect(count(r.phases, 'arrive')).toBe(arriveFrames);
   });
   it('dead end (to: null): depart → card → exit, no arrive', () => {
-    const start = beginTransit({ airlock: deadEnd, from: 'square', reducedMotion: false });
+    const start = beginTransit({
+      airlock: deadEnd,
+      from: 'square',
+      reducedMotion: false,
+      cold: false,
+    });
     expect(start).toMatchObject({ phase: 'depart', to: null });
     const r = drive(start, departFrames + cardFrames, true);
     expect(r.state.phase).toBe('exit');

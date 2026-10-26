@@ -37,6 +37,9 @@ export const en = {
     'declared numbers, the kit of parts and the budget projection.',
   'chrome.backLink': '← Palace Square',
   'chrome.noscriptNotes': 'Numbers need JavaScript: the page re-runs the facade solver at load.',
+  'index.open': 'Rooms',
+  'index.title': 'Rooms',
+  'index.current': 'Current room',
 
   'caption.s0': 'the facade and the hour',
   'caption.s1': 'the arch opens',

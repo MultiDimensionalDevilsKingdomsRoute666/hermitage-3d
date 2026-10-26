@@ -84,6 +84,7 @@ import {
   pushFrameInterval,
   rollingMedianFrameMs,
 } from './ui/hud';
+import { bindIndexDialog } from './ui/index-dialog';
 import {
   bindLangToggle,
   clearStoredLang,
@@ -111,6 +112,7 @@ import {
 import {
   type AirlockDef,
   airlockEntering,
+  type Bounds,
   type NodeHandle,
   nextAirlockOnPath,
   type Rail,
@@ -150,6 +152,14 @@ const captionLive = document.querySelector('#caption-live');
 if (!(captionLive instanceof HTMLElement)) throw new Error('#caption-live missing');
 const notesLink = document.querySelector('#notes-link');
 if (!(notesLink instanceof HTMLAnchorElement)) throw new Error('#notes-link missing');
+const indexButton = document.querySelector('#index-open');
+if (!(indexButton instanceof HTMLButtonElement)) throw new Error('#index-open button missing');
+const indexDialog = document.querySelector('#index-dialog');
+if (!(indexDialog instanceof HTMLDialogElement)) throw new Error('#index-dialog missing');
+const indexList = document.querySelector('#index-list');
+if (!(indexList instanceof HTMLElement)) throw new Error('#index-list missing');
+const indexHeading = document.querySelector('#index-dialog-title');
+if (!(indexHeading instanceof HTMLElement)) throw new Error('#index-dialog-title missing');
 const travelHint = document.querySelector('#travel-hint');
 if (!(travelHint instanceof HTMLElement)) throw new Error('#travel-hint missing');
 const edgePrompt = document.querySelector('#edge-prompt');
@@ -197,6 +207,8 @@ const bindChrome = (): void => {
   if (sceneHelp !== null) sceneHelp.textContent = t('chrome.sceneHelp');
   canvas.setAttribute('aria-label', t('chrome.canvasLabel'));
   notesLink.textContent = t('chrome.notesLink');
+  indexButton.textContent = t('index.open'); // §6.3: the dim index button
+  indexHeading.textContent = t('index.title'); // the dialog's aria-labelledby heading
   travelHint.textContent = t('chrome.travelHint'); // §9: swaps in place, timers untouched
   // The door label's text composes in the frame block (it names the current boundary's
   // destination); the language swap re-composes on the next visible frame.
@@ -489,6 +501,15 @@ let indoor = false;
 let ready = false;
 let transit: Readonly<{ state: TransitState; target: NodeHandle; def: AirlockDef }> | null = null;
 let queuedTarget: NodeHandle | null = null;
+// The room index (§6.4): a jump writes the hash with cold intent — the next navigation's
+// transit takes the deep-link path (open at the card) even from a mounted room. The flag
+// rides ONE hashchange: it parks into queuedCold when a transit is in flight (consumed by
+// the exit's chained pickup); a jump click is impossible while the button is hidden.
+let indexJumpPending = false;
+let queuedCold = false;
+// The index button fades WITH the captions (§6.3): revealed at the first settle, then
+// forever mirroring #caption's visibility flag (rest-visible, glide-faded).
+let indexRevealed = false;
 let transitStarted = false;
 const roomWork = new Map<RoomId, Promise<void>>();
 const roomModules = new Map<RoomId, RoomModule>();
@@ -890,17 +911,35 @@ let firstSkyLogged = false;
 // ledger is only ever assigned inside `if (perfLog)` branches, so a normal build drops it.
 let transitLog: TransitLog | null = null;
 
-const beginTransitTo = (target: NodeHandle): void => {
-  const def =
-    activeNode === null
+// §6.4: an index jump to the square cuts to its stop 0 — the square is resident, no
+// committed airlock enters it; the cut rides the FSM as host-owned data (never an
+// AIRLOCKS edge — the registry graph stays the linear chain). The box encloses S0's eye
+// by the J0 convention (2×2×3 over the floor at 0); cuts never glide, the boxes are
+// never read.
+const SQUARE_CUT_PORTAL = { min: [-1, 0, 229], max: [1, 3, 231] } satisfies Bounds;
+
+const beginTransitTo = (target: NodeHandle, cold = false): void => {
+  let def =
+    activeNode === null || cold
       ? airlockEntering(AIRLOCKS, target)
       : nextAirlockOnPath(ENTRIES, AIRLOCKS, activeNode, target);
+  if (def === null && cold && target === 'square' && activeNode !== null) {
+    def = {
+      id: 'index-square-cut',
+      from: activeNode,
+      to: 'square',
+      portalFrom: SQUARE_CUT_PORTAL,
+      portalTo: SQUARE_CUT_PORTAL,
+      transit: 'cut',
+      holdMs: 600,
+    };
+  }
   if (def === null) {
     activeNode = target; // already there
     transit = null;
     return;
   }
-  const state = beginTransit({ airlock: def, from: activeNode, reducedMotion });
+  const state = beginTransit({ airlock: def, from: activeNode, reducedMotion, cold });
   // R-UX2 (§2): the lean the camera arrived with rides into the depart's locked door pose;
   // the lean state resets with the transit so the arrival is unleaned. (A cut has no depart
   // — but under reduced motion the lean is always 0, so nothing is lost there.)
@@ -1072,6 +1111,7 @@ const applyPresentation = (): void => {
   }
   scrub.hidden = arrival.phase !== 'settled';
   notesLink.hidden = arrival.phase !== 'settled'; // DEC-004's in-app route to /notes
+  if (arrival.phase === 'settled') indexRevealed = true; // §6.3: the index button's reveal
   // §9: the hint's show beat IS the settle — the chrome settles as one reveal. The step
   // fires once; a travel intent that landed before the beat already owns the dismissal
   // (the armed→gone transition makes the settled step a no-op). The beat RE-CHECKS the
@@ -1291,6 +1331,7 @@ const RAIL_CHAIN: readonly NodeHandle[] = [
 ];
 document.addEventListener('keydown', (event) => {
   if (event.target === scrub) return; // the scrub owns its keys
+  if (indexDialog.open) return; // §6.4: the index dialog owns the arrows while open
   const direction =
     event.key === 'ArrowRight' || event.key === 'ArrowUp'
       ? 1
@@ -1308,6 +1349,27 @@ document.addEventListener('keydown', (event) => {
   const next = result.boundary === 'forward' ? RAIL_CHAIN[at + 1] : RAIL_CHAIN[at - 1];
   framePush = result.boundary; // §2: an arrow boundary step is a push too (the same law)
   if (next !== undefined) beginTransitTo(next);
+});
+
+// --- The room index (design-gallery §6.2–6.4; §10 R5) -----------------------------------------
+// The chrome button + the native dialog. The jump writes the hash with the CURRENT query
+// preserved (a bare write would reset the time/lang/hud params — the r25 lifecycle law;
+// the deep-link hop precedent) and the committed hashchange path does everything else:
+// one code path for URL entry and index entry (§6.4).
+const jumpToRoute = (route: string): void => {
+  indexJumpPending = true;
+  const hash = location.hash.startsWith('#') ? location.hash.slice(1) : location.hash;
+  const mark = hash.indexOf('?');
+  const query = mark === -1 ? '' : hash.slice(mark + 1);
+  location.hash = `#${route}${query === '' ? '' : `?${query}`}`;
+};
+bindIndexDialog({
+  button: indexButton,
+  dialog: indexDialog,
+  list: indexList,
+  t,
+  activeNode: () => activeNode,
+  jump: jumpToRoute,
 });
 
 // --- The boundary prompt + the wheel-through (2026-10-21, DEC-031; laws in
@@ -1444,11 +1506,13 @@ window.addEventListener('hashchange', () => {
   const target = resolveRoute(ENTRIES, location.hash).node;
   if (tierSettled) {
     if (transit === null) {
-      if (target !== activeNode) beginTransitTo(target);
+      if (target !== activeNode) beginTransitTo(target, indexJumpPending);
       queuedTarget = null;
     } else {
       queuedTarget = target;
+      queuedCold = indexJumpPending;
     }
+    indexJumpPending = false;
   } else {
     queuedTarget = target; // picked up by the settle hook
   }
@@ -1562,7 +1626,9 @@ const tick = (timeMs: number): void => {
       assertDisposal(advanced.state.from, activeNode);
       const next = queuedTarget ?? target;
       queuedTarget = null;
-      if (activeNode !== next) beginTransitTo(next); // next hop of the chain
+      const cold = queuedCold;
+      queuedCold = false;
+      if (activeNode !== next) beginTransitTo(next, cold); // next hop of the chain
     }
   }
 
@@ -1680,6 +1746,13 @@ const tick = (timeMs: number): void => {
   const captionDiff = captionChanges(captionView, captionNext);
   if (captionDiff.text) caption.textContent = captionNext.text;
   if (captionDiff.visible) caption.dataset.visible = String(captionNext.visible);
+  // §6.3: the index button fades WITH the captions — the same flag, gated by the reveal.
+  // Written against captionNext (not the diff): the reveal can lag the caption's change
+  // frame, and a missed diff would strand the button invisible until the next glide.
+  const indexVisible = captionNext.visible && indexRevealed;
+  if (indexButton.dataset.visible !== String(indexVisible)) {
+    indexButton.dataset.visible = String(indexVisible);
+  }
   if (captionDiff.stopId) caption.dataset.stop = captionNext.stopId ?? '';
   if (captionDiff.title) {
     captionTitle.textContent = captionNext.title;

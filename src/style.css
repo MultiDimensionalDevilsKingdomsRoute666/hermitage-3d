@@ -172,6 +172,89 @@ body {
   color: #fff;
   text-decoration: underline;
 }
+/* §6.3: the room index — a dim text button, always present (Q4a). The corner law: the
+   toggle owns the top-right, the wordmark the top-left — the button sits under the #title
+   BLOCK's line + the committed 12 px gap (the HUD's top-56 derivation law, mirrored): the
+   block is the wordmark's 30 px line + the timeline's 6 + 18 px row → 24 + 54 = 78.
+   It fades WITH the captions (§6.3): the button carries #caption's visibility flag,
+   revealed at the first settle. */
+#index-open {
+  position: fixed;
+  top: 90px;
+  left: 24px;
+  appearance: none;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  font-family: inherit;
+  color: rgba(255, 255, 255, 0.55);
+  font-size: var(--chrome-size);
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  text-decoration: none;
+  opacity: 0;
+  transition: opacity var(--caption-fade, 240ms) ease;
+  pointer-events: none;
+}
+#index-open[data-visible="true"] {
+  opacity: 1;
+  pointer-events: auto;
+}
+#index-open:hover,
+#index-open:focus-visible {
+  color: #fff;
+  text-decoration: underline;
+}
+/* §6.3: the index dialog — centred, dark, typographic; a list, no thumbnails, no map.
+   The palette is the chrome register's (the HUD's border, the caption's text levels);
+   the heading is the museum serif (.caption-title's register). */
+#index-dialog {
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  border-radius: 4px;
+  padding: 24px 32px;
+  background: rgba(0, 0, 0, 0.85);
+  color: rgba(255, 255, 255, 0.85);
+  max-width: min(28rem, 80vw);
+}
+#index-dialog::backdrop {
+  background: rgba(0, 0, 0, 0.72);
+}
+#index-dialog h2 {
+  margin: 0 0 16px;
+  font-family: var(--font-serif, Georgia, serif);
+  font-size: 18px;
+  line-height: 1.5;
+  font-weight: 400;
+  letter-spacing: 0.01em;
+}
+#index-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+#index-list button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: 0;
+  padding: 10px 0;
+  cursor: pointer;
+  font-family: var(--font-sans, system-ui, sans-serif);
+  color: rgba(255, 255, 255, 0.72);
+  font-size: var(--chrome-size);
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+#index-list button:hover,
+#index-list button:focus-visible {
+  color: #fff;
+  text-decoration: underline;
+}
+#index-list button[aria-current="true"] {
+  color: #fff;
+}
 /* §9 travel hint — the r26.1 law: one line above the bottom-right caption, right-aligned
    (R004: the caption owns the corner again — the hint stacks directly over it). 12 px (the
    notes link's step), the notes link's faint-white opacity, the caption's text shadow,

@@ -54,6 +54,12 @@
          language in its own script, lang set for the screen readers. It PRECEDES #hud in the
          DOM so the dev HUD can drop below its line. Static text is the pre-JS RU state. -->
     <button id="lang-toggle" type="button" lang="en" aria-label="Русский">RU</button>
+    <!-- §6.3: the room index — one dim text button, always present (Q4a). The corner law:
+         the toggle owns the top-right, the wordmark the top-left — the button sits UNDER
+         the #title block (the wordmark + the clock row) + the committed 12 px gap (the
+         HUD's derivation law, mirrored). Static text is the pre-JS RU state; data-visible
+         is an e2e row (it mirrors #caption's flag — §6.3 "fading with the captions"). -->
+    <button id="index-open" type="button" data-visible="false" aria-haspopup="dialog">Залы</button>
     <!-- Debug HUD (?hud=1 or the H key): client-only overlay per architecture.md delivery
          rules. aria-hidden: a developer tool, repeated state already announced elsewhere.
          When shown it sits below the toggle's line (style.css). -->
@@ -85,6 +91,15 @@
     <div id="chrome-row">
       <a id="notes-link" href="/notes.html" hidden>Как это устроено →</a>
     </div>
+    <!-- §6.2–6.4: the room index — a native dialog (focus trap, Escape, backdrop for
+         free), centred, dark, typographic; a list, no thumbnails, no map. The rows render
+         from the registry on every open — the registry is the index, no second list. -->
+    <dialog id="index-dialog" aria-labelledby="index-dialog-title">
+      <h2 id="index-dialog-title">Залы</h2>
+      <!-- biome-ignore lint/a11y/noRedundantRoles: §6.4 pins role list — Safari strips list
+           semantics from a ul whose list-style is none (the index list's law). -->
+      <ul id="index-list" role="list"></ul>
+    </dialog>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

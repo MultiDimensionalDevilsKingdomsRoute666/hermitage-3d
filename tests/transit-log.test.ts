@@ -69,6 +69,7 @@ function drive(plan: Plan): Run {
     airlock: plan.airlock,
     from: plan.from,
     reducedMotion: plan.reducedMotion,
+    cold: false,
   });
   const opened = openTransitLog(begun, {
     nowMs: T0,
@@ -209,7 +210,7 @@ describe('transit-log: the spike', () => {
 describe('transit-log: edges', () => {
   it('an idle advance is a no-op', () => {
     const { log } = openTransitLog(
-      beginTransit({ airlock: DOORWAY, from: 'square', reducedMotion: false }),
+      beginTransit({ airlock: DOORWAY, from: 'square', reducedMotion: false, cold: false }),
       { nowMs: T0, ready: false, leanAtFireM: 0 },
     );
     const noted = noteTransitFrame(
@@ -226,7 +227,12 @@ describe('transit-log: edges', () => {
     expect(noted.lines).toEqual([]);
   });
   it('throws on malformed clocks', () => {
-    const begun = beginTransit({ airlock: DOORWAY, from: 'square', reducedMotion: false });
+    const begun = beginTransit({
+      airlock: DOORWAY,
+      from: 'square',
+      reducedMotion: false,
+      cold: false,
+    });
     expect(() =>
       openTransitLog(begun, { nowMs: Number.NaN, ready: false, leanAtFireM: 0 }),
     ).toThrow(RangeError);

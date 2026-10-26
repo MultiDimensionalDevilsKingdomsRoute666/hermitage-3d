@@ -44,6 +44,9 @@ export const ru = {
   'chrome.backLink': '←\u00A0Дворцовая площадь',
   'chrome.noscriptNotes':
     'Для чисел нужен JavaScript: при загрузке страница заново запускает решатель фасада.',
+  'index.open': 'Залы',
+  'index.title': 'Залы',
+  'index.current': 'Текущий зал',
 
   'caption.s0': 'фасад и свет',
   'caption.s1': 'арка раскрывается',

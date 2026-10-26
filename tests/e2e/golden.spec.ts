@@ -19,7 +19,7 @@ const VIEWPORT = { width: 1280, height: 720 };
 // the notes link; #lang-toggle is the §1.2 top-right toggle (outside the row); #travel-hint is
 // the §9 hint — all overlay chrome.
 const HIDE_OVERLAYS_CSS =
-  '#title, #scrub, #chrome-row, #lang-toggle, #travel-hint, #edge-prompt, #hud, #caption, #caption-title { visibility: hidden !important; }';
+  '#title, #scrub, #chrome-row, #lang-toggle, #index-open, #index-dialog, #travel-hint, #edge-prompt, #hud, #caption, #caption-title { visibility: hidden !important; }';
 
 const MAX_DIFF_PIXEL_RATIO = 0.01;
 

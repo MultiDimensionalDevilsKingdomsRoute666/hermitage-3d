@@ -6,7 +6,8 @@
  * Pure: no three, no DOM, no clock; the host runs exactly one advanceTransit per rendered frame
  * with that frame's deltaMs and the current dataReady.
  * Laws: a transit is depart → card → arrive → exit → idle. Depart is skipped on a cold entry
- * (from: null) and under reduced motion ('cut'); arrive is skipped at a dead end (to: null) and
+ * (from: null, or the host's cold override — an index jump IS a deep link, design-gallery
+ * §6.4) and under reduced motion ('cut'); arrive is skipped at a dead end (to: null) and
  * under 'cut'. At most one phase transition per frame; a frame's overshoot carries into the next
  * phase's elapsed — EXCEPT into the arrive glide, which always plays in full: a late-data card
  * overshoot is absorbed by the black (§4: the arrival frame is reached, never shortened).
@@ -47,7 +48,13 @@ export type TransitEvent = 'upload-swap' | 'dispose-from';
 export type Advance = Readonly<{ state: TransitState; events: readonly TransitEvent[] }>;
 const IDLE = { phase: 'idle' } as const satisfies TransitState;
 export function beginTransit(
-  input: Readonly<{ airlock: AirlockDef; from: NodeHandle | null; reducedMotion: boolean }>,
+  input: Readonly<{
+    airlock: AirlockDef;
+    from: NodeHandle | null;
+    reducedMotion: boolean;
+    /** §6.4: the index jump takes the deep-link path — the card opens even from a mounted room. */
+    cold: boolean;
+  }>,
 ): DepartState | CardState {
   const { airlock, from } = input;
   const transit: AirlockTransit = input.reducedMotion ? 'cut' : airlock.transit;
@@ -64,7 +71,9 @@ export function beginTransit(
     phaseElapsedMs: 0,
     dataReady: false,
   };
-  if (from === null || transit === 'cut') return { ...fields, phase: 'card', uploaded: false };
+  if (from === null || input.cold || transit === 'cut') {
+    return { ...fields, phase: 'card', uploaded: false };
+  }
   return { ...fields, phase: 'depart' };
 }
 const carried = (s: BeatState, deltaMs: number, dataReady: boolean): TransitFields => ({
