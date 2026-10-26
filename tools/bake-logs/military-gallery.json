@@ -1,0 +1,177 @@
+{
+  "room": "military-gallery",
+  "states": {
+    "day": {
+      "blender": "Blender 4.2.23 LTS",
+      "charts": [
+        {
+          "clippedFraction": 0.1333,
+          "emitters": 0,
+          "exrSha256": "e91a002f065561e447e9bb58d3ceeaa6315e7ea810391979804ba129562f43bd",
+          "name": "arch",
+          "objects": 17,
+          "pad": 2,
+          "peak": 3.7817,
+          "res": 2048,
+          "targets": 17
+        },
+        {
+          "clippedFraction": 0.028,
+          "emitters": 0,
+          "exrSha256": "b99c407a4295bbeede335408d11382f42c4a0f5f2d771f6ced0198671882b9ae",
+          "name": "kit",
+          "objects": 670,
+          "pad": 2,
+          "peak": 2.0644,
+          "res": 1024,
+          "targets": 670
+        }
+      ],
+      "clippedFraction": 0.1333,
+      "command": "node tools/bake.mjs military-gallery day",
+      "denoiser": "OPENIMAGEDENOISE",
+      "duskFixtures": null,
+      "margin": 2,
+      "peak": 3.7817,
+      "probe": null,
+      "res": 2048,
+      "samples": 128,
+      "seconds": 1280.8,
+      "state": "day",
+      "whitePoint": 0.5,
+      "artifacts": [
+        {
+          "rel": "lm/day.ktx2",
+          "bytes": 219544,
+          "sha256": "ae4ac0e26788e430fa5ed24c489ea4fe9f70e0caf0d204e4310f520fcd3fd550"
+        },
+        {
+          "rel": "lm/kit-day.ktx2",
+          "bytes": 64074,
+          "sha256": "cf57fddda17ff164cc41421e2de7f734a45bfc4e3e4e76fba79e5795ab8ad22b"
+        }
+      ]
+    },
+    "dusk": {
+      "blender": "Blender 4.2.23 LTS",
+      "charts": [
+        {
+          "clippedFraction": 0.0024,
+          "emitters": 0,
+          "exrSha256": "4feef12105b78908bed84027d346a8e29a800db41a34a8ec5a4116657818bec2",
+          "name": "arch",
+          "objects": 17,
+          "pad": 2,
+          "peak": 0.2875,
+          "res": 2048,
+          "targets": 17
+        },
+        {
+          "clippedFraction": 0,
+          "emitters": 0,
+          "exrSha256": "735a3136d0e9c6a7ee943dc8240b041657f707d6c15774c94f7378ad35d7a9a8",
+          "name": "kit",
+          "objects": 670,
+          "pad": 2,
+          "peak": 0.0368,
+          "res": 1024,
+          "targets": 670
+        }
+      ],
+      "clippedFraction": 0.0024,
+      "command": "node tools/bake.mjs military-gallery dusk",
+      "denoiser": "OPENIMAGEDENOISE",
+      "duskFixtures": false,
+      "margin": 2,
+      "peak": 0.2875,
+      "probe": {
+        "clippedFraction": 0.0026,
+        "peak": 36.3066,
+        "point": [
+          86.25,
+          11.7,
+          -12.5
+        ],
+        "res": [
+          512,
+          256
+        ],
+        "samples": 256,
+        "whitePoint": 1
+      },
+      "res": 2048,
+      "samples": 128,
+      "seconds": 2051.6,
+      "state": "dusk",
+      "whitePoint": 0.15,
+      "artifacts": [
+        {
+          "rel": "lm/dusk.ktx2",
+          "bytes": 165240,
+          "sha256": "9a99c9bff31073bdfd3b4f47c972eb84e250fe111e834927a7f32e099fe92733"
+        },
+        {
+          "rel": "lm/kit-dusk.ktx2",
+          "bytes": 30452,
+          "sha256": "93f19f829125fdf974211c812e2206593674560f6e9fc0ce68a1b87fa2a528a9"
+        },
+        {
+          "rel": "probe/dusk.ktx2",
+          "bytes": 8119,
+          "sha256": "1cfd73acd2c5ccfa0b099dc5cb7c877058168656cf1f87e0bb4016e4254717b2"
+        }
+      ]
+    },
+    "nightChandeliers": {
+      "blender": "Blender 4.2.23 LTS",
+      "charts": [
+        {
+          "clippedFraction": 0.0195,
+          "emitters": 1,
+          "exrSha256": "9fd5b6d02ecbe3a90cae9418addd15065bef8ed7ffe1575abcd58190ef542747",
+          "name": "arch",
+          "objects": 16,
+          "pad": 2,
+          "peak": 97.9824,
+          "res": 2048,
+          "targets": 16
+        },
+        {
+          "clippedFraction": 0.0214,
+          "emitters": 1,
+          "exrSha256": "decd1696dde05ca3f257bb163f2ef9b7b71a2db5f4cb04c602df2f5bcd4c498c",
+          "name": "kit",
+          "objects": 670,
+          "pad": 2,
+          "peak": 4.0749,
+          "res": 1024,
+          "targets": 670
+        }
+      ],
+      "clippedFraction": 0.0195,
+      "command": "node tools/bake.mjs military-gallery nightChandeliers",
+      "denoiser": "OPENIMAGEDENOISE",
+      "duskFixtures": null,
+      "margin": 2,
+      "peak": 97.9824,
+      "probe": null,
+      "res": 2048,
+      "samples": 128,
+      "seconds": 2224.2,
+      "state": "nightChandeliers",
+      "whitePoint": 0.3,
+      "artifacts": [
+        {
+          "rel": "lm/night.ktx2",
+          "bytes": 171733,
+          "sha256": "5df195ddfc43089de67f5b93e987ea9b4f660e8e419ec51eaea3567f582d9057"
+        },
+        {
+          "rel": "lm/kit-night.ktx2",
+          "bytes": 67843,
+          "sha256": "673ff6ad7d737ef925a9193e426b609c21c5ccf78a4a0529c4d6dca796ea2fe8"
+        }
+      ]
+    }
+  }
+}

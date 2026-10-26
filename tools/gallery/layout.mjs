@@ -41,11 +41,11 @@ export const MONARCH_SCALE = 5;
 export const MONARCH_CANVAS_WIDTH = CANVAS_WIDTH * MONARCH_SCALE;
 export const MONARCH_CANVAS_HEIGHT = CANVAS_HEIGHT * MONARCH_SCALE;
 export const MONARCH_CANVAS_Y = 3.6;
-export const ALLY_OFFSET_X = 2.05;
+export const ALLY_OFFSET_X = 2.25;
 export const SOUTH_WALL_Z = 15.0;
 export const NORTH_WALL_Z = -40.0;
 export const NORTH_DOOR_CENTRE_X = (WEST_WALL_X + EAST_WALL_X) / 2;
-export const FLANK_OFFSET_X = 0.8;
+export const FLANK_OFFSET_X = 1.45;
 export const FLANK_CANVAS_Y = 2.3;
 
 /* §3.4 — the portrait atlas. */
@@ -64,6 +64,14 @@ export const MISSING_SLOT = 356;
 export const LIGHTMAP_SIZE_PX = 1024;
 export const LIGHTMAP_GRID = 32;
 export const LIGHTMAP_PAD_PX = 2;
+
+/* §3.7 (R4 D-11): the K8 portal's declared block on the kit chart — 4×4 cells at the
+ * first spare row after the 668 kit strips, frame at cols 0–3 and canvas at cols 4–7.
+ * The row is DERIVED from chartStripCount(), never a literal: the strip law can change
+ * without touching this (ceil(668/32) = 21 today). */
+export const PORTAL_BLOCK_CELLS = 4;
+export const PORTAL_FRAME_COL = 0;
+export const PORTAL_CANVAS_COL = 4;
 
 export function framesPerBay() {
   return COLUMNS_PER_BAY * ROWS_PER_WALL;
@@ -363,6 +371,21 @@ export function chartRect(chartIndex, kind) {
   return { u0: x0, u1: x0 + span, v0: 1 - (y0 + span), v1: 1 - y0 };
 }
 
+export function portalBlockRow() {
+  return Math.ceil(chartStripCount() / LIGHTMAP_GRID);
+}
+
+/** The K8 block rect: PORTAL_BLOCK_CELLS² cells at (col, the derived row), pad inside —
+ * the same image-px → UV convention as chartRect (v0 = 1 - (y0 + span)). */
+export function portalBlockRect(col) {
+  const cell = chartCellPx();
+  const pad = LIGHTMAP_PAD_PX;
+  const x0 = (col * cell + pad) / LIGHTMAP_SIZE_PX;
+  const y0 = (portalBlockRow() * cell + pad) / LIGHTMAP_SIZE_PX;
+  const span = (PORTAL_BLOCK_CELLS * cell - 2 * pad) / LIGHTMAP_SIZE_PX;
+  return { u0: x0, u1: x0 + span, v0: 1 - (y0 + span), v1: 1 - y0 };
+}
+
 export function chartOrder() {
   return kitFrames()
     .slice()
@@ -379,9 +402,18 @@ export function frameCharts(index) {
   if (frame === undefined) {
     throw new Error(`frame index out of range: ${index}`);
   }
+  // R4 D-11: the portal is no latecomer — its bars and canvas ride the declared block
+  // (frame cols 0–3, canvas cols 4–7) at the derived first-spare row (bevel-pitch parity
+  // with the architecture chart's 36 px/m, from the kit chart's spare strips).
+  if (frame.kind === 'portal') {
+    return {
+      canvas: portalBlockRect(PORTAL_CANVAS_COL),
+      frame: portalBlockRect(PORTAL_FRAME_COL),
+    };
+  }
   const order = chartOrder();
-  const chart = isKitFrame(frame.kind) ? order.indexOf(index) : kitFrames().length;
-  if (isKitFrame(frame.kind) && chart < 0) {
+  const chart = order.indexOf(index);
+  if (chart < 0) {
     throw new Error(`kit frame missing from chart order: ${index}`);
   }
   return { canvas: chartRect(chart, 'canvas'), frame: chartRect(chart, 'frame') };
@@ -432,6 +464,12 @@ export function buildLayout() {
     lightmap: {
       grid: LIGHTMAP_GRID,
       padPx: LIGHTMAP_PAD_PX,
+      portalBlock: {
+        cells: PORTAL_BLOCK_CELLS,
+        colCanvas: PORTAL_CANVAS_COL,
+        colFrame: PORTAL_FRAME_COL,
+        row: portalBlockRow(),
+      },
       sizePx: LIGHTMAP_SIZE_PX,
       stripsPerFrame: 2,
     },

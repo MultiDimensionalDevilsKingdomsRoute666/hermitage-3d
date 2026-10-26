@@ -4,10 +4,14 @@
  * §3.2/§3.3 (the runtime merge law: one BufferGeometry per long wall, frames + canvases as
  * two material groups, one for the north-door pair, the end-wall group with H3), §2.4
  * (CANVAS: the portrait atlas on MeshStandardMaterial with map; the lightMap slot rides
- * R4's bakes), §7.2 (the ledger rows; release clears the scope). The sibling shape
- * (rooms/rastrelli-gallery/room.ts); the UNBAKED gate reads the manifest's all-or-nothing
- * lightmaps row and mounts without probe/technique/lm-decode (the three service laws that
- * would throw) — dark interim until R4, never fake-lit.
+ * R4's bakes), §3.7/§4.4 (R4, DEC-027: TWO lightmap charts per state — the architecture
+ * chart on the core path law, the kit chart on lm/kit-<file>.ktx2 — bound per material by
+ * userData[LM_CHART_KEY]; the kit frame groups carry a runtime clone of the glb's MG_gilt so
+ * the glb instance can keep dressing architecture on the arch chart), §7.2 (the ledger rows;
+ * release clears the scope). The sibling shape (rooms/rastrelli-gallery/room.ts); the UNBAKED
+ * gate reads the manifest's all-or-nothing lightmaps row and mounts without
+ * probe/technique/lm-decode (the three service laws that would throw) — the canary branch,
+ * never fake-lit.
  *
  * Module-level state is safe: the coordinator serializes transits, so a room is never
  * mounted twice. The ledger (§8.3 layer 1) registers payload bytes in load and releases
@@ -26,7 +30,7 @@ import {
   type Texture,
 } from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
-import { applyTechnique, disposeTechnique } from '../../src/assets/blend-gl';
+import { applyChartedTechnique, disposeTechnique } from '../../src/assets/blend-gl';
 import { LIGHT_STATES } from '../../src/content/lightmap-look';
 import { stateOfPath } from '../../src/world/blend';
 import type {
@@ -38,6 +42,7 @@ import type {
   RoomPayload,
   StateId,
 } from '../../src/world/registry';
+import { chartOfUserData, kitStateOfPath, LM_CHART_KEY, type LmChart } from './charts';
 import { contract } from './contract';
 import { KIT_WALLS, type KitWall, roleOf, wallOfName } from './kit-layout';
 
@@ -49,12 +54,26 @@ const ATLAS_PATH = 'tex/military-gallery-portraits.ktx2';
  */
 const FLOOR_TILE_M = 8;
 
+/** The tag the two kit materials carry (§3.7): the merged kit groups read the kit chart. */
+const KIT_TAG = 'kit' satisfies LmChart;
+
+type Merged = Readonly<{
+  geometries: BufferGeometry[];
+  canvas: MeshStandardMaterial;
+  /** The kit chart's gilt — a runtime clone of the glb's MG_gilt, owned by this scope. */
+  giltKit: MeshStandardMaterial;
+  atlas: Texture;
+}>;
+
 let payload: RoomPayload | null = null;
-let whitePoint: LightmapIntensity | null = null; // null while unbaked (R3); R4 fills it
+let whitePoint: LightmapIntensity | null = null; // null while unbaked (the canary branch)
 let object: RoomObject | null = null;
 let envMounted = false;
-let merged: { geometries: BufferGeometry[]; canvas: MeshStandardMaterial; atlas: Texture } | null =
-  null;
+let merged: Merged | null = null;
+
+/** §3.7: the chart a material reads — the kit tag or the architecture default. */
+const chartOfMaterial = (material: MeshStandardMaterial): LmChart =>
+  chartOfUserData(material.userData);
 
 export const room: RoomModule = {
   contract,
@@ -81,15 +100,17 @@ export const room: RoomModule = {
     texture.colorSpace = SRGBColorSpace; // §2.4: the CANVAS law owns the albedo tagging
     merged = mergeKit(object, texture, ctx);
     if (whitePoint !== null) {
-      // The baked path (R4+): verbatim the sibling's.
+      // The baked path (R4): the sibling's, over two charts — one white point record serves
+      // both (D-9: both charts of a state encode at the same white point).
       const env = await ctx.assets.mountEnvironment(contract.id, payload);
       ctx.scene.setEnvironment(env); // §5/ADR-0013: the probe is mounted once, inside the hold
       envMounted = true;
-      applyTechnique(
+      applyChartedTechnique(
         ctx.lmMode,
         contract.id,
         object,
         await stateTextures(ctx),
+        chartOfMaterial,
         whitePoint,
         ctx.renderer,
         ctx.ledger,
@@ -109,6 +130,7 @@ export const room: RoomModule = {
     if (merged !== null) {
       for (const g of merged.geometries) g.dispose();
       merged.canvas.dispose();
+      merged.giltKit.dispose();
       merged.atlas.dispose();
       merged = null;
     }
@@ -163,14 +185,24 @@ const renormalizeNormals = (geometry: BufferGeometry): void => {
   normal.needsUpdate = true;
 };
 
+/** The frame material must be a MeshStandardMaterial — the technique patches only those. */
+const standardOrThrow = (material: Material | Material[], name: string): MeshStandardMaterial => {
+  const first = Array.isArray(material) ? material[0] : material;
+  if (first === undefined || !(first as MeshStandardMaterial).isMeshStandardMaterial) {
+    throw new Error(`${contract.id}: frame ${name} carries no MeshStandardMaterial`);
+  }
+  return first as MeshStandardMaterial;
+};
+
 /**
  * §3.2/§3.3: one geometry per long wall (frames + canvases as two groups), one for the north
  * pair, one for the end-wall group; the 17 architecture parts collapse into ONE grouped
  * geometry — one draw per distinct material (≤ 11) — reconciling §8's declared 19 draws
  * (8 kit + ≤ 11 architecture). Every merge step fails loud; the fix is in the merge, never
- * in drawsMax.
+ * in drawsMax. §3.7 (R4): the kit groups carry the two KIT-chart materials — CANVAS and a
+ * runtime clone of the glb's MG_gilt — tagged userData[LM_CHART_KEY] = 'kit'.
  */
-const mergeKit = (root: RoomObject, atlas: Texture, ctx: RoomLoadContext) => {
+const mergeKit = (root: RoomObject, atlas: Texture, ctx: RoomLoadContext): Merged => {
   const scene = root as Object3D;
   scene.updateMatrixWorld(true);
   const sources: Mesh[] = [];
@@ -180,7 +212,7 @@ const mergeKit = (root: RoomObject, atlas: Texture, ctx: RoomLoadContext) => {
   });
   const walls = new Map<KitWall, Bucket>(KIT_WALLS.map((w) => [w, { frames: [], canvases: [] }]));
   const arch = new Map<Material, BufferGeometry[]>();
-  let gilt: Material | null = null;
+  let giltSource: MeshStandardMaterial | null = null;
   for (const mesh of sources) {
     const geometry = dequantizeGeometry(mesh.geometry).applyMatrix4(mesh.matrixWorld);
     const role = roleOf(mesh.name);
@@ -199,13 +231,24 @@ const mergeKit = (root: RoomObject, atlas: Texture, ctx: RoomLoadContext) => {
     }
     if (role === 'frame') {
       bucket.frames.push(geometry);
-      gilt ??= mesh.material as Material;
+      giltSource ??= standardOrThrow(mesh.material, mesh.name);
     } else {
       bucket.canvases.push(geometry);
     }
   }
-  if (gilt === null) throw new Error(`${contract.id}: kit has no frame parts`);
+  if (giltSource === null) throw new Error(`${contract.id}: kit has no frame parts`);
+  // §3.7: the frames read the KIT chart while the glb's MG_gilt may also dress architecture on
+  // the ARCH chart — the kit groups carry a clone tagged for the kit chart. clone() shares the
+  // textures by reference (they stay the parsed tree's, disposeParsed reaches them); when no
+  // architecture part carries the glb instance it leaves the tree with the source meshes,
+  // never rendered — nothing GPU-side to release.
+  const giltKit = giltSource.clone();
+  giltKit.name = `${giltSource.name}-kit`;
+  giltKit.userData[LM_CHART_KEY] = KIT_TAG;
+  ctx.ledger.register(contract.id, 'material', 0, giltKit.name);
   const canvas = new MeshStandardMaterial({ map: atlas, roughness: 0.9, metalness: 0 });
+  canvas.name = 'CANVAS';
+  canvas.userData[LM_CHART_KEY] = KIT_TAG;
   ctx.ledger.register(contract.id, 'material', 0, 'CANVAS');
   const parent = sources[0]?.parent;
   if (parent === undefined || parent === null) {
@@ -221,7 +264,7 @@ const mergeKit = (root: RoomObject, atlas: Texture, ctx: RoomLoadContext) => {
     renormalizeNormals(kit);
     geometries.push(kit);
     ctx.ledger.register(contract.id, 'geometry', gpuBytes(kit), `kit/${wall}`);
-    parent.add(new Mesh(kit, [gilt, canvas]));
+    parent.add(new Mesh(kit, [giltKit, canvas]));
   }
   const materials = [...arch.keys()];
   const archGeometry = mergeOrThrow(
@@ -260,7 +303,7 @@ const mergeKit = (root: RoomObject, atlas: Texture, ctx: RoomLoadContext) => {
     mesh.removeFromParent();
     mesh.geometry.dispose();
   }
-  return { geometries, canvas, atlas };
+  return { geometries, canvas, giltKit, atlas };
 };
 
 const mapOf = (material: Material | readonly Material[]): Texture | null => {
@@ -295,17 +338,39 @@ const manifestIntensity = (manifest: RoomManifest): LightmapIntensity => {
   return record;
 };
 
-const stateTextures = async (ctx: RoomLoadContext): Promise<ReadonlyMap<StateId, unknown>> => {
-  // Verbatim the sibling's.
+/**
+ * §3.7/§4.4 (D-8): the six decoded lm rows split into the two charts — arch by the core
+ * stateOfPath, kit by kitStateOfPath — and each chart must carry exactly the three states.
+ * State law (the integration's tightening, argued in the reply's CHALLENGES): an lm row
+ * neither law names is a bake bug — it throws loud, never renders ignored.
+ */
+const stateTextures = async (
+  ctx: RoomLoadContext,
+): Promise<ReadonlyMap<LmChart, ReadonlyMap<StateId, unknown>>> => {
   if (payload === null) throw new Error(`${contract.id}: no payload`);
   const decoded = await ctx.assets.decodeRoomTextures(contract.id, payload);
-  const out = new Map<StateId, unknown>();
+  const arch = new Map<StateId, unknown>();
+  const kit = new Map<StateId, unknown>();
   for (const [path, texture] of decoded) {
-    const state = stateOfPath(path);
-    if (state !== null) out.set(state, texture);
+    const archState = stateOfPath(path);
+    if (archState !== null) {
+      arch.set(archState, texture);
+      continue;
+    }
+    const kitState = kitStateOfPath(path);
+    if (kitState !== null) {
+      kit.set(kitState, texture);
+      continue;
+    }
+    throw new Error(`${contract.id}: lm row ${path} names no chart law`);
   }
-  if (out.size !== 3) {
-    throw new Error(`${contract.id}: expected three baked states, got ${out.size}`);
+  if (arch.size !== 3 || kit.size !== 3) {
+    throw new Error(
+      `${contract.id}: expected three baked states per chart, got arch ${arch.size} + kit ${kit.size}`,
+    );
   }
-  return out;
+  return new Map<LmChart, ReadonlyMap<StateId, unknown>>([
+    ['arch', arch],
+    ['kit', kit],
+  ]);
 };

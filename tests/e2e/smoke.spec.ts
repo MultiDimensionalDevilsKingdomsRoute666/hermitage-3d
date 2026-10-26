@@ -23,6 +23,23 @@ const PLAIN_INTEGER = /^\d+$/;
 
 const AT = 'at=2026-06-21T12:00:00Z';
 
+// R4 (design-gallery §4.6, D-22): the 1812 baked contract the smoke asserts — the served
+// manifest carries the three states and the six lm rows: the arch chart on the core path law
+// (lm/<file>.ktx2) and the kit chart beside it (lm/kit-<file>.ktx2, DEC-027).
+const MANIFEST_1812 = '/assets/military-gallery/manifest.json';
+const LM_ROWS_1812 = [
+  'lm/day.ktx2',
+  'lm/dusk.ktx2',
+  'lm/night.ktx2',
+  'lm/kit-day.ktx2',
+  'lm/kit-dusk.ktx2',
+  'lm/kit-night.ktx2',
+] as const;
+type ManifestShape = Readonly<{
+  lightmaps: Readonly<{ states: readonly string[] }>;
+  files: readonly Readonly<{ path: string; kind: string }>[];
+}>;
+
 // Devlog contract: clean console. pageerror and console.error fail the test; console.warn is
 // legal diagnostics. Auto fixture so both tests get it without ceremony; asserted on teardown so
 // the collected messages survive an earlier timeout in the test body.
@@ -398,7 +415,19 @@ test('smoke walk: the 1812 edge runs both ways, the ledger returns at boot', asy
     { timeout: 60_000 },
   );
   await expect(hud).toHaveAttribute('data-hold-ms', '0', { timeout: 60_000 });
-  await expectWithinBudgets(hud); // the dark interim renders within the whole-frame budgets
+  await expectWithinBudgets(hud); // the baked room renders within the whole-frame budgets
+  // R4 (D-22): the baked leg — the contract, never the pixels (the goldens own those). The
+  // served manifest declares the three states and the six lm rows; the HUD's non-zero ledger
+  // after hold-ms 0 means both charts decoded and bound inside the hold.
+  const response = await page.request.get(MANIFEST_1812);
+  expect(response.ok(), `${MANIFEST_1812} served`).toBe(true);
+  const manifest = (await response.json()) as ManifestShape;
+  expect(manifest.lightmaps.states).toHaveLength(3);
+  const ktx2Rows = new Set(
+    manifest.files.filter((row) => row.kind === 'ktx2').map((row) => row.path),
+  );
+  for (const path of LM_ROWS_1812) expect(ktx2Rows.has(path), `lm row ${path}`).toBe(true);
+  await expect(hud).not.toHaveAttribute('data-ledger-bytes', '0', { timeout: 60_000 });
 
   // 1812 → jordan (backward through the same airlock): the entry seeds the far stop (J4)
   // and the 1812 room releases whole — the ledger reads its jordan value again.
@@ -464,9 +493,12 @@ for (const [label, hops] of [
     await expect(hud).toHaveAttribute('data-hold-ms', '0', { timeout: 90_000 });
     await expectWithinBudgets(hud);
     for (const hash of hops) {
-      await page.evaluate(([target, query]) => {
-        location.hash = `${target}?${query}`;
-      }, [hash, DEEP_LINK_QUERY]);
+      await page.evaluate(
+        ([target, query]) => {
+          location.hash = `${target}?${query}`;
+        },
+        [hash, DEEP_LINK_QUERY],
+      );
     }
     await expect(hud).toHaveAttribute('data-room', 'square', { timeout: 90_000 });
     await expect(hud).toHaveAttribute('data-ledger-bytes', '0', { timeout: 90_000 });

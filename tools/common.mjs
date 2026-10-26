@@ -60,6 +60,9 @@ export function run(cmd, args, { capture = false } = {}) {
     cwd: ROOT,
     encoding: 'utf8',
     stdio: capture ? ['ignore', 'pipe', 'inherit'] : 'inherit',
+    // R4: bake processes print every frame of progress to stdout; the default maxBuffer
+    // (1 MiB) aborts a long bake with ENOBUFS before its ZIMNY_SUMMARY line ever lands.
+    maxBuffer: 1024 * 1024 * 512,
   });
   if (r.error) throw new ChainError(`${cmd}: ${r.error.message}`);
   if (r.status !== 0) {

@@ -29,6 +29,7 @@ import {
   chartRect,
   chartStripCount,
   EAST_WALL_X,
+  FLANK_OFFSET_X,
   FLANKING_FRAMES,
   framesPerBay,
   framesPerWall,
@@ -322,7 +323,7 @@ describe('§2.7 frame transform invariants', () => {
       expect(frame.kind).toBe('flanking');
       expect(frame.position.y).toBe(2.3);
       expect(frame.position.z).toBeCloseTo(NORTH_WALL_Z + CANVAS_OFFSET, 9);
-      expect(Math.abs(frame.position.x - NORTH_DOOR_CENTRE_X)).toBeCloseTo(0.8, 9);
+      expect(Math.abs(frame.position.x - NORTH_DOOR_CENTRE_X)).toBeCloseTo(FLANK_OFFSET_X, 9);
     }
   });
 

@@ -13585,7 +13585,7 @@
       "index": 330,
       "kind": "flanking",
       "position": {
-        "x": 85.45,
+        "x": 84.8,
         "y": 2.3,
         "z": -39.96
       },
@@ -13626,7 +13626,7 @@
       "index": 331,
       "kind": "flanking",
       "position": {
-        "x": 87.05,
+        "x": 87.7,
         "y": 2.3,
         "z": -39.96
       },
@@ -13667,7 +13667,7 @@
       "index": 332,
       "kind": "ally",
       "position": {
-        "x": 84.2,
+        "x": 84,
         "y": 3.6,
         "z": 14.96
       },
@@ -13708,7 +13708,7 @@
       "index": 333,
       "kind": "ally",
       "position": {
-        "x": 88.3,
+        "x": 88.5,
         "y": 3.6,
         "z": 14.96
       },
@@ -13729,16 +13729,16 @@
         "width": 1.75
       },
       "chart": {
-        "u0": 0.876953125,
-        "u1": 0.904296875,
-        "v0": 0.345703125,
-        "v1": 0.373046875
+        "u0": 0.001953125,
+        "u1": 0.123046875,
+        "v0": 0.220703125,
+        "v1": 0.341796875
       },
       "chartCanvas": {
-        "u0": 0.908203125,
-        "u1": 0.935546875,
-        "v0": 0.345703125,
-        "v1": 0.373046875
+        "u0": 0.126953125,
+        "u1": 0.248046875,
+        "v0": 0.220703125,
+        "v1": 0.341796875
       },
       "column": null,
       "facing": {
@@ -13767,11 +13767,17 @@
   "lightmap": {
     "grid": 32,
     "padPx": 2,
+    "portalBlock": {
+      "cells": 4,
+      "colCanvas": 4,
+      "colFrame": 0,
+      "row": 21
+    },
     "sizePx": 1024,
     "stripsPerFrame": 2
   },
   "metrics": {
-    "allyOffsetX": 2.05,
+    "allyOffsetX": 2.25,
     "bayCentresZ": [
       -37.5,
       -32.5,
@@ -13790,7 +13796,7 @@
     "columnPitchZ": 1.54,
     "eastWallX": 90.5,
     "flankCanvasY": 2.3,
-    "flankOffsetX": 0.8,
+    "flankOffsetX": 1.45,
     "monarchCanvas": {
       "height": 2.15,
       "width": 1.75

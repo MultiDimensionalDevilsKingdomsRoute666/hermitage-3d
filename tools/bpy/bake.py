@@ -1,4 +1,9 @@
 # tools/bpy/bake.py — round 17a: Cycles headless lightmap bake + ADR-0013 probe (bake side).
+# Extended in Phase 3 R4 (Slice A): the two-chart bake contract (D-13) — a builder may
+# declare LM_CHARTS ({arch: {res, pad}, kit: {res, pad, objectPrefixes}}) and every chart
+# bakes ONCE per state as a multi-object selection bake; per-room tables for the pane
+# swap (PANE_MATERIALS), the dusk fixtures (DUSK_FIXTURES), the pane paint (PANE_PAINT,
+# D-4/D-23) and the per-state white points (the scalar row stays legal for the siblings).
 #
 # Implements docs/design-staircase.md
 #   §3.2  bake row: Cycles CPU, OIDN denoise, <= 2K, sample cap, one Blender process per state;
@@ -8,25 +13,33 @@
 #   §4    three light states baked independently with absolute brightness; LDR encode is
 #         clamp(linear / whitePoint, 0, 1) against ONE per-room white point that the manifest's
 #         lightmaps.intensity restores at runtime (17b). The lightmap is irradiance only.
+#         R4: the white point may be a per-state dict (the r17c law's encode side).
 #   §5 / ADR-0013 (amended): one static dusk probe per room, Cycles panorama camera, committed
 #         as a single equirectangular 512x256, white point 1.0 (absolute LDR clamp).
+#         R4 D-6: the probe restores the rig's fixtures to FULL for its render only.
 #
 # Invocation — the room-builder grammar plus --state:
 #   blender -b --factory-startup -noaudio -P tools/bpy/bake.py -- \
-#     --room <rastrelli-gallery|jordan> --state <day|dusk|nightChandeliers> --out <stage>
+#     --room <rastrelli-gallery|jordan|military-gallery> \
+#     --state <day|dusk|nightChandeliers> --out <stage> [--preview]
 #
-# State law (declared once, applied in build_rig):
+# State law (declared once, applied in main):
 #   day               sun lamp at the +15 deg plateau, neutral-white world, fixtures OFF,
-#                     jordan panes swapped to transmissive glass (in-bake only, glb untouched).
+#                     panes swapped to transmissive glass (in-bake only, glb untouched).
 #   dusk              no sun (the -6.6 deg one-hot centre is below the horizon), dim neutral
-#                     world with a north horizon glow, fixtures ON, panes swapped, probe rendered.
-#   nightChandeliers  black world, no sun, fixtures ON — emission is the only light.
+#                     world with a north horizon glow, fixtures ON by room table, panes
+#                     swapped, probe rendered (fixtures restored to FULL for the probe only).
+#   nightChandeliers  black world, no sun, fixtures ON — emission is the only light; panes
+#                     NOT swapped (their dark glass faces the candelabra's bounce).
 # Bake law: target = the committed 'lm' UV layer; DIFFUSE with DIRECT+INDIRECT, COLOR off.
+# One bake CALL per chart per state: the chart's objects are selected together and baked
+# in a single bpy.ops.object.bake (the 1812 kit's 670 objects never pay 670 calls).
 # Instanced template meshes bake once (first instance by name): the lm cells live on the shared
 # mesh data, so every instance would overwrite the same cells.
 # Determinism law: fixed Cycles seed, CPU device, no randomness, no clock reads, sorted-key JSON,
 # locale-independent output. The committed glb is never read or written here.
 import argparse
+import hashlib
 import json
 import math
 import os
@@ -38,7 +51,7 @@ import bpy
 import numpy as np
 from mathutils import Vector
 
-ROOMS = ('rastrelli-gallery', 'jordan')
+ROOMS = ('rastrelli-gallery', 'jordan', 'military-gallery')
 STATES = ('day', 'dusk', 'nightChandeliers')
 STATE_ALIASES = {'night': 'nightChandeliers'}
 STATE_FILE = {'day': 'day', 'dusk': 'dusk', 'nightChandeliers': 'night'}
@@ -57,17 +70,47 @@ DUSK_GLOW_GAIN = 0.25     # FILL — new default; MASKED-IN-BRIEF: keep the DUSK
 DUSK_GLOW_POWER = 4.0     # FILL — new default; MASKED-IN-BRIEF: keep the DUSK_GLOW_POWER value
 BAKE_SAMPLES = 128        # FILL — new default; MASKED-IN-BRIEF: keep the BAKE_SAMPLES value
 PROBE_SAMPLES = 256       # FILL — new default; MASKED-IN-BRIEF: keep the PROBE_SAMPLES value
-BAKE_MARGIN_PX = None     # FILL — None = the builder's LM_PAD_PX; MASKED-IN-BRIEF: keep the value
-# FILL — ONE scalar per room (the manifest type pins a single number); tuned so the night
-# chandelier range survives. MASKED-IN-BRIEF: keep the WHITE_POINT values
-WHITE_POINT = {'rastrelli-gallery': 4.0, 'jordan': 6.0}
+BAKE_MARGIN_PX = None     # FILL — None = the chart's own pad; MASKED-IN-BRIEF: keep the value
+# FILL — the encode white point per room: a scalar (the siblings' committed rows) or a
+# per-state dict (1812's r17c law; Block 2's WHITE_POINT_1812). MASKED-IN-BRIEF: keep the values
+WHITE_POINT = {
+    'rastrelli-gallery': 4.0,
+    'jordan': 6.0,
+    'military-gallery': {'day': 1.5, 'dusk': 0.15, 'nightChandeliers': 0.3},
+}
 PROBE_WHITE_POINT = 1.0   # pinned by ADR-0013: "neutral" = absolute LDR clamp
 PROBE_RES = (512, 256)    # pinned by the ADR-0013 amendment (equirect)
-# FILL — glTF frame; gallery ~ the passage end, jordan ~ under the vault centre.
+# FILL — glTF frame; gallery ~ the passage end, jordan ~ under the vault centre,
+# 1812 = the room midpoint at eye height (Block 2's PROBE_POINT_1812).
 # MASKED-IN-BRIEF: keep the PROBE_POINT values
-PROBE_POINT = {'rastrelli-gallery': (0.0, 1.7, 80.0), 'jordan': (79.0, 9.0, -74.0)}
+PROBE_POINT = {
+    'rastrelli-gallery': (0.0, 1.7, 80.0),
+    'jordan': (79.0, 9.0, -74.0),
+    'military-gallery': (86.25, 11.7, -12.5),
+}
 PROBE_YAW_DEG = 0.0       # FILL — aligned against three's equirect convention in 17b
-PANE_MATERIAL_NAMES = ('pane',)  # FILL — exact committed name(s) of the jordan window pane
+# FILL — per-room pane material names for the committed swap law (D-13's table; the empty
+# row = the gallery has no pane geometry). MASKED-IN-BRIEF: keep the committed names
+PANE_MATERIALS = {
+    'rastrelli-gallery': (),
+    'jordan': ('pane',),
+    'military-gallery': ('MG_glass',),
+}
+# R4 D-3: the dusk rig's fixtures per room — False composes the candelabra third at
+# re-encode time (tools/lm-recipes.mjs) instead of baking a third-emission rig.
+DUSK_FIXTURES = {'rastrelli-gallery': True, 'jordan': True, 'military-gallery': False}
+# R4 D-4/D-23: the lantern glazing's patch cells are PAINTED with the state's sky colour
+# (linear, bake units) after OIDN and before the LDR encode, into the surviving denoised
+# EXR — reencode.mjs and the compose law see the paint as bake content. The part names the
+# architecture-chart patches whose cells are painted (arch chart only).
+PANE_PAINT = {
+    'military-gallery': {
+        'part': 'lantern_glazing',
+        'day': (0.20, 0.23, 0.28),           # cool skylight
+        'dusk': (0.05, 0.06, 0.09),          # the dusk sky colour (blue-grey)
+        'nightChandeliers': (0.004, 0.005, 0.008),  # dark glass with a faint sky memory
+    },
+}
 CYCLES_SEED = 0
 MAX_BOUNCES = 8
 DIFFUSE_BOUNCES = 4
@@ -76,6 +119,14 @@ TRANSMISSION_BOUNCES = 8
 TRANSPARENT_BOUNCES = 8
 SAMPLE_CLAMP_INDIRECT = 10.0
 DENOISER = 'OPENIMAGEDENOISE'
+PREVIEW_SAMPLES = 32       # the layout-check path: quarter res, a fraction of the samples
+# R4: the emitters' cells stay clear, per room — a LOOK law (see emissive_objects:
+# the bound-arm control probe16 showed the ray tree rides identically either way, so
+# this is not a transport mechanic). 1812 declares True: its glow is runtime material
+# emission (F11). The siblings keep False: their committed bakes had the fixtures
+# selected and bound with their cells baked (O10), and a future sibling rebake must
+# reproduce that committed shape byte-stably until the owner re-adjudicates.
+EMITTER_EXCLUSION = {'military-gallery': True}
 
 
 def fail(message):
@@ -95,6 +146,8 @@ def parse_args():
     parser.add_argument('--room', required=True)
     parser.add_argument('--state', required=True)
     parser.add_argument('--out', '--stage', dest='out')
+    parser.add_argument('--preview', action='store_true',
+                        help='quarter-resolution layout check; never published')
     parser.add_argument('out_positional', nargs='?')
     args = parser.parse_args(argv)
     out = args.out or args.out_positional
@@ -105,7 +158,7 @@ def parse_args():
         fail(f'unknown room {args.room!r}; expected one of {list(ROOMS)}')
     if state not in STATES:
         fail(f'unknown state {args.state!r}; expected one of {list(STATES)}')
-    return args.room, state, Path(out).resolve()
+    return args.room, state, Path(out).resolve(), args.preview
 
 
 def build_room(room, stage):
@@ -146,10 +199,10 @@ def new_fallback_material():
     return mat
 
 
-def ensure_materials(meshes):
+def ensure_materials(objects):
     # Every baked object needs at least one material carrying the target image node.
     fallback = None
-    for obj in meshes:
+    for obj in objects:
         if len(obj.material_slots) == 0:
             fallback = fallback or new_fallback_material()
             obj.data.materials.append(fallback)
@@ -158,23 +211,23 @@ def ensure_materials(meshes):
                 fallback = fallback or new_fallback_material()
                 slot.material = fallback
     unique = {}
-    for obj in meshes:
+    for obj in objects:
         for slot in obj.material_slots:
             unique[slot.material.name] = slot.material
     return [unique[name] for name in sorted(unique)]
 
 
-def is_pane_material(mat):
+def is_pane_material(mat, room):
     base = mat.name.split('.')[0]
-    return base in PANE_MATERIAL_NAMES
+    return base in PANE_MATERIALS[room]
 
 
-def swap_panes_to_glass(materials):
+def swap_panes_to_glass(materials, room):
     # Baked-opaque at runtime, but the sun must enter during day/dusk: glass for camera rays,
     # transparent for shadow + diffuse rays so direct sun and bounces pass without caustics.
     swapped = []
     for mat in materials:
-        if not is_pane_material(mat):
+        if not is_pane_material(mat, room):
             continue
         mat.use_nodes = True
         tree = mat.node_tree
@@ -199,6 +252,20 @@ def swap_panes_to_glass(materials):
     return swapped
 
 
+def capture_fixtures(materials):
+    """The emission strengths exactly as the builder authored them — the probe's restore law."""
+    saved = []
+    for mat in materials:
+        if not mat.use_nodes:
+            continue
+        for node in mat.node_tree.nodes:
+            if node.type == 'BSDF_PRINCIPLED' and 'Emission Strength' in node.inputs:
+                saved.append((node, node.inputs['Emission Strength'].default_value))
+            elif node.type == 'EMISSION':
+                saved.append((node, node.inputs['Strength'].default_value))
+    return saved
+
+
 def set_fixtures_off(materials):
     # Day: fixtures OFF. Emission strengths otherwise stay exactly as committed.
     for mat in materials:
@@ -209,6 +276,14 @@ def set_fixtures_off(materials):
                 node.inputs['Emission Strength'].default_value = 0.0
             elif node.type == 'EMISSION':
                 node.inputs['Strength'].default_value = 0.0
+
+
+def restore_fixtures(saved):
+    for node, value in saved:
+        if node.type == 'BSDF_PRINCIPLED':
+            node.inputs['Emission Strength'].default_value = value
+        else:
+            node.inputs['Strength'].default_value = value
 
 
 def add_sun(scene):
@@ -361,10 +436,10 @@ def attach_target(mat, image):
     nodes.active = node
 
 
-def bake_targets(meshes):
+def bake_targets(objects):
     # One representative per mesh datablock, chosen deterministically by object name.
     by_mesh = {}
-    for obj in sorted(meshes, key=lambda item: item.name):
+    for obj in sorted(objects, key=lambda item: item.name):
         by_mesh.setdefault(obj.data.name, obj)
     return [by_mesh[name] for name in sorted(by_mesh)]
 
@@ -477,40 +552,256 @@ def encode_ldr(source, white_point, name, png_path):
     return peak, clipped
 
 
+def file_sha256(path):
+    digest = hashlib.sha256()
+    with open(path, 'rb') as handle:
+        for chunk in iter(lambda: handle.read(1 << 20), b''):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def paint_pane_cells(image, rects, colour):
+    """D-4/D-23: fill the lantern glazing's patch cells with the state's sky colour.
+    Chart y runs from the top; Blender's pixel rows run from the bottom."""
+    width, height = image.size
+    channels = image.channels
+    linear = np.empty(width * height * channels, dtype=np.float32)
+    image.pixels.foreach_get(linear)
+    plane = linear.reshape(height, width, channels)
+    for x, y, w, h in rects:
+        r0 = height - (y + h)
+        plane[r0:r0 + h, x:x + w, 0] = colour[0]
+        plane[r0:r0 + h, x:x + w, 1] = colour[1]
+        plane[r0:r0 + h, x:x + w, 2] = colour[2]
+    image.pixels.foreach_set(plane.reshape(-1))
+    image.save()
+
+
+def pane_rects(namespace, part):
+    """The painted part's patch rects from the builder's packed chart dict."""
+    chart = namespace.get('ARCH_CHART')
+    if not chart:
+        fail('the builder namespace carries no ARCH_CHART for the pane paint')
+    rects = []
+    for name in sorted(chart['patches']):
+        patch = chart['patches'][name]
+        if patch['part'] == part:
+            rects.append((patch['x'], patch['y'], patch['w'], patch['h']))
+    if not rects:
+        fail(f"arch chart has no patches for part {part!r}")
+    return rects
+
+
+def chart_contract(namespace):
+    """D-13: the builder may declare LM_CHARTS; the legacy LM_RES/LM_PAD_PX/LM_GRID triple
+    falls back to a single 'arch' chart (the siblings' committed shape)."""
+    charts = namespace.get('LM_CHARTS')
+    if charts:
+        out = []
+        for name in sorted(charts):
+            spec = charts[name]
+            out.append({'name': name,
+                        'res': int(spec['res']),
+                        'pad': int(spec['pad']),
+                        'objectPrefixes': tuple(spec.get('objectPrefixes', ()))})
+        return out
+    lm_res = int(builder_constant(namespace, 'LM_RES'))
+    lm_pad = int(builder_constant(namespace, 'LM_PAD_PX'))
+    return [{'name': 'arch', 'res': lm_res, 'pad': lm_pad, 'objectPrefixes': ()}]
+
+
+def chart_objects(meshes, spec, charts):
+    """A chart's bake set: prefixed objects for the kit chart; everything NOT claimed by
+    another prefixed chart for the arch chart."""
+    if spec['objectPrefixes']:
+        return [obj for obj in meshes if obj.name.startswith(spec['objectPrefixes'])]
+    claimed = set()
+    for other in charts:
+        if other['objectPrefixes']:
+            claimed.update(obj.name for obj in meshes
+                           if obj.name.startswith(other['objectPrefixes']))
+    return [obj for obj in meshes if obj.name not in claimed]
+
+
+def duplicate_chart_materials(objects):
+    """The kit chart's bake writes through DUPLICATES of the objects' materials (the
+    pane-swap precedent: bpy.data only, the glb untouched) — MG_gilt is shared with
+    architecture objects, so the kit target must never touch the original."""
+    duplicates = {}
+    for obj in objects:
+        for slot in obj.material_slots:
+            mat = slot.material
+            if mat is None:
+                continue
+            base = mat.name.split('.')[0]
+            dup = duplicates.get(base)
+            if dup is None:
+                dup = mat.copy()
+                dup.name = f'{base}.kit'
+                duplicates[base] = dup
+            slot.material = dup
+    return [duplicates[name] for name in sorted(duplicates)]
+
+
+def emissive_objects(meshes):
+    """Objects carrying a LIVE emission shader (post fixtures-off): the room's light
+    bearers. They stay OUT of every chart's target set (unselected, unbound, their
+    cells stay clear) as a DECLARED LOOK law: the glow is runtime material emission
+    (F11), never bake content, and a bake's diffuse response must not quantise into
+    the emitters' texels. Production control (probes/r4-kit-night/probe16: the fixed
+    arch night preview, candles excluded vs selected-and-bound): the room's texels are
+    IDENTICAL both ways — selected-and-bound objects DO ride the bake's ray tree; the
+    naked plane/cube probe's black arm was texel OVERWRITE (the bound cube's dark
+    diffuse response re-inking the plane's shared UV region), not tree exclusion. The
+    winding fix, not the exclusion, lit the arch."""
+    out = []
+    for obj in meshes:
+        for slot in obj.material_slots:
+            mat = slot.material
+            if mat is None or not mat.use_nodes:
+                continue
+            live = False
+            for node in mat.node_tree.nodes:
+                if (node.type == 'BSDF_PRINCIPLED'
+                        and 'Emission Strength' in node.inputs
+                        and node.inputs['Emission Strength'].default_value > 0.0):
+                    live = True
+                elif node.type == 'EMISSION' \
+                        and node.inputs['Strength'].default_value > 0.0:
+                    live = True
+            if live:
+                out.append(obj)
+                break
+    return out
+
+
+def collapse_frame_backfaces(objects, layout_frames):
+    """Bake-only lm-UV edit (restored right after the bake): every frame's 24 bar faces
+    share ONE lightmap rect, and the bake's last-rasterized face wins each texel — the
+    cells showed whichever single face (often a wall-facing back) finished last. The
+    frame cell must read the room-facing fronts: every face whose normal is not aligned
+    with the frame's facing collapses to a zero-area UV triangle. The glb is untouched
+    (the runtime samples the SAME rect for every face; the collapse only chooses WHICH
+    faces ink it during the bake)."""
+    saved = []
+    for obj in objects:
+        if not obj.name.startswith('frame_'):
+            continue
+        index = int(obj.name.split('_')[1])
+        facing = layout_frames[index]['facing']
+        n = Vector((facing['x'], -facing['z'], facing['y']))  # glTF -> Blender
+        layer = obj.data.uv_layers.get(LM_UV_LAYER)
+        if layer is None:
+            continue
+        for poly in obj.data.polygons:
+            if poly.normal.dot(n) < 0.9:
+                for li in poly.loop_indices:
+                    uv = layer.data[li]
+                    saved.append((layer, li, uv.uv.copy()))
+                    uv.uv = (-1.0, -1.0)
+    return saved
+
+
+def restore_frame_backfaces(saved):
+    for layer, li, uv in saved:
+        layer.data[li].uv = uv
+
+
 def print_summary(summary):
     print('ZIMNY_SUMMARY ' + json.dumps(summary, sort_keys=True), flush=True)
 
 
 def main():
-    room, state, stage = parse_args()
+    room, state, stage, preview = parse_args()
     stage.mkdir(parents=True, exist_ok=True)
     namespace, scene, meshes = build_room(room, stage)
-    lm_res = int(builder_constant(namespace, 'LM_RES'))
-    lm_pad = int(builder_constant(namespace, 'LM_PAD_PX'))
+    charts = chart_contract(namespace)
     lm_grid = builder_constant(namespace, 'LM_GRID', required=False)
-    margin_px = lm_pad if BAKE_MARGIN_PX is None else BAKE_MARGIN_PX
+    samples = PREVIEW_SAMPLES if preview else BAKE_SAMPLES
+    if preview:
+        for spec in charts:
+            spec['res'] = max(spec['res'] // 4, 256)
     white_point = WHITE_POINT[room]
+    if isinstance(white_point, dict):
+        if state not in white_point:
+            fail(f'the white-point table of {room} lacks state {state}')
+        white_point = white_point[state]
     file_state = STATE_FILE[state]
+    lm_dir = stage / 'lm'
+    lm_dir.mkdir(parents=True, exist_ok=True)
+
     materials = ensure_materials(meshes)
-    swapped = swap_panes_to_glass(materials) if state != 'nightChandeliers' else []
-    if state == 'day':
+    # Order law: the pane swap REBUILDS the pane materials' node trees — every capture of
+    # pre-swap nodes would leave dead RNA for the probe's restore to touch (a headless abort
+    # with no traceback). Capture AFTER the swap, BEFORE the fixtures are zeroed.
+    swapped = swap_panes_to_glass(materials, room) if state != 'nightChandeliers' else []
+    rig_saved = capture_fixtures(materials)
+    fixtures_off = state == 'day' or (state == 'dusk' and not DUSK_FIXTURES[room])
+    if fixtures_off:
         set_fixtures_off(materials)
+    if state == 'day':
         add_sun(scene)
     build_world(scene, state)
     add_probe_camera(scene, room)
-    configure_cycles(scene, BAKE_SAMPLES)
-    configure_bake(scene, margin_px)
-    targets = bake_targets(meshes)
-    lm_dir = stage / 'lm'
-    lm_dir.mkdir(parents=True, exist_ok=True)
-    raw = bake_lightmap(scene, meshes, targets, materials, lm_res, margin_px)
-    save_exr(raw, lm_dir / f'{file_state}.raw.exr')
-    denoised = denoise_image(scene, raw, lm_dir / f'{file_state}.exr')
-    lm_png = lm_dir / f'{file_state}.png'
-    peak, clipped = encode_ldr(denoised, white_point, 'ZIMNY_LM_LDR', lm_png)
-    files = [(f'lm/{file_state}.png', lm_png)]
+    configure_cycles(scene, samples)
+
+    chart_rows = []
+    arch_row = None
+    files = []
+    # The emitter look law (see emissive_objects): the emitters stay untouched in the
+    # scene and out of every chart's target set; per-room gate: EMITTER_EXCLUSION.
+    exclude_emitters = EMITTER_EXCLUSION.get(room, False)
+    emitter_names = ({obj.name for obj in emissive_objects(meshes)}
+                     if exclude_emitters else set())
+    for spec in charts:
+        prefix = '' if spec['name'] == 'arch' else 'kit-'
+        configure_cycles(scene, samples)
+        configure_bake(scene, spec['pad'])
+        margin_px = spec['pad'] if BAKE_MARGIN_PX is None else BAKE_MARGIN_PX
+        if preview:
+            # the preview quarters res; the pad is pixel-space and must scale with it,
+            # or the EXTEND margins overwrite whole 10-px cells of the neighbours
+            margin_px = max(1, margin_px // 4)
+        objects = [obj for obj in chart_objects(meshes, spec, charts)
+                   if obj.name not in emitter_names]
+        if not objects:
+            fail(f"chart {spec['name']!r} of {room} selected no objects")
+        chart_mats = ensure_materials(objects)
+        bake_mats = duplicate_chart_materials(objects) if spec['objectPrefixes'] else chart_mats
+        targets = bake_targets(objects)
+        collapsed = (collapse_frame_backfaces(objects, namespace['_LAYOUT']['frames'])
+                     if spec['objectPrefixes'] else [])
+        image = bake_lightmap(scene, meshes, targets, bake_mats, spec['res'], margin_px)
+        if collapsed:
+            restore_frame_backfaces(collapsed)
+        save_exr(image, lm_dir / f'{prefix}{file_state}.raw.exr')
+        denoised = denoise_image(scene, image, lm_dir / f'{prefix}{file_state}.exr')
+        paint = PANE_PAINT.get(room)
+        if paint is not None and spec['name'] == 'arch':
+            paint_pane_cells(denoised, pane_rects(namespace, paint['part']), paint[state])
+        peak, clipped = encode_ldr(
+            denoised, white_point, 'ZIMNY_LM_LDR', lm_dir / f'{prefix}{file_state}.png')
+        rel = f'lm/{prefix}{file_state}.png'
+        files.append((rel, lm_dir / f'{prefix}{file_state}.png'))
+        row = {'clippedFraction': round(clipped, 4),
+               'emitters': len(emitter_names),
+               'exrSha256': file_sha256(lm_dir / f'{prefix}{file_state}.exr'),
+               'name': spec['name'],
+               'objects': len(objects),
+               'pad': margin_px,
+               'peak': round(peak, 4),
+               'res': spec['res'],
+               'targets': len(targets)}
+        chart_rows.append(row)
+        if spec['name'] == 'arch':
+            arch_row = row
+
     probe = None
     if state == 'dusk':
+        # D-6: the probe is the only environment the gilt ever sees and is scaled by
+        # ADR-0013 — the warm candle highlights that make gilt glint at night must exist
+        # in it: the rig's fixtures return to FULL for the probe render only.
+        restore_fixtures(rig_saved)
         probe_dir = stage / 'probe'
         probe_dir.mkdir(parents=True, exist_ok=True)
         probe_image = render_probe(scene, probe_dir / 'dusk.exr')
@@ -527,22 +818,26 @@ def main():
             'samples': PROBE_SAMPLES,
             'whitePoint': PROBE_WHITE_POINT,
         }
+
     print_summary({
-        'bakedObjects': len(targets),
+        'bakedObjects': sum(row['targets'] for row in chart_rows),
         'blender': bpy.app.version_string,
-        'clippedFraction': round(clipped, 4),
+        'charts': chart_rows,
+        'clippedFraction': arch_row['clippedFraction'],
         'denoiser': DENOISER,
         'device': 'CPU',
+        'duskFixtures': DUSK_FIXTURES[room] if state == 'dusk' else None,
         'files': [{'bytes': os.path.getsize(path), 'rel': rel} for rel, path in files],
         'lmGrid': lm_grid,
-        'margin': margin_px,
+        'margin': arch_row['pad'],
         'meshObjects': len(meshes),
         'panesSwapped': swapped,
-        'peak': round(peak, 4),
+        'peak': arch_row['peak'],
+        'preview': preview,
         'probe': probe,
-        'res': lm_res,
+        'res': arch_row['res'],
         'room': room,
-        'samples': BAKE_SAMPLES,
+        'samples': samples,
         'seconds': None,
         'state': state,
         'whitePoint': white_point,

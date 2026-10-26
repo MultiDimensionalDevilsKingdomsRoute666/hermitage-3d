@@ -18,12 +18,16 @@ describe('INTERIOR_LOOK_GAIN', () => {
       [...INTERIOR_ROOMS, 'military-gallery'].sort(),
     );
   });
-  it('the unbaked room\u2019s row is the neutral unset (1/1/1) — R4\u2019s bake declares the real gains', () => {
-    expect(INTERIOR_LOOK_GAIN['military-gallery']).toEqual({
-      day: 1,
-      dusk: 1,
-      nightChandeliers: 1,
-    });
+  it('the R4 row is the first-bake gains (design-gallery.md §4.6) with eff under the ceiling', () => {
+    const row = INTERIOR_LOOK_GAIN['military-gallery'];
+    expect(row).toEqual({ day: 1.5, dusk: 3, nightChandeliers: 2 });
+    // D-21's pure ceiling law: eff = whitePoint × gain stays ≤ 1.0 per state, night < day.
+    const WHITE_POINT = { day: 0.5, dusk: 0.15, nightChandeliers: 0.3 } as const;
+    const effs = LIGHT_STATES.map((state) => WHITE_POINT[state] * row[state]);
+    expect(Math.max(...effs)).toBeLessThanOrEqual(1.0);
+    expect(WHITE_POINT.nightChandeliers * row.nightChandeliers).toBeLessThan(
+      WHITE_POINT.day * row.day,
+    );
   });
   it('every state entry is a finite positive number', () => {
     for (const room of INTERIOR_ROOMS) {

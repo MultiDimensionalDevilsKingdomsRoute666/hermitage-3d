@@ -118,6 +118,15 @@ def _build_frame(frame, index, canvas_offset):
     return bpy.data.objects.new(name, mesh)
 
 
+def _quad_uv_reversed(face, layer, rect):
+    """Map a quad's four loops onto a rect for a face whose winding runs BL, TL, TR, BR
+    (the reversed canvas winding): (u0v0, u0v1, u1v1, u1v0) in loop order."""
+    us = (rect['u0'], rect['u0'], rect['u1'], rect['u1'])
+    vs = (rect['v0'], rect['v1'], rect['v1'], rect['v0'])
+    for i, loop in enumerate(face.loops):
+        loop[layer].uv = (us[i], vs[i])
+
+
 def _build_canvas(frame, index, canvas_offset):
     name = '%s_%03d' % (CANVAS_PART_PREFIX, index)
     mesh = bpy.data.meshes.new(name)
@@ -129,24 +138,36 @@ def _build_canvas(frame, index, canvas_offset):
     hh = float(frame['canvas']['height']) * 0.5
     uv_a = bm.loops.layers.uv.new(UV_ATLAS)
     uv_l = bm.loops.layers.uv.new(UV_LIGHTMAP)
-    corners = ((-hw, -hh), (hw, -hh), (hw, hh), (-hw, hh))
+    # Winding runs BL, TL, TR, BR so the canvas normal points OUT of the wall into
+    # the room (the R4 winding audit: the old order faced it into the wall and the
+    # bake culled/read the cell black).
+    corners = ((-hw, -hh), (-hw, hh), (hw, hh), (hw, -hh))
     verts = [bm.verts.new(_wm(*tuple(origin + u * cu + v * cv)))
              for cu, cv in corners]
     face = bm.faces.new(verts)
     face.smooth = False
-    _quad_uv(face, uv_a, frame['uv'])
-    _quad_uv(face, uv_l, frame['chartCanvas'])
+    _quad_uv_reversed(face, uv_a, frame['uv'])
+    _quad_uv_reversed(face, uv_l, frame['chartCanvas'])
     bmesh.ops.triangulate(bm, faces=bm.faces[:])
     bm.to_mesh(mesh)
     bm.free()
     return bpy.data.objects.new(name, mesh)
 
 
-def build_frames(collection, script_dir):
-    """Build every frame in the law. Returns (objects, frame_count)."""
+def build_frames(collection, script_dir, floor_y=0.0):
+    """Build every frame in the law. Returns (objects, frame_count).
+
+    floor_y: the room's floor height in glTF metres. The layout's position.y is a
+    hanging height OVER the floor (rowBottomY..rowTopY are floor-relative by
+    design); the architecture adds FLOOR_Y everywhere, and the R4 night-kit probe
+    (probes/r4-kit-night/probe13_where.py) proved the raw consumption left the
+    whole kit 5.6-8.6 m under the hall floor — the night bake's receivers sat in
+    the void beneath the only emitters. The kit is lifted onto the wall here."""
     layout = read_layout(script_dir)
     frames = layout['frames']
     canvas_offset = float(layout['metrics']['canvasOffset'])
+    frames = [dict(f, position=dict(f['position'], y=f['position']['y'] + floor_y))
+              for f in frames]
     objects = []
     for index in range(len(frames)):
         frame = frames[index]

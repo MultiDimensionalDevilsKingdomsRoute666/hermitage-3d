@@ -42,12 +42,13 @@ import {
   writeManifest,
 } from './common.mjs';
 
-const ROOMS = ['rastrelli-gallery', 'jordan'];
+const ROOMS = ['rastrelli-gallery', 'jordan', 'military-gallery'];
 const STATES = ['day', 'dusk', 'nightChandeliers'];
 const STATE_FILE = { day: 'day', dusk: 'dusk', nightChandeliers: 'night' };
 const STATE_ALIASES = { night: 'nightChandeliers' };
 const BAKE_SCRIPT = path.join(ROOT, 'tools', 'bpy', 'bake.py');
 const LOG_DIR = path.join(ROOT, 'tools', 'bake-logs');
+const LAYOUT_JSON = path.join(ROOT, 'tools', 'gallery', 'layout.json');
 const SUMMARY_PREFIX = 'ZIMNY_SUMMARY ';
 const SLOW_BAKE_SECONDS = 45 * 60;
 const PUBLISH_PREFIXES = ['lm/', 'probe/'];
@@ -78,7 +79,7 @@ const TOKTX_INSTALL = 'install KTX-Software 4.4.2 (brew install ktx) so `toktx` 
 function usage(message) {
   console.error(`bake: ${message}`);
   console.error(
-    'usage: node tools/bake.mjs <rastrelli-gallery|jordan> <day|dusk|night|all> [--verify]',
+    'usage: node tools/bake.mjs <rastrelli-gallery|jordan|military-gallery> <day|dusk|night|all> [--verify]',
   );
   process.exit(2);
 }
@@ -132,6 +133,10 @@ function runBlenderBake(room, state, stage) {
   console.log(line.trim());
   // bake.py reads no clock; the wall time is measured here around the subprocess.
   const summary = { ...JSON.parse(line.slice(SUMMARY_PREFIX.length)), seconds };
+  // R4: bake.py --preview is a layout check only — its plates never reach the log or the room.
+  if (summary.preview) {
+    throw new ChainError('bake.py ran in preview mode — previews are never recorded or published');
+  }
   writeFileSync(path.join(stage, 'summary.json'), `${JSON.stringify(summary, null, 2)}\n`);
   return { summary, command: `node tools/bake.mjs ${room} ${state}` };
 }
@@ -192,9 +197,11 @@ function record(state, result, artifacts, blenderVersion) {
   const { summary, command } = result;
   return {
     blender: blenderVersion,
+    charts: summary.charts ?? null,
     clippedFraction: summary.clippedFraction,
     command,
     denoiser: summary.denoiser,
+    duskFixtures: summary.duskFixtures ?? null,
     margin: summary.margin,
     peak: summary.peak,
     probe: summary.probe ?? null,
@@ -225,8 +232,10 @@ function renderLog(room, log) {
   for (const state of STATES) {
     const row = log.states[state];
     if (!row) continue;
+    const kitChart = (row.charts ?? []).find((chart) => chart.name !== 'arch');
     lines.push(
-      `| ${state} | \`${row.command}\` | ${row.blender} | ${row.res} | ${row.samples} | ` +
+      `| ${state} | \`${row.command}\` | ${row.blender} | ${row.res}` +
+        `${kitChart ? `+${kitChart.res}` : ''} | ${row.samples} | ` +
         `${row.denoiser} | ${row.whitePoint} | ${row.peak} | ${row.clippedFraction} | ` +
         `${row.seconds.toFixed(1)} |`,
     );
@@ -274,11 +283,55 @@ function writeLog(room, log) {
   console.log(`wrote ${path.relative(ROOT, md)}`);
 }
 
-function lightmapsRow(descriptor, log) {
+/** The kit chart's committed resolution — tools/gallery/layout.json's lightmap.sizePx (the
+ * one home the kit res already has; never duplicated into the manifest row, D-7). */
+function kitRes() {
+  if (!existsSync(LAYOUT_JSON)) return null;
+  return JSON.parse(readFileSync(LAYOUT_JSON, 'utf8')).lightmap.sizePx;
+}
+
+function chartOf(row, name) {
+  const charts = row.charts ?? [];
+  return charts.find((chart) => chart.name === name) ?? null;
+}
+
+function lightmapsRow(descriptor, log, kit) {
   const committed = descriptor.lightmaps;
   // The committed row may exist as an EMPTY placeholder ({states: [], res, intensity null}) —
   // only a row that actually names states counts as filled (orchestrator adjudication).
   if (committed && Array.isArray(committed.states) && committed.states.length > 0) {
+    // R4 (D-14): the filled row must agree with the bake records on the chart resolutions
+    // and — when the descriptor carries a true per-state table (the values differ, 1812's
+    // r17c shape) — on the white points. The siblings' scalar-era rows keep the committed
+    // behaviour: their encode scalar was superseded by the re-encode law, never by a re-bake.
+    for (const state of STATES) {
+      const rec = log.states[state];
+      if (!rec) {
+        throw new ChainError(
+          `lightmaps row names ${state} but no bake record exists — bake it first`,
+        );
+      }
+      const arch = chartOf(rec, 'arch') ?? { res: rec.res };
+      if (arch.res !== committed.res) {
+        throw new ChainError(
+          `bake record ${state}: arch res ${arch.res} !== the descriptor's ${committed.res}`,
+        );
+      }
+      const kitRec = chartOf(rec, 'kit');
+      if (kitRec !== null && kitRec.res !== kit) {
+        throw new ChainError(
+          `bake record ${state}: kit res ${kitRec.res} !== layout.json's ${kit}`,
+        );
+      }
+      const values = Object.values(committed.intensity ?? {});
+      const isPerStateTable = values.length > 0 && !values.every((v) => v === values[0]);
+      if (isPerStateTable && committed.intensity[state] !== rec.whitePoint) {
+        throw new ChainError(
+          `bake record ${state}: white point ${rec.whitePoint} !== the descriptor's ` +
+            `${committed.intensity[state]}`,
+        );
+      }
+    }
     return { row: committed, proposed: false };
   }
   // All-or-nothing law: the manifest may name a state only when its ktx2 is on disk (the
@@ -297,12 +350,26 @@ function lightmapsRow(descriptor, log) {
     );
   }
   const [first] = records;
+  const archRes = (chartOf(first, 'arch') ?? { res: first.res }).res;
+  const firstKit = chartOf(first, 'kit');
   for (const entry of records) {
-    if (entry.res !== first.res || entry.whitePoint !== first.whitePoint) {
-      throw new ChainError('bake records disagree on res / white point; re-bake the room');
+    const arch = chartOf(entry, 'arch') ?? { res: entry.res };
+    const kitRec = chartOf(entry, 'kit');
+    if (arch.res !== archRes) {
+      throw new ChainError('bake records disagree on the arch res; re-bake the room');
+    }
+    if ((kitRec?.res ?? null) !== (firstKit?.res ?? null)) {
+      throw new ChainError('bake records disagree on the kit res; re-bake the room');
     }
   }
-  return { row: { states: STATES, res: first.res, intensity: first.whitePoint }, proposed: true };
+  return {
+    row: {
+      states: STATES,
+      res: archRes,
+      intensity: Object.fromEntries(records.map((r) => [r.state, r.whitePoint])),
+    },
+    proposed: true,
+  };
 }
 
 function verify(room, states) {
@@ -390,7 +457,7 @@ async function main() {
     }
   }
   publish(room, staged);
-  const { row, proposed } = lightmapsRow(descriptor, log);
+  const { row, proposed } = lightmapsRow(descriptor, log, kitRes());
   writeManifest({ ...descriptor, lightmaps: row }, path.join(ASSETS_DIR, room), tc);
   if (proposed) {
     console.log(

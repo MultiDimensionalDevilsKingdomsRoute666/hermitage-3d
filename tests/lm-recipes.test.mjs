@@ -5,7 +5,12 @@
 // daylight, both at scale 1; dusk and night encode their own bakes; argv construction is
 // deterministic and fail-loud. Node driver-side data (imports tools/, never src/).
 import { describe, expect, it } from 'vitest';
-import { composeArgs, composeRecipeFor, LIGHTMAP_COMPOSE_RECIPES } from '../tools/lm-recipes.mjs';
+import {
+  composeArgs,
+  composeRecipeFor,
+  DUSK_CANDELABRA_SCALE,
+  LIGHTMAP_COMPOSE_RECIPES,
+} from '../tools/lm-recipes.mjs';
 
 const STATES = ['day', 'dusk', 'nightChandeliers'];
 
@@ -22,6 +27,19 @@ describe('lightmap compose recipes', () => {
   it('gallery dusk and night encode their own bakes', () => {
     expect(composeRecipeFor('rastrelli-gallery', 'dusk')).toBeNull();
     expect(composeRecipeFor('rastrelli-gallery', 'nightChandeliers')).toBeNull();
+  });
+
+  it('R4 D-3: the 1812 dusk composes the night candelabra field at a third', () => {
+    const terms = composeRecipeFor('military-gallery', 'dusk');
+    expect(terms).not.toBeNull();
+    expect(terms?.map((t) => [t.source, t.scale])).toEqual([
+      ['dusk', 1],
+      ['nightChandeliers', DUSK_CANDELABRA_SCALE],
+    ]);
+    expect(DUSK_CANDELABRA_SCALE).toBeCloseTo(1 / 3, 12);
+    // The night state itself encodes its own bake; the day state too.
+    expect(composeRecipeFor('military-gallery', 'day')).toBeNull();
+    expect(composeRecipeFor('military-gallery', 'nightChandeliers')).toBeNull();
   });
 
   it('every term names a canonical state with a finite positive scale', () => {

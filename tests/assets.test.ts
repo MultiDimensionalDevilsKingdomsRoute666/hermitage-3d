@@ -180,6 +180,28 @@ describe.each(committedRooms)('public/assets/%s (room contract)', (room) => {
       for (const state of STATES_ON_DISK) {
         expect(existsSync(join(dir, 'lm', `${FILE_BY_STATE[state]}.ktx2`)), state).toBe(true);
       }
+      // R4 (design-gallery.md §4.6, D-7): the split's disk law — every lm row is the
+      // architecture chart's <file>.ktx2 or the kit chart's kit-<file>.ktx2; the kit rows
+      // are all-or-nothing (a state carries both charts or neither; a kit row never rides
+      // alone). The kit res itself lives in tools/gallery/layout.json (D-7), not here.
+      const lmRows = manifest.files.map((f) => f.path).filter((p) => p.startsWith('lm/'));
+      for (const row of lmRows) {
+        const base = row
+          .slice('lm/'.length)
+          .replace(/\.ktx2$/, '')
+          .replace(/^kit-/, '');
+        expect(
+          ['day', 'dusk', 'night'].includes(base),
+          `${row} is <file>.ktx2 or kit-<file>.ktx2`,
+        ).toBe(true);
+      }
+      const kitRows = lmRows.filter((p) => p.includes('kit-'));
+      if (kitRows.length > 0) {
+        expect(
+          kitRows.map((p) => p.slice('lm/kit-'.length).replace(/\.ktx2$/, '')).sort(),
+          'kit rows all-or-nothing',
+        ).toEqual(['day', 'dusk', 'night']);
+      }
     }
     expect(manifest.budget.trianglesMax).toBeGreaterThan(0);
     expect(manifest.budget.textureBytesMax).toBeGreaterThan(0);

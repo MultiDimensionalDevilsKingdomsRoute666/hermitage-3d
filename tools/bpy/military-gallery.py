@@ -1,20 +1,34 @@
-# Zimny Phase 3 R1b — military-gallery room kit (Blender 4.2 LTS, headless).
+# Zimny Phase 3 R1b / R4a — military-gallery room kit (Blender 4.2 LTS, headless).
 # Run by tools/asset.mjs `bpy military-gallery` (stem = room id verbatim).
 #
 # Implements design-gallery.md §2.2 (placement), §2.4 (palette), §2.5/§2.6
-# (kit), §3.1 (kit list), DEC-024 (torchere振 candelabra, DEC-028 night law)
+# (kit), §3.1 (kit list), DEC-024 (torchere candelabra, DEC-028 night law)
 # with the frame kit in tools/bpy/military_gallery_frames.py.
+# R4 Slice A (light delta): MG_candle carries the committed emission
+# (CANDLE_EMISSION_RGB x CANDLE_EMISSION — the jordan parity value read from
+# tools/bpy/jordan.py's committed constants); every architecture face writes
+# its 'lm' UV from the packed architecture chart
+# (tools/bpy/military_gallery_chart.py). The pack runs once every part is
+# authored, so face finishing is deferred to _finish_all().
 #
 # Writes:  <stage>/military-gallery.raw.glb
 #          <stage>/tex/military-gallery-parquet.png (math-only, 512x512)
+#          <stage>/arch-chart.json (EVERY run, bake runs included: the bake
+#          stage is the builder's stage; the gltf step copies it to its
+#          committed home tools/gallery/arch-chart.json)
 #          <stage>/summary.json  and one `ZIMNY_SUMMARY <json sorted-keys>` line.
 # INT: stage-dir handoff mirrors the sibling rooms (asset.mjs invokes
 # `... -P <py> -- --room <id> --out <stage>`; also --stage, positional,
 # ZIMNY_STAGE_DIR).
 #
+# Bake contract (read by tools/bpy/bake.py from this module's namespace):
+#   LM_CHARTS {arch: {res, pad}, kit: {res, pad, objectPrefixes}}
+#   LM_RES / LM_PAD_PX      the arch chart (legacy single-chart readers)
+#   ARCH_CHART              the packed chart dict (== arch-chart.json), set by main()
+#
 # Deterministic: no randomness, no clock, every dimension a named constant,
 # stable part names for the gltf-transform pass. Repeat runs byte-identical.
-# ZIMNY_BAKE=1: build the scene, skip export/summary (the bake owns stdout).
+# ZIMNY_BAKE=1: build the scene + the chart, skip export/summary.
 
 import bmesh
 import bpy
@@ -28,11 +42,14 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, SCRIPT_DIR)
 import military_gallery_frames as frames_kit  # noqa: E402
 
+import military_gallery_chart as chart_kit  # noqa: E402
+
 import json  # noqa: E402
 import math  # noqa: E402
 ROOM_ID = 'military-gallery'
 PARQUET_TEX_NAME = 'military-gallery-parquet.png'
 TEX_SIZE = 512
+UV_LIGHTMAP = frames_kit.UV_LIGHTMAP
 
 # ---- shell (design-gallery.md §2.2; metres, glTF world axes) -----------------
 WALL_X_WEST = 82.0
@@ -60,21 +77,34 @@ LANTERN_BARS = 6
 LANTERN_BAR_W = 0.10
 LANTERN_BAR_D = 0.08
 
-# ---- doors (K4: one authored double-door panel, six reuses) ------------------
-DOOR_W = 1.9
+# ---- doors (K4: one authored double-door panel, parametric width, six reuses) --
+DOOR_W = 1.9                # the north entry pair (the passage look)
+SOUTH_DOOR_W = 0.8          # the portal's flanking dark pairs (Hau's narrow panels)
+BLIND_DOOR_W = 1.4          # the long-wall blinds: their jamb boxes span [W/2, W/2+CASE],
+                            # which must clear the pair's shafts (outer 0.675) below and
+                            # the canvases' near edge (0.785) above
 DOOR_H = 3.4
 DOOR_LEAF_INSET = 0.04
 DOOR_PANEL_D = 0.10
-DOOR_CASE_W = 0.28
-NORTH_DOOR_SWING = 0.0     # the entry pair reads as the airlock face (closed)
-SOUTH_DOOR_INSET = 0.75    # the flanking panels sit ±(half width - inset)
-BLIND_DOOR_BAYS = (4, 8)   # pier indices per long wall (of 12)
+DOOR_CASE_W = 0.06          # R4 fit re-fit: the case span (W/2+CASE) must clear the
+                            # flanking/ally frames and sit inside the end walls
+NORTH_DOOR_SWING = 0.0      # the entry pair reads as the airlock face (closed)
+SOUTH_DOOR_INSET = 0.50     # the flanking pairs' stations at mid+/-3.75: the case
+                            # span [3.29..4.21] sits inside the 4.25 half-width corner
+BLIND_DOOR_BAYS = (2, 9)    # pier indices per long wall (of 12): z -30/+5, symmetric
+                            # about the hall's mid, both PLAIN piers (the old (4, 8) sat
+                            # the blind doors inside the engaged columns at piers 4/8)
 
 # ---- piers (twelve per wall between the law's eleven portrait bays) ---------
 PIERS_PER_WALL = 12
-PILASTER_W = 0.55
+PILASTER_W = 0.30           # R4 fit re-fit (owner-ruled): the pair's shafts span
+                            # pier+/-0.375..0.675, so the clear wall between adjacent
+                            # pairs is 5-2x0.675 = 3.65 m and the frame kit's 3.57 m
+                            # span now clears by 4 cm a side (at 0.55/0.9 the bay-end
+                            # canvases sat ~61% inside the shafts)
 PILASTER_D = 0.14
-PILASTER_PAIR_GAP = 0.9
+PILASTER_PAIR_GAP = 0.75    # >= ~0.7: the wide piers' engaged columns (r 0.32) must
+                            # clear the pair's inner faces (0.375 > 0.32 + 5 cm)
 CAP_H = 0.35
 CAP_FLARE = 0.06
 BASE_H = 0.45
@@ -120,7 +150,7 @@ PLASTER_RGB = (0.700, 0.690, 0.660)
 VAULT_RGB = (0.660, 0.650, 0.630)
 GILT_RGB = (0.550, 0.410, 0.150)
 STONE_RGB = (0.520, 0.510, 0.480)
-GLASS_RGB = (0.020, 0.024, 0.030)
+GLASS_RGB = (0.020, 0.024, 0.030)   # §2.4 dark glass — the BAKE-side pane (R4 D-23)
 DOOR_RGB = (0.160, 0.100, 0.060)
 UPHOLSTERY_RGB = (0.240, 0.055, 0.075)
 CANDLE_RGB = (0.850, 0.820, 0.740)
@@ -129,13 +159,45 @@ CARPET_RGB = (0.260, 0.048, 0.062)
 PARQUET_LIGHT_RGB = (0.420, 0.280, 0.150)
 PARQUET_DARK_RGB = (0.240, 0.150, 0.085)
 PARQUET_LINE_RGB = (0.180, 0.115, 0.065)
+PARQUET_BAKE_RGB = (0.330, 0.215, 0.118)  # mean of light/dark: the bake's floor albedo
 FLOOR_UV_REPEAT = 1.0                 # one 0..1 sweep; repeat is the runtime's law (R3)
+
+# ---- light (R4 D-2: MG_candle emissive; DEC-028) ----------------------------
+# ~2700 K in linear sRGB: sRGB (255, 169, 87) linearised (the relay draft's
+# revision of Block 2's first sketch — the actual linearisation of 2700 K).
+CANDLE_EMISSION_RGB = (1.000, 0.405, 0.094)
+# Block 2's first guess was the jordan fixture parity 6.0; the first bake
+# CONTRADICTED its own flagged units assumption (walls 0.04 vs the assumed 0.3,
+# the kit frames quantising to codes 0-1 = the r17c death class). The draft's
+# own placeholder value 40.0 lands the estimate: walls ~0.25, the M1 frames
+# ~0.1 -> codes 20-40. A retune = this constant + a NIGHT re-bake (the probe and
+# the composed dusk re-encode from the EXRs, minutes).
+CANDLE_EMISSION = 40.0
 
 PARQUET_CHECKS = 8
 PARQUET_DIAMOND_INSET = 0.15
 PARQUET_LINE_W = 0.06
 
 COLLECTION_NAME = 'MilitaryGallery'
+
+# ---- the bake contract (tools/bpy/bake.py reads these names) -----------------
+_LAYOUT = frames_kit.read_layout(SCRIPT_DIR)
+_LAYOUT_LM = _LAYOUT['lightmap']
+LM_RES = chart_kit.ARCH_CHART_RES
+LM_PAD_PX = chart_kit.ARCH_CHART_PAD_PX
+LM_CHARTS = {
+    'arch': {'res': LM_RES, 'pad': LM_PAD_PX},
+    'kit': {
+        'res': int(_LAYOUT_LM['sizePx']),
+        'pad': int(_LAYOUT_LM['padPx']),
+        'objectPrefixes': (frames_kit.FRAME_PART_PREFIX + '_',
+                           frames_kit.CANVAS_PART_PREFIX + '_'),
+    },
+}
+ARCH_CHART = None   # set by main(): the packed chart dict (== arch-chart.json)
+CHART = None        # the ArchChart registry, created in main()
+PENDING = {}        # id(bm) -> [(face, patch, ((s, t), ...)), ...]
+FINISH_QUEUE = []   # (obj, bm, shade_flat) — finished after CHART.pack()
 
 
 def to_b(p):
@@ -156,7 +218,7 @@ def stage_dir():
     for arg in argv:
         if arg.startswith('--out=') or arg.startswith('--stage='):
             return os.path.abspath(arg.split('=', 1)[1])
-    if len(sys.argv) > sys.argv.index('--') + 2:
+    if '--' in sys.argv and len(sys.argv) > sys.argv.index('--') + 2:
         return os.path.abspath(sys.argv[sys.argv.index('--') + 2])
     env = os.environ.get('ZIMNY_STAGE_DIR')
     if env:
@@ -188,7 +250,8 @@ def make_materials():
         ('gilt', GILT_RGB), ('stone', STONE_RGB), ('glass', GLASS_RGB),
         ('door', DOOR_RGB), ('upholstery', UPHOLSTERY_RGB),
         ('candle', CANDLE_RGB), ('canvas', CANVAS_RGB),
-        ('carpet', CARPET_RGB), ('parquet', (0.4, 0.4, 0.4)),
+        ('carpet', CARPET_RGB),
+        ('parquet', PARQUET_BAKE_RGB if BAKE else (0.4, 0.4, 0.4)),
     )
     made = {}
     for name, rgb in flats:
@@ -197,6 +260,12 @@ def make_materials():
         bsdf = mat.node_tree.nodes['Principled BSDF']
         bsdf.inputs['Base Color'].default_value = (rgb[0], rgb[1], rgb[2], 1.0)
         made[name] = mat
+    # D-2: the candles are the night state's only light; the exporter writes the
+    # emissive strength, the runtime never state-gates it (the F11 law).
+    candle = made['candle'].node_tree.nodes['Principled BSDF']
+    candle.inputs['Emission Color'].default_value = (
+        CANDLE_EMISSION_RGB[0], CANDLE_EMISSION_RGB[1], CANDLE_EMISSION_RGB[2], 1.0)
+    candle.inputs['Emission Strength'].default_value = CANDLE_EMISSION
     return made
 
 
@@ -207,22 +276,83 @@ def _new_part(collection, name):
     return obj, bmesh.new()
 
 
+def _bind(bm, face, patch, sts):
+    """Record a face's (s, t) metres per loop against its chart patch; resolved in _finish_all."""
+    PENDING.setdefault(id(bm), []).append((face, patch, tuple(sts)))
+    return face
+
+
 def _finish(obj, bm, shade_flat):
-    if shade_flat:
-        for face in bm.faces:
-            face.smooth = False
-    bmesh.ops.triangulate(bm, faces=bm.faces[:])
-    bm.to_mesh(obj.data)
-    bm.free()
+    FINISH_QUEUE.append((obj, bm, shade_flat))
     return obj
 
 
+def _finish_all():
+    """Resolve every pending 'lm' loop from the packed chart, then triangulate + commit."""
+    for obj, bm, shade_flat in FINISH_QUEUE:
+        lm = bm.loops.layers.uv.get(UV_LIGHTMAP)
+        bound = PENDING.get(id(bm), ())
+        if len(bound) != len(bm.faces):
+            raise AssertionError('%s: %d of %d faces carry no lightmap patch'
+                                 % (obj.name, len(bm.faces) - len(bound), len(bm.faces)))
+        for face, patch, sts in bound:
+            if len(sts) != len(face.loops):
+                raise AssertionError('%s: %d (s,t) pairs for a %d-loop face on %s'
+                                     % (obj.name, len(sts), len(face.loops), patch.name))
+            for loop, (s, t) in zip(face.loops, sts):
+                loop[lm].uv = patch.uv(s, t)
+        if shade_flat:
+            for face in bm.faces:
+                face.smooth = False
+        bmesh.ops.triangulate(bm, faces=bm.faces[:])
+        bm.to_mesh(obj.data)
+        bm.free()
+    FINISH_QUEUE.clear()
+    PENDING.clear()
+
+
 def _layers(bm):
-    return bm.loops.layers.uv.new('uv'), bm.loops.layers.uv.new('lm')
+    return bm.loops.layers.uv.new('uv'), bm.loops.layers.uv.new(UV_LIGHTMAP)
 
 
-def add_box(bm, centre, half):
-    """Axis-aligned box in WORLD coordinates (converted at the vertices)."""
+def face_patch(bm, face, part):
+    """Bind `face` to its OWN chart patch (D-10's per-face law): w/h from the face's
+    in-plane extents (u = the longest loop edge, first-max on ties), (s, t) metres per loop."""
+    pts = [v.co.copy() for v in face.verts]
+    origin = pts[0]
+    best = None
+    for i in range(len(pts)):
+        j = (i + 1) % len(pts)
+        d = pts[j] - pts[i]
+        length = d.length
+        if best is None or length > best[0] + 1e-9:
+            best = (length, d * (1.0 / length) if length > 1e-9 else Vector((1.0, 0.0, 0.0)))
+    u = best[1]
+    # bmesh computes normals lazily — a fresh face's .normal reads (0, 0, 0); derive the
+    # in-plane normal from the verts themselves (the first non-collinear triple).
+    n = (pts[1] - pts[0]).cross(pts[2] - pts[0])
+    for i in range(2, len(pts)) if n.length <= 1e-9 else ():
+        n = (pts[1] - pts[0]).cross(pts[i] - pts[0])
+        if n.length > 1e-9:
+            break
+    if n.length < 1e-9:
+        n = Vector((0.0, 1.0, 0.0))
+    n = n * (1.0 / n.length)
+    v = n.cross(u)
+    if v.length < 1e-9:
+        v = Vector((0.0, 0.0, 1.0)) if abs(u.z) < 0.9 else Vector((1.0, 0.0, 0.0))
+    v = v * (1.0 / v.length)
+    dus = [(p - origin).dot(u) for p in pts]
+    dvs = [(p - origin).dot(v) for p in pts]
+    w_m = max(dus) - min(dus)
+    h_m = max(dvs) - min(dvs)
+    patch = CHART.add(part, w_m, h_m)
+    _bind(bm, face, patch, [(du - min(dus), dv - min(dvs)) for du, dv in zip(dus, dvs)])
+    return face
+
+
+def add_box(bm, centre, half, part):
+    """Axis-aligned box in WORLD coordinates; every face binds to its OWN chart patch (D-10)."""
     cx, cy, cz = centre
     hx, hy, hz = half
     coords = []
@@ -232,32 +362,47 @@ def add_box(bm, centre, half):
     verts = [bm.verts.new(c) for c in coords]
     quads = ((0, 1, 2, 3), (7, 6, 5, 4), (0, 4, 5, 1),
              (1, 5, 6, 2), (2, 6, 7, 3), (3, 7, 4, 0))
-    return [bm.faces.new([verts[i] for i in q]) for q in quads]
+    return [face_patch(bm, bm.faces.new([verts[i] for i in q]), part) for q in quads]
 
 
-def add_prism(bm, centre, radius, height, sides, taper=1.0):
-    """Vertical n-gon prism, flat caps; sides from a constant."""
+def add_prism(bm, centre, radius, height, sides, taper=1.0, part=None):
+    """Vertical n-gon prism, flat caps; the lateral surface unrolls into one chart patch
+    (the relay draft's tight prism net — adopted: width = perimeter + two cap diameters).
+    Winding: every face runs so its normal points OUT of the prism (the R4 winding
+    audit — the previous order faced every normal inward and the bake read the
+    columns/torcheres as black)."""
     cx, cy, cz = centre
     lower = []
     upper = []
+    angles = []
     for i in range(sides):
         a = 2.0 * math.pi * i / float(sides)
+        angles.append(a)
         dx = math.cos(a)
         dz = math.sin(a)
         lower.append(bm.verts.new(_wm(cx + dx * radius, cy, cz + dz * radius)))
         upper.append(bm.verts.new(_wm(cx + dx * radius * taper, cy + height,
                                       cz + dz * radius * taper)))
+    net_w, net_h, chord, perim = chart_kit.prism_net(radius, height, sides)
+    patch = CHART.add(part, net_w, net_h)
     faces = []
     for i in range(sides):
         j = (i + 1) % sides
-        faces.append(bm.faces.new((lower[i], lower[j], upper[j], upper[i])))
-    faces.append(bm.faces.new(tuple(reversed(lower))))
-    faces.append(bm.faces.new(tuple(upper)))
+        face = bm.faces.new((lower[i], upper[i], upper[j], lower[j]))
+        st = chart_kit.prism_side_st(i, chord, height)
+        faces.append(_bind(bm, face, patch, (st[0], st[3], st[2], st[1])))
+    bottom = bm.faces.new(tuple(lower))
+    faces.append(_bind(bm, bottom, patch,
+                       chart_kit.prism_cap_st(tuple(angles), radius, perim)))
+    top = bm.faces.new(tuple(reversed(upper)))
+    faces.append(_bind(bm, top, patch,
+                       chart_kit.prism_cap_st(tuple(reversed(angles)), radius,
+                                              perim + 2.0 * radius)))
     return faces
 
 
 def read_metrics():
-    return frames_kit.read_layout(SCRIPT_DIR)['metrics']
+    return _LAYOUT['metrics']
 
 
 def bay_centres(metrics):
@@ -337,13 +482,18 @@ def build_floor(collection, materials):
     obj, bm = _new_part(collection, 'floor')
     uv, _ = _layers(bm)
     mid_x = hall_mid_x()
-    half_x = hall_span()[0] * 0.5
+    span_x, span_z = hall_span()
+    half_x = span_x * 0.5
     repeats = FLOOR_UV_REPEAT
-    a = Vector((mid_x - half_x, FLOOR_Y, WALL_Z_NORTH))
-    b = Vector((mid_x + half_x, FLOOR_Y, WALL_Z_NORTH))
-    c = Vector((mid_x + half_x, FLOOR_Y, WALL_Z_SOUTH))
-    d = Vector((mid_x - half_x, FLOOR_Y, WALL_Z_SOUTH))
-    face = bm.faces.new([bm.verts.new(_wm(p.x, p.y, p.z)) for p in (a, b, c, d)])
+    # The floor patch runs (s = along Z, t = across X): transposed so the packer's
+    # height-descending shelves meet a 1980-wide slab, never a 1980-tall one.
+    # Winding: the corners run COUNTERCLOCKWISE seen from above (+Y up) so the
+    # face's normal points INTO the room (the R4 night-bake winding audit).
+    corners = (((mid_x - half_x, FLOOR_Y, WALL_Z_NORTH), (0.0, 0.0)),
+               ((mid_x - half_x, FLOOR_Y, WALL_Z_SOUTH), (span_z, 0.0)),
+               ((mid_x + half_x, FLOOR_Y, WALL_Z_SOUTH), (span_z, span_x)),
+               ((mid_x + half_x, FLOOR_Y, WALL_Z_NORTH), (0.0, span_x)))
+    face = _plane(bm, corners, CHART.add('floor', span_z, span_x, 'parquet'))
     uvs = ((0.0, 0.0), (repeats, 0.0), (repeats, repeats), (0.0, repeats))
     for i, loop in enumerate(face.loops):
         loop[uv].uv = uvs[i]
@@ -353,41 +503,60 @@ def build_floor(collection, materials):
 
 def build_walls(collection, materials):
     """Crimson portrait fields on the long walls below the cornice band;
-    plaster above and on both end walls."""
-    half_x = hall_span()[0] * 0.5
-    half_z = hall_span()[1] * 0.5
+    plaster above and on both end walls. One developable patch per wall face (D-10)."""
+    span_x, span_z = hall_span()
+    half_x = span_x * 0.5
     mid_x = hall_mid_x()
     band_y = SPRING_Y - 0.9           # the portrait fields run floor..band
+    field_h = band_y - FLOOR_Y
     crimson, bm_c = _new_part(collection, 'wall_crimson')
     _, _ = _layers(bm_c)
-    for wall_x, nx in ((WALL_X_WEST, 1.0), (WALL_X_EAST, -1.0)):
-        a, b, c, d = (Vector((wall_x, FLOOR_Y, WALL_Z_NORTH)),
-                      Vector((wall_x, FLOOR_Y, WALL_Z_SOUTH)),
-                      Vector((wall_x, band_y, WALL_Z_SOUTH)),
-                      Vector((wall_x, band_y, WALL_Z_NORTH)))
-        order = (a, b, c, d) if nx > 0.0 else (b, a, d, c)
-        bm_c.faces.new([bm_c.verts.new(_wm(p.x, p.y, p.z)) for p in order])
+    for wall_x, nx, tag in ((WALL_X_WEST, 1.0, 'west'), (WALL_X_EAST, -1.0, 'east')):
+        patch = CHART.add('wall_crimson', span_z, field_h, tag)
+        _wall(bm_c, (wall_x, FLOOR_Y, WALL_Z_NORTH),
+              (wall_x, FLOOR_Y, WALL_Z_SOUTH),
+              (wall_x, band_y, WALL_Z_SOUTH),
+              (wall_x, band_y, WALL_Z_NORTH),
+              ((0.0, 0.0), (span_z, 0.0), (span_z, field_h), (0.0, field_h)),
+              nx > 0.0, patch)
     obj = _finish(crimson, bm_c, True)
     obj.data.materials.append(materials['crimson'])
     plaster, bm_p = _new_part(collection, 'wall_plaster')
     _, _ = _layers(bm_p)
-    for wall_x, nx in ((WALL_X_WEST, 1.0), (WALL_X_EAST, -1.0)):
-        a, b, c, d = (Vector((wall_x, band_y, WALL_Z_NORTH)),
-                      Vector((wall_x, band_y, WALL_Z_SOUTH)),
-                      Vector((wall_x, SPRING_Y, WALL_Z_SOUTH)),
-                      Vector((wall_x, SPRING_Y, WALL_Z_NORTH)))
-        order = (a, b, c, d) if nx > 0.0 else (b, a, d, c)
-        bm_p.faces.new([bm_p.verts.new(_wm(p.x, p.y, p.z)) for p in order])
-    for wall_z, nz in ((WALL_Z_NORTH, 1.0), (WALL_Z_SOUTH, -1.0)):
-        a, b, c, d = (Vector((mid_x - half_x, FLOOR_Y, wall_z)),
-                      Vector((mid_x + half_x, FLOOR_Y, wall_z)),
-                      Vector((mid_x + half_x, SPRING_Y, wall_z)),
-                      Vector((mid_x - half_x, SPRING_Y, wall_z)))
-        order = (a, b, c, d) if nz > 0.0 else (b, a, d, c)
-        bm_p.faces.new([bm_p.verts.new(_wm(p.x, p.y, p.z)) for p in order])
+    band_h = SPRING_Y - band_y
+    for wall_x, nx, tag in ((WALL_X_WEST, 1.0, 'band-west'), (WALL_X_EAST, -1.0, 'band-east')):
+        patch = CHART.add('wall_plaster', span_z, band_h, tag)
+        _wall(bm_p, (wall_x, band_y, WALL_Z_NORTH),
+              (wall_x, band_y, WALL_Z_SOUTH),
+              (wall_x, SPRING_Y, WALL_Z_SOUTH),
+              (wall_x, SPRING_Y, WALL_Z_NORTH),
+              ((0.0, 0.0), (span_z, 0.0), (span_z, band_h), (0.0, band_h)),
+              nx > 0.0, patch)
+    wall_h = SPRING_Y - FLOOR_Y
+    for wall_z, nz, tag in ((WALL_Z_NORTH, 1.0, 'end-north'), (WALL_Z_SOUTH, -1.0, 'end-south')):
+        patch = CHART.add('wall_plaster', span_x, wall_h, tag)
+        _wall(bm_p, (mid_x - half_x, FLOOR_Y, wall_z),
+              (mid_x + half_x, FLOOR_Y, wall_z),
+              (mid_x + half_x, SPRING_Y, wall_z),
+              (mid_x - half_x, SPRING_Y, wall_z),
+              ((0.0, 0.0), (span_x, 0.0), (span_x, wall_h), (0.0, wall_h)),
+              nz < 0.0, patch)
     obj2 = _finish(plaster, bm_p, True)
     obj2.data.materials.append(materials['plaster'])
     return [obj, obj2]
+
+
+def _plane(bm, corners, patch):
+    """One planar face from ((x, y, z), (s, t)) corners, bound to `patch`."""
+    face = bm.faces.new([bm.verts.new(_wm(*p)) for p, _ in corners])
+    return _bind(bm, face, patch, [st for _, st in corners])
+
+
+def _wall(bm, a, b, c, d, sts, flip, patch):
+    corners = list(zip((a, b, c, d), sts))
+    if flip:
+        corners = [corners[1], corners[0], corners[3], corners[2]]
+    return _plane(bm, corners, patch)
 
 
 def vault_profile():
@@ -404,20 +573,49 @@ def vault_profile():
 
 def build_vault(collection, materials):
     """Barrel soffit with a coffer grid; columns under the lantern footprints
-    stay bare (the kit-chart skip the specialist caught in its challenge)."""
+    stay bare (the kit-chart skip the specialist caught in its challenge).
+    The coffer bottoms share ONE (arc-length, z-band) patch (D-10); every pan
+    is its own patch."""
     obj, bm = _new_part(collection, 'vault')
     uv, _ = _layers(bm)
     profile = vault_profile()
+    # Cumulative arc lengths along the profile — the deterministic (s, t) table.
+    cum = [0.0]
+    for i in range(VAULT_SEGMENTS):
+        ax, ay = profile[i]
+        bx, by = profile[i + 1]
+        cum.append(cum[-1] + math.hypot(bx - ax, by - ay))
+    arc_total = cum[-1]
     overlaps = lantern_overlaps()
     col_step = (WALL_Z_SOUTH - WALL_Z_NORTH) / float(COFFER_COLS)
     row_step = VAULT_SEGMENTS / float(COFFER_ROWS)
     mid = hall_mid_x()
+    half = hall_span()[0] * 0.5
+
+    def za_of(ci):
+        return WALL_Z_NORTH + col_step * ci + COFFER_MARGIN
+
+    def zb_of(ci):
+        return WALL_Z_NORTH + col_step * (ci + 1) - COFFER_MARGIN
+
+    live = []
     for ci in range(COFFER_COLS):
-        za = WALL_Z_NORTH + col_step * ci + COFFER_MARGIN
-        zb = WALL_Z_NORTH + col_step * (ci + 1) - COFFER_MARGIN
+        za = za_of(ci)
+        zb = zb_of(ci)
         zc = (za + zb) * 0.5
         if any(lo <= zc <= hi for lo, hi in overlaps):
             continue
+        live.append((ci, za, zb))
+    band = zb_of(0) - za_of(0)
+
+    def arc_s(px, py):
+        a = math.atan2((py - SPRING_Y) / VAULT_RISE, (mid - px) / half)
+        i = int(round(a * VAULT_SEGMENTS / math.pi))
+        return cum[max(0, min(VAULT_SEGMENTS, i))]
+
+    patch = CHART.add('vault', arc_total, band * len(live), 'soffit')
+    for live_index, (ci, za, zb) in enumerate(live):
+        t0 = live_index * band
         for ri in range(COFFER_ROWS):
             i0 = int(round(row_step * ri))
             i1 = int(round(row_step * (ri + 1)))
@@ -439,15 +637,32 @@ def build_vault(collection, materials):
                 pan_face = bm.faces.new([bm.verts.new(_wm(px, py, zz))
                                          for px, py, zz in corners])
                 pan_face.smooth = False
-            bm.faces.new([bm.verts.new(_wm(px, py, zz)) for px, py, zz in
-                          ((pxa, pya, za), (pxb, pyb, za),
-                           (pxb, pyb, zb), (pxa, pya, zb))])
+                face_patch(bm, pan_face, 'vault')
+            bottom = bm.faces.new([bm.verts.new(_wm(px, py, zz)) for px, py, zz in
+                                   ((pxa, pya, za), (pxb, pyb, za),
+                                    (pxb, pyb, zb), (pxa, pya, zb))])
+            _bind(bm, bottom, patch,
+                  [(arc_s(pxa, pya), t0),
+                   (arc_s(pxb, pyb), t0),
+                   (arc_s(pxb, pyb), t0 + (zb - za)),
+                   (arc_s(pxa, pya), t0 + (zb - za))])
     obj.data.materials.append(materials['vault'])
     return _finish(obj, bm, False)
 
 
-
 # ---- lantern (one authored glazed lantern, placed three times, merged) -------
+def _orient_outward(face, axis_x, axis_y):
+    """Mirror-proof winding for the lantern's glazed faces: the normal must point
+    horizontally AWAY from the lantern's mid-axis (the R4 winding audit — mirrored
+    placements invert any fixed vertex order). Blender axes (x east, y north).
+    Flips in place, before the face's chart patch binds its per-loop (s, t) values."""
+    face.normal_update()
+    c = face.calc_center_median()
+    away = Vector((c.x - axis_x, c.y - axis_y, 0.0))
+    if away.length > 1e-9 and face.normal.dot(away) < 0.0:
+        face.normal_flip()
+
+
 def build_lanterns(collection, materials):
     glaze, bm_g = _new_part(collection, 'lantern_glazing')
     bars, bm_b = _new_part(collection, 'lantern_bars')
@@ -464,25 +679,32 @@ def build_lanterns(collection, materials):
         zb = zc + half_l
         for sx in (-1.0, 1.0):
             eave = mid + sx * half_w
-            bm_g.faces.new([bm_g.verts.new(_wm(*p)) for p in
-                           ((eave, kerb, za), (mid, ridge, za),
-                            (mid, ridge, zb), (eave, kerb, zb))])
-            bm_g.faces.new([bm_g.verts.new(_wm(*p)) for p in
-                           ((eave, crown, za), (eave, kerb, za),
-                            (eave, kerb, zb), (eave, crown, zb))])
+            slope = bm_g.faces.new([bm_g.verts.new(_wm(*p)) for p in
+                        ((eave, kerb, za), (mid, ridge, za),
+                         (mid, ridge, zb), (eave, kerb, zb))])
+            _orient_outward(slope, mid, -zc)
+            face_patch(bm_g, slope, 'lantern_glazing')
+            kerb_wall = bm_g.faces.new([bm_g.verts.new(_wm(*p)) for p in
+                        ((eave, crown, za), (eave, kerb, za),
+                         (eave, kerb, zb), (eave, crown, zb))])
+            _orient_outward(kerb_wall, mid, -zc)
+            face_patch(bm_g, kerb_wall, 'lantern_glazing')
             for bi in range(LANTERN_BARS):
                 t = (bi + 0.5) / float(LANTERN_BARS)
                 zc_bar = za + (zb - za) * t
                 bx = (eave + mid) * 0.5
                 by = (kerb + ridge) * 0.5
                 add_box(bm_b, (bx, by, zc_bar),
-                        (abs(eave - mid) * 0.5, LANTERN_BAR_D * 0.5, LANTERN_BAR_W * 0.5))
+                        (abs(eave - mid) * 0.5, LANTERN_BAR_D * 0.5, LANTERN_BAR_W * 0.5),
+                        'lantern_bars')
         for z_end in (za, zb):
-            bm_g.faces.new([bm_g.verts.new(_wm(*p)) for p in
-                           ((mid - half_w, kerb, z_end), (mid + half_w, kerb, z_end),
-                            (mid, ridge, z_end))])
+            gable = bm_g.faces.new([bm_g.verts.new(_wm(*p)) for p in
+                        ((mid - half_w, kerb, z_end), (mid + half_w, kerb, z_end),
+                         (mid, ridge, z_end))])
+            _orient_outward(gable, mid, -zc)
+            face_patch(bm_g, gable, 'lantern_glazing')
         add_box(bm_b, (mid, ridge, zc),
-                (LANTERN_BAR_W * 0.5, half_l, LANTERN_BAR_D * 0.5))
+                (LANTERN_BAR_W * 0.5, half_l, LANTERN_BAR_D * 0.5), 'lantern_bars')
     glaze_obj = _finish(glaze, bm_g, True)
     bars_obj = _finish(bars, bm_b, False)
     glaze_obj.data.materials.append(materials['glass'])
@@ -491,12 +713,12 @@ def build_lanterns(collection, materials):
 
 
 # ---- doors (K4: one authored double-door panel, six reuses) -------------------
-def door_panel(bm_leaf, bm_case, centre, normal, swing):
+def door_panel(bm_leaf, bm_case, centre, normal, swing, width=DOOR_W):
     """Two leaves plus a gilt architrave; swing offsets the leaves inward."""
     cx, cy, cz = centre
     nx, _, nz = normal
     ux, uz = -nz, nx
-    leaf_w = (DOOR_W - DOOR_LEAF_INSET * 2.0) * 0.5
+    leaf_w = (width - DOOR_LEAF_INSET * 2.0) * 0.5
     half_h = DOOR_H * 0.5
     for side in (-1.0, 1.0):
         off = side * (leaf_w * 0.5 + DOOR_LEAF_INSET * 0.5)
@@ -506,35 +728,39 @@ def door_panel(bm_leaf, bm_case, centre, normal, swing):
         add_box(bm_leaf, (lx, cy + half_h, lz),
                 (abs(ux) * leaf_w * 0.5 + abs(nx) * DOOR_PANEL_D * 0.5,
                  half_h,
-                 abs(uz) * leaf_w * 0.5 + abs(nz) * DOOR_PANEL_D * 0.5))
-    jamb_off = DOOR_W * 0.5 + DOOR_CASE_W * 0.5
+                 abs(uz) * leaf_w * 0.5 + abs(nz) * DOOR_PANEL_D * 0.5),
+                'door_leaves')
+    jamb_off = width * 0.5 + DOOR_CASE_W * 0.5
     for side in (-1.0, 1.0):
         jx = cx + ux * side * jamb_off + nx * DOOR_PANEL_D * 0.5
         jz = cz + uz * side * jamb_off + nz * DOOR_PANEL_D * 0.5
         add_box(bm_case, (jx, cy + half_h + DOOR_CASE_W * 0.5, jz),
                 (abs(ux) * DOOR_CASE_W * 0.5 + abs(nx) * DOOR_PANEL_D * 0.5,
                  half_h + DOOR_CASE_W * 0.5,
-                 abs(uz) * DOOR_CASE_W * 0.5 + abs(nz) * DOOR_PANEL_D * 0.5))
+                 abs(uz) * DOOR_CASE_W * 0.5 + abs(nz) * DOOR_PANEL_D * 0.5),
+                'door_cases')
     hx = cx + nx * DOOR_PANEL_D * 0.5
     hz = cz + nz * DOOR_PANEL_D * 0.5
     add_box(bm_case, (hx, cy + DOOR_H + DOOR_CASE_W * 0.5, hz),
-            (abs(ux) * (DOOR_W * 0.5 + DOOR_CASE_W) + abs(nx) * DOOR_PANEL_D * 0.5,
+            (abs(ux) * (width * 0.5 + DOOR_CASE_W) + abs(nx) * DOOR_PANEL_D * 0.5,
              DOOR_CASE_W * 0.5,
-             abs(uz) * (DOOR_W * 0.5 + DOOR_CASE_W) + abs(nz) * DOOR_PANEL_D * 0.5))
+             abs(uz) * (width * 0.5 + DOOR_CASE_W) + abs(nz) * DOOR_PANEL_D * 0.5),
+            'door_cases')
 
 
 def door_stations(piers):
-    """The six reuses: the north entry pair, two south flanks, four blinds."""
+    """The six reuses: the north entry pair, two south flanks, four blinds.
+    Each station carries its door width."""
     mid = hall_mid_x()
     half_x = hall_span()[0] * 0.5
-    stations = [((mid, FLOOR_Y, WALL_Z_NORTH), (0.0, 0.0, 1.0), NORTH_DOOR_SWING)]
+    stations = [((mid, FLOOR_Y, WALL_Z_NORTH), (0.0, 0.0, 1.0), NORTH_DOOR_SWING, DOOR_W)]
     for sx in (-1.0, 1.0):
         stations.append(((mid + sx * (half_x - SOUTH_DOOR_INSET), FLOOR_Y, WALL_Z_SOUTH),
-                         (0.0, 0.0, -1.0), 0.0))
+                         (0.0, 0.0, -1.0), 0.0, SOUTH_DOOR_W))
     for wall_x, nx in ((WALL_X_WEST, 1.0), (WALL_X_EAST, -1.0)):
         for bay_index in BLIND_DOOR_BAYS:
             stations.append(((wall_x + nx * DOOR_PANEL_D * 0.5, FLOOR_Y, piers[bay_index]),
-                             (nx, 0.0, 0.0), 0.0))
+                             (nx, 0.0, 0.0), 0.0, BLIND_DOOR_W))
     return tuple(stations)
 
 
@@ -543,8 +769,8 @@ def build_doors(collection, materials, metrics):
     cases, bm_case = _new_part(collection, 'door_cases')
     _, _ = _layers(bm_leaf)
     _, _ = _layers(bm_case)
-    for centre, normal, swing in door_stations(pier_centres(metrics)):
-        door_panel(bm_leaf, bm_case, centre, normal, swing)
+    for centre, normal, swing, width in door_stations(pier_centres(metrics)):
+        door_panel(bm_leaf, bm_case, centre, normal, swing, width)
     leaves_obj = _finish(leaves, bm_leaf, True)
     cases_obj = _finish(cases, bm_case, True)
     leaves_obj.data.materials.append(materials['door'])
@@ -570,19 +796,19 @@ def build_piers(collection, materials, metrics):
             for side in (-1.0, 1.0):
                 zc = z + side * (PILASTER_PAIR_GAP + PILASTER_W) * 0.5
                 add_box(bm_s, (px, FLOOR_Y + BASE_H + shaft_h * 0.5, zc),
-                        (PILASTER_D * 0.5, shaft_h * 0.5, PILASTER_W * 0.5))
+                        (PILASTER_D * 0.5, shaft_h * 0.5, PILASTER_W * 0.5), 'pier_shafts')
                 add_box(bm_g, (px, FLOOR_Y + BASE_H * 0.5, zc),
                         (PILASTER_D * 0.5 + CAP_FLARE, BASE_H * 0.5,
-                         PILASTER_W * 0.5 + CAP_FLARE))
+                         PILASTER_W * 0.5 + CAP_FLARE), 'pier_gilt')
                 add_box(bm_g, (px, band_y - CAP_H * 0.5, zc),
                         (PILASTER_D * 0.5 + CAP_FLARE, CAP_H * 0.5,
-                         PILASTER_W * 0.5 + CAP_FLARE))
+                         PILASTER_W * 0.5 + CAP_FLARE), 'pier_gilt')
             if pi % WIDE_PIER_EVERY == 0:
                 add_prism(bm_c, (wall_x + nx * COLUMN_R, FLOOR_Y, z),
-                          COLUMN_R, band_y - FLOOR_Y, COLUMN_SIDES)
+                          COLUMN_R, band_y - FLOOR_Y, COLUMN_SIDES, part='pier_columns')
         add_box(bm_g, (wall_x + nx * 0.45, SPRING_Y - 0.45,
                        (WALL_Z_NORTH + WALL_Z_SOUTH) * 0.5),
-                (0.45, 0.45, hall_span()[1] * 0.5))
+                (0.45, 0.45, hall_span()[1] * 0.5), 'pier_gilt')
     shafts_obj = _finish(shafts, bm_s, True)
     gilt_obj = _finish(gilt, bm_g, True)
     columns_obj = _finish(columns, bm_c, False)
@@ -615,18 +841,19 @@ def build_torcheres(collection, materials, metrics):
     for x, z in torchere_stations(pier_centres(metrics)):
         add_prism(bm_b, (x, FLOOR_Y, z), TORCHERE_BASE_R,
                   TORCHERE_BASE_R, TORCHERE_SIDES,
-                  TORCHERE_STEM_R / TORCHERE_BASE_R)
+                  TORCHERE_STEM_R / TORCHERE_BASE_R, part='torchere_body')
         add_prism(bm_b, (x, FLOOR_Y + TORCHERE_BASE_R, z), TORCHERE_STEM_R,
-                  stem_h - TORCHERE_BASE_R, TORCHERE_SIDES)
+                  stem_h - TORCHERE_BASE_R, TORCHERE_SIDES, part='torchere_body')
         add_prism(bm_b, (x, FLOOR_Y + stem_h, z), TORCHERE_RING_R,
-                  TORCHERE_CANDLE_R, TORCHERE_SIDES)
+                  TORCHERE_CANDLE_R, TORCHERE_SIDES, part='torchere_body')
         for ci in range(TORCHERE_CANDLES):
             a = 2.0 * math.pi * ci / float(TORCHERE_CANDLES)
             add_prism(bm_f,
                       (x + math.cos(a) * TORCHERE_RING_R,
                        FLOOR_Y + stem_h + TORCHERE_CANDLE_R,
                        z + math.sin(a) * TORCHERE_RING_R),
-                      TORCHERE_CANDLE_R, TORCHERE_CANDLE_H, TORCHERE_SIDES)
+                      TORCHERE_CANDLE_R, TORCHERE_CANDLE_H, TORCHERE_SIDES,
+                      part='torchere_candles')
     body_obj = _finish(body, bm_b, False)
     candle_obj = _finish(candles, bm_f, False)
     body_obj.data.materials.append(materials['gilt'])
@@ -645,7 +872,7 @@ def build_benches(collection, materials):
             z = WALL_Z_NORTH + step * (bi + 1)
             x = wall_x + nx * (BENCH_WALL_OFF + BENCH_W * 0.5)
             add_box(bm, (x, FLOOR_Y + BENCH_H * 0.5, z),
-                    (BENCH_W * 0.5, BENCH_H * 0.5, BENCH_L * 0.5))
+                    (BENCH_W * 0.5, BENCH_H * 0.5, BENCH_L * 0.5), 'bench')
     obj.data.materials.append(materials['upholstery'])
     return _finish(obj, bm, True)
 
@@ -661,21 +888,22 @@ def build_portal(collection, materials):
     mid = hall_mid_x()
     face_z = WALL_Z_SOUTH - PORTAL_PED_D * 0.5
     add_box(bm_g, (mid, 10.0 + 4.7, face_z),
-            (PORTAL_PED_W * 0.5, PORTAL_PED_H * 0.5, PORTAL_PED_D * 0.5))
+            (PORTAL_PED_W * 0.5, PORTAL_PED_H * 0.5, PORTAL_PED_D * 0.5), 'portal_gilt')
     for vi in range(PORTAL_VALANCE_COUNT):
         t = (vi + 0.5) / float(PORTAL_VALANCE_COUNT)
         vx = mid + (t - 0.5) * PORTAL_PED_W
         vy = 10.0 + 4.7 - PORTAL_PED_H * 0.5 - PORTAL_VALANCE_H * 0.5
         add_box(bm_g, (vx, vy, face_z),
                 (PORTAL_VALANCE_W * 0.5, PORTAL_VALANCE_H * 0.5,
-                 PORTAL_PED_D * 0.5))
+                 PORTAL_PED_D * 0.5), 'portal_gilt')
     add_box(bm_c, (mid, FLOOR_Y + PORTAL_STEP_H * 0.5,
                    WALL_Z_SOUTH - PORTAL_STEP_D * 0.5),
-            (PORTAL_STEP_W * 0.5, PORTAL_STEP_H * 0.5, PORTAL_STEP_D * 0.5))
+            (PORTAL_STEP_W * 0.5, PORTAL_STEP_H * 0.5, PORTAL_STEP_D * 0.5), 'portal_step')
     for side in (-1.0, 1.0):
         add_box(bm_l, (mid + side * PORTAL_LEAF_OFF,
                        FLOOR_Y + PORTAL_LEAF_H * 0.5, face_z),
-                (PORTAL_LEAF_W * 0.5, PORTAL_LEAF_H * 0.5, PORTAL_PED_D * 0.5))
+                (PORTAL_LEAF_W * 0.5, PORTAL_LEAF_H * 0.5, PORTAL_PED_D * 0.5),
+                'portal_leaves')
     gilt_obj = _finish(gilt, bm_g, True)
     leaves_obj = _finish(leaves, bm_l, True)
     carpet_obj = _finish(carpet, bm_c, True)
@@ -691,6 +919,9 @@ def main():
     materials = make_materials()
     metrics = read_metrics()
 
+    global CHART, ARCH_CHART
+    CHART = chart_kit.ArchChart()
+
     parts = []
     floor = build_floor(collection, materials)
     parts.append(floor)
@@ -702,7 +933,7 @@ def main():
     parts.extend(build_torcheres(collection, materials, metrics))
     parts.append(build_benches(collection, materials))
     parts.extend(build_portal(collection, materials))
-    frame_objects, frame_count = frames_kit.build_frames(collection, SCRIPT_DIR)
+    frame_objects, frame_count = frames_kit.build_frames(collection, SCRIPT_DIR, FLOOR_Y)
     for obj in frame_objects:
         if obj.name.startswith(frames_kit.CANVAS_PART_PREFIX):
             obj.data.materials.append(materials['canvas'])
@@ -710,10 +941,17 @@ def main():
             obj.data.materials.append(materials['gilt'])
     parts.extend(frame_objects)
 
+    CHART.pack()
+    _finish_all()
+    ARCH_CHART = CHART.to_dict()
+
+    stage = stage_dir()
+    os.makedirs(stage, exist_ok=True)
+    CHART.write_json(os.path.join(stage, chart_kit.ARCH_CHART_FILE))
+
     if BAKE:
         return
 
-    stage = stage_dir()
     image = write_parquet_texture(stage)
     wire_parquet(materials, image)
 

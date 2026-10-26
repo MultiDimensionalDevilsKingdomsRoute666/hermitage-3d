@@ -2,10 +2,52 @@
   "id": "military-gallery",
   "files": [
     {
+      "path": "lm/day.ktx2",
+      "bytes": 188306,
+      "sha256": "43e30e8eba8a95814ba714c53dd8a5bc4fa169867ef09ba0f9c682ed570c8f2b",
+      "kind": "ktx2"
+    },
+    {
+      "path": "lm/dusk.ktx2",
+      "bytes": 179900,
+      "sha256": "7d38abdaa6ebc8e45e79d756594e497ad7d09c703b344b39abc5c6f219f6c101",
+      "kind": "ktx2"
+    },
+    {
+      "path": "lm/kit-day.ktx2",
+      "bytes": 40651,
+      "sha256": "de40c18eba9f4acefbdc4d9cf7f9415d0c7bc21c2b2214db79e41895da2e219c",
+      "kind": "ktx2"
+    },
+    {
+      "path": "lm/kit-dusk.ktx2",
+      "bytes": 43057,
+      "sha256": "e4a7e67eeb0ecda4d43f8ca62e1987cb0ae225f756be7ad8984c8b642fe2ce43",
+      "kind": "ktx2"
+    },
+    {
+      "path": "lm/kit-night.ktx2",
+      "bytes": 67843,
+      "sha256": "673ff6ad7d737ef925a9193e426b609c21c5ccf78a4a0529c4d6dca796ea2fe8",
+      "kind": "ktx2"
+    },
+    {
+      "path": "lm/night.ktx2",
+      "bytes": 171733,
+      "sha256": "5df195ddfc43089de67f5b93e987ea9b4f660e8e419ec51eaea3567f582d9057",
+      "kind": "ktx2"
+    },
+    {
       "path": "military-gallery.glb",
-      "bytes": 763124,
-      "sha256": "683672aff97ae00d1989d56256cd5948dd76a1abc21081da983fb6aefc933328",
+      "bytes": 827316,
+      "sha256": "0b01af5023a4f9cc4c77e9837db2641f69430c3b4a9cb1b7cf6be2b7b35f46f1",
       "kind": "glb"
+    },
+    {
+      "path": "probe/dusk.ktx2",
+      "bytes": 8119,
+      "sha256": "1cfd73acd2c5ccfa0b099dc5cb7c877058168656cf1f87e0bb4016e4254717b2",
+      "kind": "ktx2"
     },
     {
       "path": "tex/military-gallery-parquet.ktx2",
@@ -4154,14 +4196,22 @@
     ]
   },
   "lightmaps": {
-    "states": [],
-    "res": null,
-    "intensity": null
+    "states": [
+      "day",
+      "dusk",
+      "nightChandeliers"
+    ],
+    "res": 2048,
+    "intensity": {
+      "day": 1.5,
+      "dusk": 0.15,
+      "nightChandeliers": 0.3
+    }
   },
   "budget": {
     "trianglesMax": 60000,
     "drawsMax": 19,
-    "textureBytesMax": 1000000,
+    "textureBytesMax": 1200000,
     "payloadBytesMax": 4000000
   },
   "toolchain": {

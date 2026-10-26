@@ -7,6 +7,11 @@
 // changing a white point means editing the manifest first, then re-encoding.
 // R-UX4 (walkthrough-UX pass): a state carrying a compose recipe (tools/lm-recipes.mjs) first
 // composes its source EXRs linearly (tools/lm_compose.py) and encodes the composed EXR.
+// R4 (Slice A, D-14): a state may carry TWO charts — the architecture chart keeps the
+// committed lm/<file>.* paths; the kit chart publishes lm/kit-<file>.ktx2 beside them. The
+// driver resolves EVERY lm row of a state (both charts), asserts each staged denoised EXR's
+// sha256 against the bake-log record (the "never the old PNG/ktx2" law, now checkable),
+// composes per chart when the recipe asks, and publishes per chart.
 //
 //   node tools/reencode.mjs <room> <state|all>     state aliases: night → nightChandeliers
 //
@@ -38,11 +43,13 @@ import { composeArgs, composeRecipeFor } from './lm-recipes.mjs';
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ENCODE_PY = join(HERE, 'reencode-encode.py');
 const COMPOSE_PY = join(HERE, 'lm_compose.py');
+const LOG_DIR = join(HERE, 'bake-logs');
 const TOKTX_INSTALL = 'install KTX-Software 4.4.2 (brew install ktx) so `toktx` is on PATH';
 
 const STATES = ['day', 'dusk', 'nightChandeliers'];
 const ALIAS = { night: 'nightChandeliers' };
 const FILE_BY_STATE = { day: 'day', dusk: 'dusk', nightChandeliers: 'night' };
+const KIT_PREFIX = 'kit-';
 
 // Pinned transcode flags — the same ETC1S economics as the bake (§5: linear irradiance data).
 const TOKTX_FLAGS = [
@@ -94,32 +101,72 @@ function whitePointOf(manifest, room, state) {
   return value;
 }
 
-/** The bake's DENOISED linear EXR (bake-<state>/lm/<file>.exr; the raw one is <file>.raw.exr). */
-function denoisedExr(room, state) {
+/** The room's charts per its manifest rows: 'arch' always; 'kit' all-or-nothing (R4 D-14). */
+function chartsOf(manifest, room) {
+  const paths = new Set(manifest.files.map((row) => row.path));
+  const charts = ['arch'];
+  const kitPresent = STATES.some((state) =>
+    paths.has(`lm/${KIT_PREFIX}${FILE_BY_STATE[state]}.ktx2`),
+  );
+  if (kitPresent) {
+    for (const state of STATES) {
+      const rel = `lm/${KIT_PREFIX}${FILE_BY_STATE[state]}.ktx2`;
+      if (!paths.has(rel)) fail(`${room}: the kit rows are all-or-nothing — ${rel} missing`);
+    }
+    charts.push('kit');
+  }
+  return charts;
+}
+
+/** The bake's DENOISED linear EXR for (room, state, chart); the raw one is <file>.raw.exr. */
+function chartExr(room, state, chart) {
   const file = FILE_BY_STATE[state];
-  const path = join(STAGE_ROOT, room, `bake-${file}`, 'lm', `${file}.exr`);
+  const prefix = chart === 'arch' ? '' : KIT_PREFIX;
+  const path = join(STAGE_ROOT, room, `bake-${file}`, 'lm', `${prefix}${file}.exr`);
   if (!existsSync(path)) {
     fail(`missing denoised EXR ${path}`, 'run the bake first; this tool never re-bakes');
   }
   return path;
 }
 
-function reencodeState(room, state, manifest, work) {
-  const whitePoint = whitePointOf(manifest, room, state);
-  let exr = denoisedExr(room, state);
-  // R-UX4 compose law (tools/lm-recipes.mjs): a state with a recipe encodes the linear sum of
-  // its declared sources (staged denoised EXRs, the driver's own path convention) produced by
-  // lm_compose.py; the composed EXR then feeds the UNCHANGED single-input encode/transcode/
-  // publish path. Sources resolve by bake-rig state id, so aliases flow through FILE_BY_STATE.
+/** R4 D-14: a staged EXR must be the plate the bake log recorded (sha256). */
+function assertStagedExr(room, state, chart, exrPath) {
+  const logPath = join(LOG_DIR, `${room}.json`);
+  if (!existsSync(logPath)) return;
+  const log = JSON.parse(readFileSync(logPath, 'utf8'));
+  const rec = log.states?.[state];
+  if (rec === undefined || rec === null) return;
+  const chartRow = (rec.charts ?? []).find((row) => row.name === chart);
+  const digest = chartRow === undefined ? null : (chartRow.exrSha256 ?? null);
+  if (digest === null || digest === undefined) return;
+  const actual = sha256(readFileSync(exrPath));
+  if (actual !== digest) {
+    fail(
+      `staged EXR ${exrPath} sha256 ${actual} !== the bake-log record ${digest}`,
+      'never re-encode a plate the log does not record',
+    );
+  }
+}
+
+function reencodeChart(room, state, chart, whitePoint, manifest, work) {
+  const file = FILE_BY_STATE[state];
+  const prefix = chart === 'arch' ? '' : KIT_PREFIX;
+  let exr = chartExr(room, state, chart);
+  assertStagedExr(room, state, chart, exr);
+  // Compose law (tools/lm-recipes.mjs): a state with a recipe encodes the linear sum of
+  // its declared sources (staged denoised EXRs, per chart) produced by lm_compose.py; the
+  // composed EXR then feeds the UNCHANGED single-input encode/transcode/publish path.
   const recipe = composeRecipeFor(room, state);
   if (recipe !== null) {
-    const resolved = recipe.map((term) => ({
-      path: denoisedExr(room, term.source),
-      scale: term.scale,
-    }));
-    const composed = join(STAGE_ROOT, `${room}.${state}.composite.exr`);
+    const resolved = recipe.map((term) => {
+      const path = chartExr(room, term.source, chart);
+      assertStagedExr(room, term.source, chart, path);
+      return { path, scale: term.scale };
+    });
+    const suffix = chart === 'arch' ? '' : `.${chart}`;
+    const composed = join(STAGE_ROOT, `${room}.${state}${suffix}.composite.exr`);
     const terms = recipe.map((t) => `${t.source}×${t.scale}`).join(' + ');
-    console.log(`== ${room} ${state}: compose ${terms}`);
+    console.log(`== ${room} ${state} ${chart}: compose ${terms}`);
     run(BLENDER, [
       '-b',
       '--factory-startup',
@@ -131,10 +178,9 @@ function reencodeState(room, state, manifest, work) {
     ]);
     exr = composed;
   }
-  const file = FILE_BY_STATE[state];
-  const png = join(work, `${file}.png`);
-  const ktx2 = join(work, `${file}.ktx2`);
-  console.log(`\n== ${room} ${state}: whitePoint=${whitePoint}`);
+  const png = join(work, `${prefix}${file}.png`);
+  const ktx2 = join(work, `${prefix}${file}.ktx2`);
+  console.log(`\n== ${room} ${state} ${chart}: whitePoint=${whitePoint}`);
   run(BLENDER, [
     '-b',
     '--factory-startup',
@@ -149,7 +195,7 @@ function reencodeState(room, state, manifest, work) {
   run('toktx', [...TOKTX_FLAGS, ktx2, png]);
   if (!existsSync(ktx2)) fail(`toktx produced no file at ${ktx2}`);
   // Publish only now: encode + transcode both succeeded (all-or-nothing per state).
-  const rel = `lm/${file}.ktx2`;
+  const rel = `lm/${prefix}${file}.ktx2`;
   const dest = join(ASSETS_DIR, room, rel);
   copyFileSync(ktx2, dest);
   const bytes = readFileSync(dest);
@@ -161,6 +207,11 @@ function reencodeState(room, state, manifest, work) {
   console.log(`published ${dest} (${bytes.length} bytes, sha256 ${sha})`);
 }
 
+function reencodeState(room, state, manifest, work, charts) {
+  const whitePoint = whitePointOf(manifest, room, state);
+  for (const chart of charts) reencodeChart(room, state, chart, whitePoint, manifest, work);
+}
+
 function main() {
   const { room, states } = parseArgs(process.argv.slice(2));
   const tc = readToolchain();
@@ -169,9 +220,10 @@ function main() {
     fail(`Blender not found at ${BLENDER}`, 'set ZIMNY_BLENDER to the Blender binary');
   }
   const { path, manifest } = readManifest(room);
+  const charts = chartsOf(manifest, room);
   const work = mkdtempSync(join(tmpdir(), 'zimny-reencode-'));
   try {
-    for (const state of states) reencodeState(room, state, manifest, work);
+    for (const state of states) reencodeState(room, state, manifest, work, charts);
     // The record is already the source of truth; rewrite it verbatim so the file is self-stating.
     manifest.lightmaps.intensity = Object.fromEntries(
       STATES.map((s) => [s, whitePointOf(manifest, room, s)]),

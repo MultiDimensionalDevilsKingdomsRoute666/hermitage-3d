@@ -70,6 +70,109 @@ Phase 3 ships room three, the Military Gallery of 1812 (route `#/1812`), and wit
 
 4.5 Bake discipline on the two-core reference device (charter risk 6): preview bakes at quarter resolution for layout checks; one full bake per light round, three states sequentially, fixed seeds and sample counts under the committed baker's determinism contract; declared ceiling 40 min per state, 2.5 h total (re-measure); bake artefacts committed and regenerate byte-identically.
 
+4.6 The R4 rig (the specialist's ruling, adopted 2026-10-25; residuals open):
+
+- **The candle emission is BUILDER content**: `MG_candle` carries Emission
+  `CANDLE_EMISSION_RGB` at strength 40.0. The relay's draft revised Block 2's
+  colour to the true linearisation of 2700 K — sRGB (255, 169, 87) linearised =
+  (1.000, 0.405, 0.094) — adopted. The first bake CONTRADICTED the FILL's 6.0
+  (walls ~0.04, the kit quantising to codes 0-1); the retune to 40.0 lands the
+  estimate: walls ~0.25, the M1 frames ~0.1 → codes 20-40 (a builder edit plus a
+  re-bake). The glb carries it; bake.py's rig zeroes it at day
+  and keeps it at dusk/night (the jordan precedent, `set_fixtures_off`); the
+  candles themselves read lit at night.
+- **The dusk's "candelabra at a third of night" is COMPOSED, not baked at a
+  third**: the dusk rig bakes sky only (`DUSK_FIXTURES` False for this room), and
+  the published dusk = EXR(dusk) × 1 + EXR(nightChandeliers) × 1/3 via the
+  committed compose law (tools/lm-recipes.mjs gains the room's dusk recipe; the
+  scale is a recipe literal — a re-encode retunes it, never a re-bake).
+- **The pane colours are PAINTED into the lightmap cells; the pane material in
+  the glb is the CARRIER (D-23, closing the round's one open item)**: bake.py
+  fills the lantern_glazing patch cells of the architecture chart with
+  `PANE_SKY_LINEAR[state]` (day (0.20, 0.23, 0.28) cool skylight; dusk
+  (0.05, 0.06, 0.09) the dusk sky colour; night (0.004, 0.005, 0.008) the faint
+  sky memory) after OIDN and before the LDR encode, into the surviving denoised
+  EXR — reencode.mjs and the compose law see the paint as bake content. The
+  gltf step rewrites the exported `MG_glass` to a unit carrier
+  (`baseColorFactor` 1,1,1,1, roughness 1, metallic 0), so the runtime pane
+  pixel is 1.0 × paintedCell × whitePoint × gain = the painted sky itself. The
+  BAKE-side pane stays §2.4's dark `GLASS_RGB` (night: the un-swapped dark glass
+  faces the candelabra's bounce truthfully). No state-gated emissive (F11), no
+  shader change (the fence), `GLASS_RGB` untouched.
+- **The architecture chart packer** (tools/bpy/military_gallery_chart.py): one
+  density across the whole 2048² chart; D-10's per-face patch law restored at
+  integration (the draft's box net wasted 98% of its bounding on elongated
+  boxes — the 55 m cornice band alone demanded ~8.1M px); the shelf packer
+  upgraded to first-fit guillotine (the naive single-band packer overflowed at
+  81% demand); `ARCH_DENSITY_PX_PER_M` resolved at 32 px/m against the real
+  pack (the draft's 36 demanded 4,132,894 px² of 4,194,304 and threw, as
+  designed); pad 2 both charts (Block 2's `LM_PAD_PX`; jordan's committed
+  2 @ 2k margin).
+- **White points and look gains** (first-bake values; retune = descriptor edit +
+  `node tools/reencode.mjs military-gallery <state>`, never a re-bake):
+  `WHITE_POINT_1812` = day 0.25 / dusk 0.15 / night 0.3;
+  `INTERIOR_LOOK_GAIN['military-gallery']` = 3 / 3 / 2 → eff 0.75 / 0.45 / 0.6.
+  R4's landed values: day 0.25 → 0.5 (the first bake's histogram) → **1.5** (the
+  fixed tree's histogram: the arch lit 60%, p50 0.244, p90 1.14, p95 1.33 — 0.5
+  still flat-clipped 13.3% as the inversion-symptom retune; 1.5 grades the
+  sunlit field inside 0.89 at a 1-2% clip); the gains landed 1.5 / 3 / 2 →
+  eff 2.25 / 0.45 / 0.6.
+- **The probe**: the dusk process, `PROBE_POINT_1812` = (86.25, 11.7, −12.5) — the
+  room midpoint at eye height, panes swapped, fixtures restored to FULL for the
+  probe render only; committed `PROBE_RES` / `PROBE_WHITE_POINT` / `PROBE_SAMPLES`.
+- **§3.7 residual (owner by DEC):** K8 (the portal frame + canvas_334) stays on
+  the KIT chart in a declared 128 px block (the bevel-pitch parity argument)
+  instead of §3.7's literal 2k² architecture chart.
+- **R4b (2026-10-26): the night-kit blackness was PLACEMENT, twice over.**
+  (a) The whole kit hung 5.6-8.6 m under the hall floor: layout.json's
+  floor-relative y (rowBottomY 1.6 … rowTopY 4.4) consumed as absolute glTF-Y by
+  the frames module while the whole architecture adds FLOOR_Y 10 (probe13:
+  canvas_000 z 1.385-1.815 vs the floor at 10; the candles at 12.245-12.425 were
+  the void's only light). Fix: `build_frames(collection, script_dir, floor_y)`
+  lifts the kit onto the wall. (b) The pier composition did not close: the clear
+  wall between adjacent pilaster pairs was 3.0 m against the kit's 3.57 m span →
+  the bay-end canvases sat ~61% inside the shafts; the blind doors sat inside the
+  engaged columns; the north-door flanking pair hid inside the door case. The
+  owner-ruled re-fit: `PILASTER_W` 0.55 → 0.30, `PILASTER_PAIR_GAP` 0.9 → 0.75,
+  the doors parametric (entry 1.9 / south flanks 0.8 at `SOUTH_DOOR_INSET` 0.50 /
+  blinds 1.4), `DOOR_CASE_W` 0.28 → 0.06, `BLIND_DOOR_BAYS` (4, 8) → (2, 9); the
+  layout law's `FLANK_OFFSET_X` 0.8 → 1.45, `ALLY_OFFSET_X` 2.05 → 2.25
+  (layout.json regenerated byte-deterministic + the TS mirror). Census
+  (probe13c): 0/335 canvases buried; 330/335 canvases' first candle ray hits
+  `torchere_candles` — the 5 end-wall specials (flanking pair, allies, portal)
+  see their nearest candelabra edge-on and collect bounce, honest. Final night
+  kit bake: 335/335 canvas cells lit, 0 dead strips, mean 0.048 linear.
+- **The "emitter-exclusion law" demoted to a LOOK law.** The production control
+  (probes/r4-kit-night/probe16: the fixed arch night preview, candles excluded
+  vs selected-and-bound) showed the room's texels IDENTICAL both ways —
+  selected-and-bound objects DO ride the bake's ray tree; the naked plane/cube
+  probe's black arm was texel OVERWRITE (the bound cube's dark diffuse response
+  re-inking the plane's shared UV region), not tree exclusion. The winding fix,
+  not the exclusion, lit the arch. bake.py keeps the emitters out of the target
+  set as a LOOK law (the glow is runtime F11 emission, never bake content) under
+  the per-room gate `EMITTER_EXCLUSION = {'military-gallery': True}`; the
+  siblings stay False — their committed bakes had the fixtures selected and
+  bound with their cells baked (O10), and a future sibling rebake must
+  reproduce that committed shape.
+- **The kit cells' write law**: a frame's 24 bar faces share ONE lm rect and the
+  bake's last-rasterized face wins each texel (the naked probes' mechanism) —
+  bake.py collapses every face whose normal is not aligned with the frame's
+  facing to a zero-area UV triangle, restored right after the bake (the glb is
+  untouched: the runtime samples the same rect for every face; the collapse only
+  chooses which faces ink it). The preview's EXTEND margin scales with the
+  quartered res (pad // 4, min 1 px).
+- **The texture budget**: `textureBytesMax` 1,000,000 → 1,200,000 (the owner's
+  ruling): the cap was a pre-light plan estimate; the lit room measures
+  1,131,373 B of ktx2 (the jordan-class sharp-light content: 219-264 K per 2048²
+  lm + the atlas's 419 K). Encoder-side levers measured and rejected: the white
+  point moves the size ~0.6%, the ETC1S qlevel 128 → 100 moves it ~9% with
+  banding risk.
+- **Open residuals (owner's eyeball at M1):** the monarch/portal crown (the
+  canvas top sits 0.3-0.7 m behind the valance/pediment band — "centred under
+  the pediment" by design, the 34% share is the owner's call); the portrait
+  atlas's v orientation (`_basis`'s v points down — check the hang at runtime);
+  the end walls' night bounce dimness (the torchères are side-wall only).
+
 ## 5. Environment
 
 The adopted probe law applies unchanged (ADR-0013): one static dusk environment cube probe for the room, baked from the gallery's midpoint at eye height with the lantern panes in their dusk colour, loaded once in the airlock hold and disposed with the room; it feeds the gilt's specular and nothing else. No sky dome is visible from inside (opaque panes), so the probe is the only environment the gilt ever sees.

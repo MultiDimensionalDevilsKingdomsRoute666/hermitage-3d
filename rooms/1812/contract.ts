@@ -84,7 +84,10 @@ export const contract: RoomContract = {
   budget: {
     trianglesMax: 60_000,
     drawsMax: 19,
-    textureBytesMax: 1_000_000,
+    // R4: raised 1_000_000 -> 1_200_000 after the owner's ruling — the cap was a
+    // pre-light plan estimate; the lit room measures 1,131,373 B of ktx2 (the
+    // jordan-class sharp-light content: 219-264 K per 2048 lm + the atlas 419 K).
+    textureBytesMax: 1_200_000,
     payloadBytesMax: 4_000_000,
   },
 };

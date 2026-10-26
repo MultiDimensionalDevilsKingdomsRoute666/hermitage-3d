@@ -1,7 +1,7 @@
 // src/assets/blend-gl.ts
 /**
  * Lightmap techniques — three-bound hub (design-staircase §4.1 A, §4.2 B, §4.4 measurement;
- * r17c per-state scalar law).
+ * r17c per-state scalar law; design-gallery §3.7/§4.4 charts, DEC-027).
  *
  * Scalar law (stated once here, applied in applyWeights): every baked state s carries its own
  * effective intensity eff(s) = manifest white point(s) × INTERIOR_LOOK_GAIN[room][s]. The white
@@ -9,6 +9,18 @@
  * restoration (§4.4: the interior exposure stays 1.0, ADR-0013's probe scalars stay untouched).
  * A state binding and its scalar land in the same frame — setStates then setWeights, both before
  * the render call. A null B state binds the black texel with scalar 0, never a stale scalar.
+ *
+ * Chart law (design-gallery §3.7, DEC-027): a room binds one or more CHARTS — atlas families
+ * that each carry the three states, sampled on the same vLightMapUv (1812: architecture 2k +
+ * kit 1k). The binding is material-blind: applyChartedTechnique takes the charts map and
+ * chartOf(material), both resolved ONCE at mount — a material naming a chart the room lacks
+ * throws there, never on a frame. ONE lmB uniform object per chart (a material's program wires
+ * its chart's), ONE lmScale per room (both charts of a state encode at the same white point, so
+ * scaleB is identical), state A bound per material from its chart. applyTechnique is the
+ * single-chart delegate ('arch', () => 'arch'): every sibling call site, uniform object and
+ * value stays what it was. 'b-discrete' routes state A per material; 'b-rt' is the dev
+ * measurement mode, measured on single-chart rooms — a charted room (≠ 1 chart) throws loud at
+ * mount, before the renderer is touched.
  *
  * Mode 'a' (shipped, technique A): the glb's own MeshStandardMaterial instances patched via
  * onBeforeCompile — state A rides the stock lightmap path (material.lightMap,
@@ -25,7 +37,8 @@
  * ceiling, so a passing ceiling passes any honest implementation.
  *
  * Laws:
- * - One shared uniform object per room across every patched program; one write updates all.
+ * - One lmScale object per room and one lmB object per chart across every patched program; one
+ *   write updates every program that reads it.
  * - Materials are patched once per unique instance (shared across meshes).
  * - Module-level state is safe: the coordinator serializes transits (loaders.ts pattern).
  * - lm textures are LINEAR data (NoColorSpace) and are added to `irradiance` untouched.
@@ -53,9 +66,25 @@ export interface TechniqueHandle {
   setWeights(scaleA: number, scaleB: number): void;
 }
 
+/** A chart id names one atlas family of the room; the hub never interprets it (room vocabulary). */
+export type ChartId = string;
+export type ChartTextures = ReadonlyMap<StateId, unknown>;
+export type ChartMap = ReadonlyMap<ChartId, ChartTextures>;
+export type ChartOf = (material: THREE.MeshStandardMaterial) => ChartId;
+
+type LmBUniform = { value: THREE.Texture };
+
 type SharedUniforms = Readonly<{
-  lmB: { value: THREE.Texture };
+  /** ONE lmB object per chart — a material's program wires the one of its chart. */
+  lmB: ReadonlyMap<ChartId, LmBUniform>;
+  /** ONE lmScale per room — both charts of a state encode at the same white point (D-9). */
   lmScale: { value: number };
+}>;
+
+type ChartBinding = Readonly<{
+  id: ChartId;
+  textures: ReadonlyMap<StateId, THREE.Texture>;
+  lmB: LmBUniform;
 }>;
 
 type RoomTechnique = Readonly<{
@@ -63,7 +92,7 @@ type RoomTechnique = Readonly<{
   handle: TechniqueHandle;
   shared: SharedUniforms;
   materials: THREE.MeshStandardMaterial[];
-  textures: ReadonlyMap<StateId, THREE.Texture>;
+  charts: ReadonlyMap<ChartId, ChartBinding>;
   /** eff(s) per state — white point × look gain, fixed for the room's mounted lifetime. */
   effective: LightmapIntensity;
   /** B-RT only: the per-room render target and its quad scene (the ceiling re-blend). */
@@ -78,6 +107,9 @@ const CACHE_KEY = 'zimny-lm-blend-v1';
 const INCLUDE_LINE = '#include <lights_fragment_maps>';
 const UNIFORM_DECLS = 'uniform sampler2D lmB;\nuniform float lmScale;\n';
 const RT_BYTES_PER_TEXEL = 8; // RGBA16F
+
+/** The delegate's chart: every single-chart room (jordan, the gallery) binds under this id. */
+const SINGLE_CHART: ChartId = 'arch';
 
 // Stock block as shipped in three 0.186.1 `lights_fragment_maps`; whitespace-tolerant.
 const STOCK_BLOCK =
@@ -113,21 +145,22 @@ function blackTexel(): THREE.Texture {
   return fallbackTexel;
 }
 
-function asTexture(roomId: RoomId, state: StateId, value: unknown): THREE.Texture {
+function asTexture(roomId: RoomId, chart: ChartId, state: StateId, value: unknown): THREE.Texture {
   if (!(value instanceof THREE.Texture)) {
-    throw new Error(`blend-gl: ${roomId}/${state} lightmap is not a three Texture`);
+    throw new Error(`blend-gl: ${roomId}/${chart}/${state} lightmap is not a three Texture`);
   }
   return value;
 }
 
 function requireTexture(
   roomId: RoomId,
+  chart: ChartId,
   textures: ReadonlyMap<StateId, THREE.Texture>,
   state: StateId,
 ): THREE.Texture {
   const tex = textures.get(state);
   if (tex === undefined) {
-    throw new Error(`blend-gl: ${roomId} has no baked lightmap for state ${state}`);
+    throw new Error(`blend-gl: ${roomId}/${chart} has no baked lightmap for state ${state}`);
   }
   return tex;
 }
@@ -191,31 +224,86 @@ function requireHalfFloatTarget(roomId: RoomId, r: THREE.WebGLRenderer): void {
   }
 }
 
-/** The entry point every room module calls once at mount (inside the airlock hold). */
-export function applyTechnique(
+/** Types every chart's textures and gives each chart its own lmB object (black until bound). */
+function bindCharts(roomId: RoomId, charts: ChartMap): ReadonlyMap<ChartId, ChartBinding> {
+  if (charts.size === 0) throw new Error(`blend-gl: ${roomId} binds no lightmap chart`);
+  const out = new Map<ChartId, ChartBinding>();
+  for (const [id, textures] of charts) {
+    const typed = new Map<StateId, THREE.Texture>();
+    for (const [state, value] of textures) {
+      const tex = asTexture(roomId, id, state, value);
+      tex.channel = LIGHTMAP_UV_CHANNEL;
+      typed.set(state, tex);
+    }
+    out.set(id, { id, textures: typed, lmB: { value: blackTexel() } });
+  }
+  return out;
+}
+
+/** chartOf resolved ONCE: a material naming a chart the room lacks throws here, never on a frame. */
+function resolveCharts(
+  roomId: RoomId,
+  materials: readonly THREE.MeshStandardMaterial[],
+  charts: ReadonlyMap<ChartId, ChartBinding>,
+  chartOf: ChartOf,
+): ReadonlyMap<THREE.MeshStandardMaterial, ChartBinding> {
+  const out = new Map<THREE.MeshStandardMaterial, ChartBinding>();
+  for (const material of materials) {
+    const id = chartOf(material);
+    const binding = charts.get(id);
+    if (binding === undefined) {
+      const name = material.name === '' ? material.uuid : material.name;
+      throw new Error(`blend-gl: ${roomId} material ${name} names chart ${id} — no such atlas`);
+    }
+    out.set(material, binding);
+  }
+  return out;
+}
+
+/** §4.4 measurement mode: b-rt is measured on single-chart rooms; charted rooms throw loud. */
+function singleChart(roomId: RoomId, charts: ReadonlyMap<ChartId, ChartBinding>): ChartBinding {
+  const [only] = charts.values();
+  if (only === undefined || charts.size !== 1) {
+    throw new Error(
+      `blend-gl: ${roomId} b-rt is the single-chart measurement mode (§4.4); got ${charts.size} charts`,
+    );
+  }
+  return only;
+}
+
+/** The charted entry (design-gallery §3.7, D-9): one or more charts, the chart read per material. */
+export function applyChartedTechnique(
   mode: LmMode,
   roomId: RoomId,
   object: RoomObject,
-  textures: ReadonlyMap<StateId, unknown>,
+  charts: ChartMap,
+  chartOf: ChartOf,
   whitePoint: LightmapIntensity,
   renderer: RoomObject,
   ledger: RoomLedger,
 ): TechniqueHandle {
   const effective = effectiveIntensities(roomId, whitePoint);
   requireFree(roomId);
-  const typed = new Map<StateId, THREE.Texture>();
-  for (const [state, value] of textures) {
-    const tex = asTexture(roomId, state, value);
-    tex.channel = LIGHTMAP_UV_CHANNEL;
-    typed.set(state, tex);
-  }
+  const bindings = bindCharts(roomId, charts);
   const materials = collectMaterials(roomId, object);
-  const shared: SharedUniforms = { lmB: { value: blackTexel() }, lmScale: { value: 0 } };
+  const ofMaterial = resolveCharts(roomId, materials, bindings, chartOf);
+  const lmB = new Map<ChartId, LmBUniform>();
+  for (const [id, binding] of bindings) lmB.set(id, binding.lmB);
+  const shared: SharedUniforms = { lmB, lmScale: { value: 0 } };
   const current: { a: StateId | null; b: StateId | null } = { a: null, b: null };
   let rt: RoomTechnique['rt'] = null;
   let handle: TechniqueHandle;
 
+  /** State A per material, from its own chart (the stock slot). */
+  const bindA = (a: StateId): void => {
+    for (const [material, binding] of ofMaterial) {
+      material.lightMap = requireTexture(roomId, binding.id, binding.textures, a);
+    }
+  };
+
   if (mode === 'b-rt') {
+    const single = singleChart(roomId, bindings); // before the renderer is touched
+    const typed = single.textures;
     const r = renderer as THREE.WebGLRenderer;
     requireHalfFloatTarget(roomId, r);
     // §4.2 B-RT ceiling: the largest baked atlas sizes the per-room RT (2048² RGBA16F ≈ 32 MB).
@@ -256,14 +344,15 @@ export function applyTechnique(
       scene.add(mesh);
       return mesh;
     };
-    const quadA = quad(requireTexture(roomId, typed, 'day'));
+    const quadA = quad(requireTexture(roomId, single.id, typed, 'day'));
     const quadB = quad(blackTexel());
     const savedClear = new THREE.Color();
     rt = { target, scene, camera };
     handle = {
       setStates(a, b) {
-        quadA.material.map = requireTexture(roomId, typed, a);
-        quadB.material.map = b === null ? blackTexel() : requireTexture(roomId, typed, b);
+        quadA.material.map = requireTexture(roomId, single.id, typed, a);
+        quadB.material.map =
+          b === null ? blackTexel() : requireTexture(roomId, single.id, typed, b);
       },
       setWeights(scaleA, scaleB) {
         // The ceiling: re-blend EVERY frame (the product would quantise w to 1/64 first).
@@ -292,32 +381,31 @@ export function applyTechnique(
       'preblend-rt',
     );
   } else if (mode === 'b-discrete') {
-    // §4.4 floor: the stock lightmap path, the argmax state bound at its own eff.
-    const tex = requireTexture(roomId, typed, 'day');
+    // §4.4 floor: the stock lightmap path, the argmax state bound at its own eff — per chart.
+    bindA('day');
     for (const material of materials) {
-      material.lightMap = tex;
       material.lightMapIntensity = effective.day;
       material.needsUpdate = true;
     }
     handle = {
       setStates(a) {
-        for (const material of materials) material.lightMap = requireTexture(roomId, typed, a);
+        bindA(a);
       },
       setWeights(scaleA) {
         for (const material of materials) material.lightMapIntensity = scaleA;
       },
     };
   } else {
-    // Technique A: state A on the stock slot; the patch adds the B fetch.
+    // Technique A: state A on the stock slot; the patch adds the B fetch from the chart's lmB.
     const chunk = patchedChunk();
-    for (const material of materials) {
+    for (const [material, binding] of ofMaterial) {
       material.lightMap = blackTexel(); // bound for real on the first applyWeights frame
       material.lightMapIntensity = 0;
       material.onBeforeCompile = (shader) => {
         if (!shader.fragmentShader.includes(INCLUDE_LINE)) {
           throw new Error('blend-gl: fragment shader lacks lights_fragment_maps include');
         }
-        shader.uniforms.lmB = shared.lmB;
+        shader.uniforms.lmB = binding.lmB;
         shader.uniforms.lmScale = shared.lmScale;
         shader.fragmentShader = UNIFORM_DECLS + shader.fragmentShader.replace(INCLUDE_LINE, chunk);
       };
@@ -326,8 +414,11 @@ export function applyTechnique(
     }
     handle = {
       setStates(a, b) {
-        for (const material of materials) material.lightMap = requireTexture(roomId, typed, a);
-        shared.lmB.value = b === null ? blackTexel() : requireTexture(roomId, typed, b);
+        bindA(a);
+        for (const binding of bindings.values()) {
+          binding.lmB.value =
+            b === null ? blackTexel() : requireTexture(roomId, binding.id, binding.textures, b);
+        }
       },
       setWeights(scaleA, scaleB) {
         for (const material of materials) material.lightMapIntensity = scaleA;
@@ -336,8 +427,31 @@ export function applyTechnique(
     };
   }
 
-  rooms.set(roomId, { mode, handle, shared, materials, textures: typed, effective, rt, current });
+  rooms.set(roomId, { mode, handle, shared, materials, charts: bindings, effective, rt, current });
   return handle;
+}
+
+/** The single-chart entry every sibling room calls once at mount (inside the airlock hold). */
+export function applyTechnique(
+  mode: LmMode,
+  roomId: RoomId,
+  object: RoomObject,
+  textures: ChartTextures,
+  whitePoint: LightmapIntensity,
+  renderer: RoomObject,
+  ledger: RoomLedger,
+): TechniqueHandle {
+  const charts: ChartMap = new Map([[SINGLE_CHART, textures]]);
+  return applyChartedTechnique(
+    mode,
+    roomId,
+    object,
+    charts,
+    () => SINGLE_CHART,
+    whitePoint,
+    renderer,
+    ledger,
+  );
 }
 
 /** Per frame, once for the active room: applies the scalar law, dispatches by technique. */
@@ -369,7 +483,7 @@ export function applyWeights(roomId: RoomId, weights: BlendWeights): void {
 export function disposeTechnique(roomId: RoomId): void {
   const room = rooms.get(roomId);
   if (room === undefined) return;
-  room.shared.lmB.value = blackTexel();
+  for (const lmB of room.shared.lmB.values()) lmB.value = blackTexel();
   room.shared.lmScale.value = 0;
   if (room.rt) {
     room.rt.target.dispose();

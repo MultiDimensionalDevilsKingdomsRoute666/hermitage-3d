@@ -3,13 +3,21 @@
 // header). The frame kit's 670 unique-UV meshes ride the meshopt pass as-is; the
 // RUNTIME merges them per wall (innerHTML nothing here — the room module, R3).
 // The lightmap rows land with r-R4's bake (the manifest's lightmaps row arrives then).
-import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
+import {
+  copyFileSync,
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  statSync,
+  writeFileSync,
+} from 'node:fs';
+import { join, relative } from 'node:path';
 import {
   ChainError,
   GLTF_TRANSFORM,
   geometrySummary,
   parseGlb,
+  ROOT,
   repackBin,
   run,
   sha256,
@@ -21,13 +29,32 @@ export const ROOM = {
   budget: {
     trianglesMax: 60_000,
     drawsMax: 19,
-    textureBytesMax: 1_000_000,
+    // R4: raised 1_000_000 -> 1_200_000 after the owner's ruling: the cap was a
+    // pre-light plan estimate; the lit room measures 1,131,373 B of ktx2 (the
+    // jordan-class sharp-light content 219-264 K per 2048 lm + the atlas 419 K).
+    textureBytesMax: 1_200_000,
     payloadBytesMax: 4_000_000,
   },
-  // r-R4's bake fills the row (three states, the kit/arch resolution split, white
-  // points); until then the empty shape keeps the all-or-nothing law honest.
-  lightmaps: { states: [], res: null, intensity: null },
+  // R4's bake filled the row: the three states at the arch/kit split (DEC-027; the kit's
+  // 1024 lives in tools/gallery/layout.json's lightmap.sizePx, D-7), the per-state white
+  // points of the r17c records. Day's record retuned from the fixed tree's histogram
+  // (the r17c law: a descriptor edit + reencode, never a re-bake): the pre-fix 0.5 was
+  // the inversion symptom-fighter (13.3% flat-clip; the arch's p90 ~1.14 linear); 1.5
+  // grades the sunlit field inside 0.89 with a 1-2% highlight clip.
+  lightmaps: {
+    states: ['day', 'dusk', 'nightChandeliers'],
+    res: 2048,
+    intensity: { day: 1.5, dusk: 0.15, nightChandeliers: 0.3 },
+  },
 };
+
+// R4 D-23 (design-gallery.md §4.6): the lantern pane is a LIGHTMAP CARRIER, not lit glass.
+// The gltf step rewrites the exported MG_glass to a unit carrier so the runtime pane pixel
+// is 1.0 × paintedCell × whitePoint × gain = the painted sky itself (per-state variation
+// rides the lightmaps alone; no state-gated emissive, F11; no shader change, the fence).
+// The BAKE-side pane stays §2.4's dark GLASS_RGB — the builder's material is untouched.
+const PANE_MATERIAL = 'MG_glass';
+const PANE_CARRIER = { baseColorFactor: [1, 1, 1, 1], metallicFactor: 0, roughnessFactor: 1 };
 
 const TEXTURES = ['military-gallery-parquet'];
 const ATLAS_BYTES_MAX = 400_000;
@@ -144,6 +171,30 @@ function gateConventions(json) {
   }
 }
 
+/** D-23: rewrite the exported pane material to the unit lightmap carrier (loud on any
+ * drift — exactly one MG_glass, and it must still be the plain Principled export). */
+function carryPane(json) {
+  const hits = (json.materials ?? []).filter((m) => m.name === PANE_MATERIAL);
+  if (hits.length !== 1) fail(`expected exactly one ${PANE_MATERIAL} material, got ${hits.length}`);
+  const [pane] = hits;
+  const pbr = pane.pbrMetallicRoughness ?? {};
+  pane.pbrMetallicRoughness = {
+    ...pbr,
+    baseColorFactor: PANE_CARRIER.baseColorFactor,
+    metallicFactor: PANE_CARRIER.metallicFactor,
+    roughnessFactor: PANE_CARRIER.roughnessFactor,
+  };
+}
+
+/** R4 D-10: the stage's packed architecture chart lands in its committed home. */
+function copyArchChart(stage) {
+  const src = join(stage, 'arch-chart.json');
+  if (!existsSync(src)) fail('missing arch-chart.json in the stage — run the bpy step (R4 D-10)');
+  const dest = join(ROOT, 'tools', 'gallery', 'arch-chart.json');
+  copyFileSync(src, dest);
+  console.log(`gltf: ${relative(ROOT, dest)} ← the stage's packed chart`);
+}
+
 function gateGeometry(json, summary) {
   const geo = geometrySummary(json);
   const byName = new Map();
@@ -171,7 +222,7 @@ function gateGeometry(json, summary) {
   if (geo.trianglesDrawn > ROOM.budget.trianglesMax) {
     fail(`${geo.trianglesDrawn} triangles exceed ${ROOM.budget.trianglesMax}`);
   }
-  const declared = summary['frames'];
+  const declared = summary.frames;
   if (declared !== FRAME_COUNT) fail(`bpy summary frames ${declared} !== ${FRAME_COUNT}`);
   return byName;
 }
@@ -195,6 +246,8 @@ export function optimise({ roomId, stage, out }) {
   rewriteImages(json);
   gateConventions(json);
   const byName = gateGeometry(json, summary);
+  carryPane(json);
+  copyArchChart(stage);
   const bin2 = repackBin(json, bin);
   const glb = writeGlb(json, bin2);
   const glbPath = join(out, `${roomId}.glb`);
