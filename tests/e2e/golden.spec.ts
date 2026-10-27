@@ -121,6 +121,23 @@ test('golden: dec night (lattice)', async ({ page }) => {
   await expect(page).toHaveScreenshot('golden-dec-night.png', SHOT);
 });
 
+// DEC-033 winter exit gate: 21 Dec 13:00 local (10:00Z) — solar noon at 30.3°E, the day's
+// maximum ~6.6°. wNight === 0 (the lattice hidden), wSnow === 1 (the plateau): the low sun rakes
+// the cornice lips and the slot's up-facing dusting. The point of snow is that December becomes
+// legible in daylight. Same camera as dec night; captured like every square scene.
+test('golden: dec noon (winter gate)', async ({ page }) => {
+  await settledPage(page, 'at=2026-12-21T10:00:00Z&det=1');
+  await expect(page).toHaveScreenshot('golden-dec-noon.png', SHOT);
+});
+
+// DEC-033: an isolated lattice fence now that dec night fences two things — 15 Oct 23:00 local
+// (20:00Z): wNight === 1, wSnow === 0 (Oct 15 precedes the Nov 10 anchor; the cap hidden, the
+// slot an exact identity).
+test('golden: oct night (lattice only)', async ({ page }) => {
+  await settledPage(page, 'at=2026-10-15T20:00:00Z&det=1');
+  await expect(page).toHaveScreenshot('golden-oct-night.png', SHOT);
+});
+
 for (const scene of ROOM_SCENES) {
   for (const [light, at] of Object.entries(DET_AT)) {
     test(`golden: ${scene.name} ${scene.stop} ${light}`, async ({ page }) => {

@@ -48,9 +48,10 @@ import { t } from './i18n';
 import { formatDate, formatTime, PETERSBURG_OFFSET_LABEL } from './i18n/format';
 import { activateLang, activeLang, onLangChange, resolveLang } from './i18n/locale';
 import { noteTransitFrame, openTransitLog, type TransitLog } from './perf/transit-log';
-import { buildFacade } from './procedural/facade-builder';
+import { buildFacade, FACADE_SURFACE_UNIFORMS } from './procedural/facade-builder';
 import { solveSouthFacade } from './procedural/facade-solver';
 import { buildNightLattice } from './procedural/night-lattice';
+import { buildSnowCap } from './procedural/snow-cap';
 import { buildThroat, openGroundArch, setThroatOpacity } from './procedural/throat';
 import { type SkySample, sampleSky } from './sky/appearance';
 import type { ArrivalState } from './sky/arrival';
@@ -125,6 +126,7 @@ import {
   resolveRoute,
   type Vec3,
 } from './world/registry';
+import { snowWeight } from './world/snow-season';
 import { parseStopParam } from './world/stop-param';
 import { arrivePose, type BeatPose, beatExposure, departPose } from './world/threshold-beat';
 import { THROAT_VOID } from './world/throat';
@@ -263,6 +265,9 @@ const facadeBuild = buildFacade(solvedFacade.value);
 // DEC-019 night lattice: one pane quad per window recess, hashed into three stock levels.
 // Lives inside the palace group — the indoors visibility flip is inherited for free.
 const nightLattice = buildNightLattice(solvedFacade.value);
+// DEC-033 winter: one merged morph lip over the solver's 9 upper cornice-runs; hidden outright
+// at wSnow === 0. Lives inside the palace group — the indoors visibility flip is inherited.
+const snowCap = buildSnowCap(solvedFacade.value);
 // R-UX3 (§3): the resident throat — rides the palace group: hidden the frame a room mounts,
 // faded in with the massing. The kit's middle ground-arch slab is voided for it.
 const throat = buildThroat();
@@ -350,6 +355,7 @@ palace.add(
   ...bands,
   facadeBuild.group,
   nightLattice.group,
+  snowCap.group,
   throat.group,
 );
 // Shadows return with the facade kit (architecture.md): every solid casts and receives.
@@ -450,6 +456,11 @@ const applyEpoch = (nextEpochMs: number): void => {
   // to the pre-lattice sample line, and the lattice group is hidden outright.
   const wNight = lightmapWeights(elevationDegOf(sample)).nightChandeliers;
   nightLattice.setNight(wNight);
+  // DEC-033: the season law reads the same instant the sun samples (at=/det=), never Date.now();
+  // three writes per frame — morph influence + cap visibility, and the kit slot's one uniform.
+  const wSnow = snowWeight(nextEpochMs);
+  snowCap.setSnow(wSnow);
+  FACADE_SURFACE_UNIFORMS.uSnow.value = wSnow;
   hemi.groundColor.setRGB(
     ...warmGround([0.25 * h[0], 0.25 * h[1], 0.25 * h[2]], WINDOW_WARM_LINEAR, wNight),
   );

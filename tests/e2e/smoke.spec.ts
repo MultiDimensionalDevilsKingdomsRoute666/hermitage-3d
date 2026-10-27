@@ -110,6 +110,14 @@ test('deterministic T0 boot settles within budget', async ({ page }) => {
   await expectWithinBudgets(hud);
 });
 
+// DEC-033 winter: at a plateau instant (wSnow === 1) the cornice cap is visible and the kit's
+// facade-surface slot is live — +1 draw call, +≤1,000 triangles — and the frame still holds the
+// architecture caps. The summer identity is fenced by the unchanged June goldens, not here.
+test('winter: the cornice cap renders within budgets', async ({ page }) => {
+  const hud = await bootDeterministic(page, 'at=2026-12-21T12:00:00Z&det=1&hud=1&lang=en');
+  await expectWithinBudgets(hud);
+});
+
 // §8.3 layer 3: the smoke walks the phase-2 graph (transits driven directly in-test — the
 // hash is the r16 input surface; rail-driven walking is asserted in r18) and asserts the
 // HUD metadata ledger rows return to their boot values with a clean console. Smoke asserts

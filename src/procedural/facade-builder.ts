@@ -6,6 +6,7 @@
 // heads land on the design row table (3.00 / 9.20 / 15.50 / 19.50 m) — the
 // draft stacked an internal sill ledge and band inside the envelope instead.
 import * as THREE from 'three';
+import { SNOW_ALBEDO_LINEAR } from '../world/snow-season';
 import type { PartId, Placement, SolvedFacade } from './facade-solver';
 import { KIT, PART_IDS } from './facade-solver';
 
@@ -557,6 +558,88 @@ export type FacadeBuild = Readonly<{
 
 const Y_AXIS = new THREE.Vector3(0, 1, 0);
 
+/* ------------------------------------------------------------------ facade-surface slot */
+
+/*
+ * DEC-033 / design-winter.md §3: the ONE injection point on the kit's single material.
+ * Contract: inputs are world height (vFacadeWorldY), the shading normal and clock scalars;
+ * SURFACE TERMS run BEFORE LIGHT TERMS — snow alters the albedo before lighting; the floodlight
+ * (5+ Floodlit) later adds irradiance after it, reusing the same varying. One shared uniforms
+ * object, written once per frame by the host. No hash, no noise (DEC-019 discipline).
+ * At uSnow === 0 every term is an exact identity (mix by 0) — out-of-season frames unchanged.
+ */
+export type FacadeSurfaceUniforms = Readonly<{ uSnow: { value: number } }>;
+
+export const FACADE_SURFACE_UNIFORMS: FacadeSurfaceUniforms = { uSnow: { value: 0 } };
+
+/** Snow catches on up-facing surfaces: dot(shadingNormal, worldUp) across this smoothstep. */
+export const SNOW_FACING = { lo: 0.45, hi: 0.8 } as const;
+
+/** TUNING TARGET (DEC-033): the cleared, trampled zone — coverage fades out below topM world height. */
+export const SNOW_CLEAR = { bottomM: 0, topM: 1.5 } as const;
+
+/* Patched and unpatched programs must never share a cache entry: any non-empty key is distinct. */
+const FACADE_SURFACE_CACHE_KEY = 'FacadeKit/surface-slot/snow@1';
+
+const glslFloat = (x: number): string => (Number.isInteger(x) ? `${x}.0` : `${x}`);
+
+const SURFACE_VERTEX_DECL = `#include <common>
+varying float vFacadeWorldY;`;
+
+const SURFACE_VERTEX_BODY = `#include <worldpos_vertex>
+{
+vec4 facadeWorld = vec4( transformed, 1.0 );
+#ifdef USE_INSTANCING
+facadeWorld = instanceMatrix * facadeWorld;
+#endif
+vFacadeWorldY = ( modelMatrix * facadeWorld ).y;
+}`;
+
+const SURFACE_FRAGMENT_DECL = `#include <common>
+uniform float uSnow;
+varying float vFacadeWorldY;`;
+
+const SURFACE_FRAGMENT_BODY = `#include <normal_fragment_maps>
+{
+vec3 facadeUpView = normalize( ( viewMatrix * vec4( 0.0, 1.0, 0.0, 0.0 ) ).xyz );
+float snowFacing = smoothstep( ${glslFloat(SNOW_FACING.lo)}, ${glslFloat(SNOW_FACING.hi)}, dot( normal, facadeUpView ) );
+float snowCleared = smoothstep( ${glslFloat(SNOW_CLEAR.bottomM)}, ${glslFloat(SNOW_CLEAR.topM)}, vFacadeWorldY );
+float snowCoverage = uSnow * snowFacing * snowCleared;
+diffuseColor.rgb = mix( diffuseColor.rgb, vec3( ${SNOW_ALBEDO_LINEAR.map(glslFloat).join(', ')} ), snowCoverage );
+}`;
+
+function spliceChunk(source: string, anchor: string, replacement: string, stage: string): string {
+  if (!source.includes(anchor)) {
+    throw new Error(
+      `facade-builder: surface slot anchor '${anchor}' missing from the ${stage} shader`,
+    );
+  }
+  return source.replace(anchor, replacement);
+}
+
+/** The one onBeforeCompile on the kit material; the host writes `uniforms.uSnow.value` per frame. */
+export function patchFacadeSurfaceSlot(
+  material: THREE.Material,
+  uniforms: FacadeSurfaceUniforms = FACADE_SURFACE_UNIFORMS,
+): void {
+  material.onBeforeCompile = (shader) => {
+    shader.uniforms.uSnow = uniforms.uSnow;
+    shader.vertexShader = spliceChunk(
+      spliceChunk(shader.vertexShader, '#include <common>', SURFACE_VERTEX_DECL, 'vertex'),
+      '#include <worldpos_vertex>',
+      SURFACE_VERTEX_BODY,
+      'vertex',
+    );
+    shader.fragmentShader = spliceChunk(
+      spliceChunk(shader.fragmentShader, '#include <common>', SURFACE_FRAGMENT_DECL, 'fragment'),
+      '#include <normal_fragment_maps>',
+      SURFACE_FRAGMENT_BODY,
+      'fragment',
+    );
+  };
+  material.customProgramCacheKey = () => FACADE_SURFACE_CACHE_KEY;
+}
+
 function placementsFor(solved: SolvedFacade, partId: PartId): readonly Placement[] {
   const byPart = solved.byPart as Partial<Record<PartId, readonly Placement[]>>;
   return byPart[partId] ?? [];
@@ -578,6 +661,8 @@ export function buildFacade(solved: SolvedFacade): FacadeBuild {
 
   const material = new THREE.MeshLambertMaterial({ vertexColors: true, color: 0xffffff });
   material.name = 'FacadeKit';
+  // DEC-033: the facade-surface slot — the one onBeforeCompile on the kit's single material.
+  patchFacadeSurfaceSlot(material);
   const group = new THREE.Group();
   group.name = 'FacadeKit';
 
