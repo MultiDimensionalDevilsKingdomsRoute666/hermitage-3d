@@ -54,6 +54,10 @@ export default defineConfig({
     {
       // Local-only pixel goldens on the reference Mac's GPU. Never retried: a flaky golden is
       // the documented signal (charter risk row), not something to paper over.
+      // NOTE: this project matches BOTH spec files — an --update-snapshots pass rewrites the
+      // historical SCENE baselines too, not just the fixtures. Scene goldens re-baseline only
+      // by an explicit DEC (design-gallery §9.3); restore any scene drift from git after a
+      // fixtures-only re-baseline (STATE.md, the golden re-baseline law).
       name: 'golden',
       testMatch: /(golden|fixtures)\.spec\.ts$/,
       retries: 0,

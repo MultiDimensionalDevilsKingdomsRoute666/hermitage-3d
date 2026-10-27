@@ -222,3 +222,8 @@ retries: 1). A second local run only after a failure; two consecutive failures =
 never re-roll. (The per-round ×2 convention is retired; it duplicated the quiet-machine law's
 protection and is a statistically weak flake detector — a 1-in-10 flake slips both runs 81% of
 the time. The R-UX4 round's ×2 was the last.)
+**The golden re-baseline law (R5, 2026-10-26):** the `golden` project matches BOTH
+golden.spec.ts and fixtures.spec.ts — an `--update-snapshots` pass rewrites the historical
+SCENE baselines too, not just the fixtures. The scene goldens re-baseline only by an explicit
+DEC (§9.3); a fixtures-only re-baseline must restore any scene-baseline drift from git
+afterwards (the R5 round restored the four square/gallery-dusk references twice).
