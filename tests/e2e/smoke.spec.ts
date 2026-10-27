@@ -265,12 +265,23 @@ test('keyboard walk: every stop reachable, reduced-motion cuts', async ({ page }
   test.setTimeout(600_000);
   await page.emulateMedia({ reducedMotion: 'reduce' });
   const hud = await bootDeterministic(page, `${AT}&det=1&hud=1&lang=en`);
-  // Press-and-poll one stop at a time. data-stop re-binds at most every 500 ms and a press
-  // fired while a transit is open is dropped by design (§2.4 owns the camera), so: press,
-  // then wait for the row to CHANGE (a dropped press retries; a landed one binds within
-  // ~500 ms on a healthy frame — the change-wait absorbs slow frames without overshooting).
-  // A cut transit to the instant-ready resident never reports a non-zero hold — data-stop
-  // is the honest gate, and every landing is observed (§10 r18 gate).
+  // One accepted press per landing. The keydown handler drops any press while the arrival is
+  // unsettled or a transit is open (railInputReady: §2.4, the airlock owns the camera), and
+  // nothing retries a dropped press. Under Playwright 1.64.1 an error thrown inside an
+  // expect.poll callback ends that poll at once, so a nested press-and-poll gives no second
+  // press. A leg is therefore complete, and the next press permitted, only on ONE coherent
+  // HUD sample that shows BOTH the expected data-stop AND data-hold-ms "0". "Coherent" means
+  // both attributes are read in one page task: the tick writes them in one synchronous pass,
+  // so they can never come from different ticks.
+  // data-stop alone is not readiness: a cut's swap seeds the destination stop mid-card while
+  // the transit still owns the camera (the backward landing-airlock entry reports J4 with the
+  // card open). data-hold-ms is not a "was non-zero" signal either: hudHoldMs reports the
+  // transit's holdMs for EVERY non-idle phase, exit included (the landing airlock's cut card
+  // reads 600 through its whole dwell), and "0" only when no transit is open. A short transit
+  // may never publish a non-zero sample, so none is awaited. The HUD binds at most every
+  // 500 ms, so a (stop, "0") sample can lag readiness but never lead it.
+  // The caption binds the destination from the card phase on (dwellStop). It is asserted on
+  // every landing (§10 r18 gate) but is never readiness evidence.
   const caption = page.locator('#caption');
   // The §6.1 caption beats, verbatim from the committed stop data (rooms/*/contract.ts;
   // R-UX5 §7/§8 stop authoring: Gj, J1b, J2b new; J2, J3 re-authored).
@@ -295,32 +306,64 @@ test('keyboard walk: every stop reachable, reduced-motion cuts', async ({ page }
     M3: 'The monarchs — the end wall, the large portraits above the small.',
     M4: 'The doors are closed; beyond them — St George’s Hall.',
   };
-  const walkTo = (stop: string, key = 'ArrowRight'): Promise<void> =>
-    expect
+  // A leg spans the data-bound load + mount behind the card (seconds on a starved page; the
+  // backward entries re-mount, since the exit disposes the room left), the card's hold, one
+  // exit frame and up to one 500 ms HUD bind.
+  const LEG_TIMEOUT_MS = 90_000;
+  const IDLE_HOLD = '0';
+  type HudSample = Readonly<{ stop: string | null; holdMs: string | null; room: string | null }>;
+  // One page task reads all three attributes, so the sample is one tick's write, never a mix.
+  const sampleHud = (): Promise<HudSample> =>
+    hud.evaluate((el) => ({
+      stop: el.getAttribute('data-stop'),
+      holdMs: el.getAttribute('data-hold-ms'),
+      room: el.getAttribute('data-room'),
+    }));
+  const sampleKey = (s: HudSample): string => `${s.stop} | hold ${s.holdMs}`;
+  const readyKey = (stop: string): string => `${stop} | hold ${IDLE_HOLD}`;
+  // The walk starts from a ready S0. The arrival-settle half of the gate is bootDeterministic's
+  // own contract; data-hold-ms does not encode the arrival phase.
+  await expect
+    .poll(async () => sampleKey(await sampleHud()), {
+      message: 'boot: a coherent ready sample at S0',
+      timeout: HUD_BIND_TIMEOUT_MS,
+      intervals: [100, 250],
+    })
+    .toBe(readyKey('S0'));
+  let at = 'S0';
+  const walkTo = async (stop: string, key = 'ArrowRight'): Promise<void> => {
+    const from = at;
+    const beat = BEATS[stop];
+    if (beat === undefined) throw new Error(`no committed beat for stop ${stop}`);
+    // The press is made only in the ready state the previous leg proved. Nothing moves
+    // without a press, so a fresh sample must still read it.
+    expect(sampleKey(await sampleHud()), `leg ${from} → ${stop}: ready before its press`).toBe(
+      readyKey(from),
+    );
+    await page.keyboard.press(key); // the leg's ONLY press: no retry, by contract
+    await expect
       .poll(
         async () => {
-          const before = await hud.getAttribute('data-stop');
-          if (before !== stop) {
-            await page.keyboard.press(key);
-            // The change-wait must outlast a data-bound load dwell (seconds on a starved
-            // page): the press either lands, or an open transit's swap lands its seed —
-            // either way the row changes; a dropped press needs no retry of its own.
-            await expect
-              .poll(() => hud.getAttribute('data-stop'), { timeout: 30_000, intervals: [250] })
-              .not.toBe(before);
+          const s = await sampleHud();
+          // An idle sample on any third stop is a wrong landing, never lag: fail at once.
+          if (s.holdMs === IDLE_HOLD && s.stop !== from && s.stop !== stop) {
+            throw new Error(`leg ${from} → ${stop}: one press settled on ${s.stop}`);
           }
-          return hud.getAttribute('data-stop');
+          return sampleKey(s);
         },
-        { timeout: 180_000, intervals: [1000] },
+        {
+          message: `leg ${from} → ${stop}: one coherent HUD sample with the stop AND hold 0`,
+          timeout: LEG_TIMEOUT_MS,
+          intervals: [100, 250],
+        },
       )
-      .toBe(stop)
-      .then(async () => {
-        // Every landing shows that stop's beat (the caption doubles as the description).
-        const beat = BEATS[stop];
-        if (beat === undefined) throw new Error(`no committed beat for stop ${stop}`);
-        await expect(caption).toHaveAttribute('data-stop', stop, { timeout: 60_000 });
-        await expect(caption).toHaveText(beat, { timeout: 60_000 });
-      });
+      .toBe(readyKey(stop));
+    at = stop;
+    // Every landing shows that stop's beat (the caption doubles as the description). This
+    // is asserted after readiness and is not part of it.
+    await expect(caption).toHaveAttribute('data-stop', stop, { timeout: 60_000 });
+    await expect(caption).toHaveText(beat, { timeout: 60_000 });
+  };
   // Forward: S0 → S1, the arch-portal boundary, G0 → Gj → G2, the gallery-airlock boundary,
   // J0 → J1b → J2b → J4 — every stop of the phase observed landed.
   for (const stop of ['S1', 'G0', 'Gj', 'G1', 'G2', 'J0', 'J1', 'J1b', 'J2', 'J2b', 'J3', 'J4']) {
@@ -336,12 +379,18 @@ test('keyboard walk: every stop reachable, reduced-motion cuts', async ({ page }
   for (const stop of ['M0', 'M1', 'M2', 'M3', 'M4']) {
     await walkTo(stop);
   }
-  // The route's end (M4, the closed doors) is the new inert end: a press past it changes
-  // nothing — the room's only airlock side sits at M0, the entry stop (§1.1's chain end).
+  // The route's end (M4, the closed doors) is the new inert end: a press past it, made in
+  // the ready state, changes nothing. The room's only airlock side sits at M0, the entry stop
+  // (§1.1's chain end). After the re-check window, one coherent sample shows the stop, the
+  // room and an idle hold: no transit opened.
+  expect(sampleKey(await sampleHud()), 'inert end: ready before its press').toBe(readyKey('M4'));
   await page.keyboard.press('ArrowRight');
   await page.waitForTimeout(2000);
-  await expect(hud).toHaveAttribute('data-stop', 'M4');
-  await expect(hud).toHaveAttribute('data-room', 'military-gallery');
+  expect(await sampleHud(), 'inert end: the press past M4 opened nothing').toEqual({
+    stop: 'M4',
+    holdMs: IDLE_HOLD,
+    room: 'military-gallery',
+  });
   // Backward: the whole way home through both airlocks — M0's backward push is the landing
   // airlock's reverse (the cut back to jordan), and the backward entries seed the far stop
   // (J4, then G2, then S1) so the direction of travel is preserved (§6.1 seed law).
