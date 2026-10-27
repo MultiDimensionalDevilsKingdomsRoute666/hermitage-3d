@@ -50,6 +50,10 @@ Each decision: what, why in one line, and the credible rejected alternative. New
 - **DEC-029 · Route slug `#/1812`** — short and language-neutral; hash paths need no server rewrites. *Rejected: `#/military-gallery` (English-first).*
 - **DEC-030 · The stand-in portraits are declared in the license register in the phase they ship, with the v2 swap path recorded** (the owner's ruling, 2026-10-21): one atlas slot per portrait; v2 replaces the generator with a per-roster-key importer of public-domain images — geometry, UVs, lightmaps and goldens untouched; the 13 green-silk frames (generals with no surviving image) are the v2 roster's own detail.
 
+## Phase 3 · The Gallery — the exit (R6, owner rulings 2026-10-27)
+
+- **DEC-032 · The §8 box-office re-measure: the declared 1812 estimates are superseded by the measured values, the caps untouched** — JS phase delta +12.4 KB landed (258,248 → 270,685; the +9 KB estimate was low; the 350 KB cap holds with ~79 KB headroom), first lit frame cold unthrottled ≈1.5 s / @10 Mbps+40 ms ≈3.6 s (the hold+2.5 s estimate was tight), VRAM ledger 31.3 MB at the mount / 38.4 MB at the swap peak (the ~14 MB estimate was low; the 256 MB cap holds) — and the §4.6 residuals are accepted as-is for v1 (the monarch crown share, the atlas v hang, the end walls' night bounce, the day's lamp-less floor). *Rejected: silently amending the estimates without the log row (the measurement-wins precedent records the amendment); a perf fix round inside R6 (split-never-widen — the over-lines are estimate drift, not cap breaches; a fix is a post-v1 phase slot).*
+
 ## Resolved owner inputs (2026-10-15)
 
 - **Palette:** today's scheme — pale green walls, white dressings, ochre tones — chosen for recognisability; drives the kit trim sheet and hero frames.

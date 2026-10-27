@@ -25,3 +25,12 @@ Implications and plan:
 - **Dashboard gotcha (2026):** the create panel highlights **Workers** as Cloudflare's recommended path; that form asks for Deploy/Preview commands (wrangler) and needs a `wrangler.jsonc` in the repo. Our static site belongs to **Pages**: in **Create application** choose the **Pages** tab — it has no deploy/preview command fields at all. Workers path is a workable fallback (3-line wrangler config) only if Pages creation disappears.
 - First production URL: `https://hermitage-3d.pages.dev` once Pages is connected and `main` has a green build. The page already renders the Phase 0 placeholder (a white massing box under a plain sky) after the scaffold commit.
 - WebGL2 is served as-is; no special headers are needed yet. When the app ships, headers (strict CSP) will be added via a `_headers` file in `public/`.
+
+## R6 reachability experiment — recorded 2026-10-27
+
+Method: the deployed production URL opened from the owner's consumer line (the charter risk 7 class), headed Chromium on the reference Mac, deterministic noon, fresh browser context per load, three repeats per route; asset content types probed with HEAD requests.
+
+- **TLS to `*.pages.dev` verified today** (curl `ssl_verify_result 0`) — the 2026-10-15 self-signed stub did not reproduce on this day's line. Hash routes need no rewrites, as designed: `/`, `/notes` and the room routes all serve the same `index.html` and the hash carries the route.
+- **Content types confirmed correct**: `/` and `/notes` `text/html; charset=utf-8`; the main chunk `application/javascript` (ES modules load); `military-gallery.glb` `model/gltf-binary`; the portrait atlas and the lightmap charts `image/ktx2`; the `plex-sans-400.woff2` subset `font/woff2`.
+- **Cold settles** (navigation → `#scrub` visible + the hold row back to 0, medians of 3 over the consumer line): root ≈2.3–3.7 s; `#/jordan` ≈5.1–7.2 s; `#/1812` ≈4.5–5.7 s — the CDN fetch chain rides the dark card, never a spinner.
+- **The §8 first-lit measure** (local preview, the transit-log instrument): `#/1812` unthrottled ≈1.5 s; @10 Mbps + 40 ms ≈3.6 s — the declared ≤ hold(600 ms)+2.5 s estimate over by ~0.5 s; recorded as a finding in design-gallery §8, the caps untouched.

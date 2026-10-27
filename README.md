@@ -2,7 +2,9 @@
 
 A stylized 3D recreation of the Winter Palace, Saint Petersburg, for the web. You walk into a 215-metre Baroque facade and the palace is lit by the real Saint Petersburg sky at the moment the page opens - white nights in June, a six-hour day in December.
 
-Status: **Phase 2 · The Staircase - shipped** (Phase 0 · Mass & Sky and Phase 1 · The Facade shipped; Phase 2b · Night Windows is next). Plan: [ROADMAP.md](ROADMAP.md). Every phase ends at a public URL.
+Status: **v1 · Phase 3 · The Gallery — shipped 2026-10-27** (Phase 0 · Mass & Sky, Phase 1 · The Facade, Phase 2 · The Staircase and Phase 2b · Night Windows shipped before it). Plan: [ROADMAP.md](ROADMAP.md). Every phase ends at a public URL.
+
+**v1.** Зимний дворец: первый полный маршрут — Дворцовая площадь → галерея Растрелли → Иорданская лестница → Военная галерея 1812 года. | Winter Palace v1: the first complete route — Palace Square → the Rastrelli Gallery → the Jordan Staircase → the Military Gallery of 1812.
 
 ## What this is
 

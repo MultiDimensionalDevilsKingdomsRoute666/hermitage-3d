@@ -44,7 +44,7 @@ Pure modules complete and gate-green: solar (NOAA, four contract vectors at 1e-5
 - **Builds underneath:** instanced pane quads (facade recesses are opaque dark panels today) + weight import + hemisphere ground lerp; unit test (pane intensity ≡ weight over −15°…+5°, ≤ 10% of peak at June-solstice midnight — weight is 0 on the −7…−4° dusk plateau, so white-night windows stay dark under a still-luminous sky); night goldens re-baselined once, day/dusk goldens bit-identical. Decision: DEC-019.
 - **Exit:** 21 Dec 21:00 golden reads the facade from the lattice alone · draw calls +≤ 3, tris +≤ ~4 k, slots and light counts unchanged · reference-device frame time within +0.2 ms.
 
-### Phase 3 · The Gallery — **v1** — **not started**
+### Phase 3 · The Gallery — **v1 — complete 2026-10-27** — exit: v1 announced · all budgets green · license register complete ([docs/devlog/0005.md](docs/devlog/0005.md) holds the device-pass numbers)
 
 - **Ships:** the Military Gallery of 1812: 332 frames under skylights; room index; the full route (Square → portal → Rastrelli Gallery → Jordan Staircase → airlock → Gallery) works end to end.
 - **Builds underneath:** instanced frames + portrait atlas; second airlock; golden frames for every room; README and architecture polish.

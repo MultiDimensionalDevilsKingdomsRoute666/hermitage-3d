@@ -27,5 +27,10 @@ Ideas parked on purpose. Each carries a "why parked" line.
   осмотреться» is ~2.5× the old copy under `white-space: nowrap` at `--hint-size`; the hint's CSS
   was untouched this round. If the new RU copy clips at 360, allow a two-line wrap (or
   `text-wrap: balance`) for it — the R007 mobile corner law holds either way.
+- **The full v1 announcement prose (R6)** — the README banner landed minimal (one RU-first + EN line,
+  the owner's call: «very-very minimally for now»); the expanded announcement (the why-it-matters
+  prose, RU first + EN, the route as a story) rides a future CREATIVE relay together with another
+  taste task, per the owner's backlog ruling (2026-10-27). Why parked: taste work rides the strong
+  specialist only when a batch of it is queued; a lone banner is not that batch.
 
 Adding an item requires a "why parked" line; promoting one requires a phase slot and charter compatibility.

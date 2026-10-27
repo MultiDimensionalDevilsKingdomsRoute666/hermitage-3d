@@ -43,6 +43,8 @@ disposal ledger     exposure           reduced-motion → cuts
 
 Phase-2 exit check (r19): both rooms (`rastrelli-gallery`, `jordan`) satisfy every field, and every check in the last column is live — per-stop captions reachable and announced by keyboard (r18 a11y), bounds unit-tested against the footprint, sha256 manifests revalidated against `budget.mjs` in CI, golden frames at one stop per room (J4/G1 × day/dusk/night), blend weights unit-tested (sum to 1, monotone), the smoke walk covers the whole graph with the ledger back to boot, and the payload/VRAM rows are CI gates.
 
+Phase-3 exit check (R5/R6): the third room (`military-gallery`, route `#/1812`) joins behind the retargeted landing airlock (a cut whose card carries the compression note), satisfies every field the same way — budget mirrors the served manifest (60,000 tris / 19 draws / 1.2 MB textures / 4 MB payload; measured 31,090 tris / 17 draws / 1,944,413 B), golden frames at M0 in all three states, the smoke walk crosses the edge both ways with the ledger back at boot. The room's 332 portraits sample one generated 2048² KTX2 atlas produced by the layout law (`tools/gallery/layout.mjs` → the committed `layout.json`, the browser twin byte-pinned by test); the room index is a registry-driven native `<dialog>` behind the chrome «Залы» button — deep links and index jumps share one cold-entry path (`beginTransitTo(target, cold)`).
+
 ## Camera: the museum visitor
 
 A spline rail with composed stops; scroll, drag or arrow keys move along it; pointer/touch gives ±35° of free look; `prefers-reduced-motion` turns glides into cuts. Eye height 1.7 m. Every frame is composed, the asset envelope is bounded, and it works on trackpads, phones and keyboards. *(Rejected: free FPS roam — collision, full surface coverage, uncomposed frames.)*
@@ -59,7 +61,8 @@ A spline rail with composed stops; scroll, drag or arrow keys move along it; poi
 No manual modelling exists in this project — every asset is produced by committed scripts:
 
 - `tools/` holds **bpy (Blender Python) scripts** that generate each kit part and room shell, plus `gltf-transform` optimisation steps. A single command regenerates a part deterministically.
-- Lightmaps are baked with Cycles **locally** (headless): ≤ 3 states per room, ≤ 2 K, denoised; bake times logged per room — the reference machine makes bakes the known slow spot, so bake-once-and-cache is the norm. If a bake genuinely outgrows the machine, that is a menu item for borrowed hardware, never a blocking dependency.
+- Lightmaps are baked with Cycles **locally** (headless): ≤ 3 states per room, ≤ 2 K, denoised; bake times logged per room (`tools/bake-logs/`) — the reference machine makes bakes the known slow spot, so bake-once-and-cache is the norm. If a bake genuinely outgrows the machine, that is a menu item for borrowed hardware, never a blocking dependency.
+- The Military Gallery's portrait atlas and frame geometry are produced by the same law, zero committed frame geometry: `tools/gallery/layout.mjs` holds the layout law and emits the committed `tools/gallery/layout.json` byte-deterministically (the CI gate regenerates it; the browser twin `rooms/1812/layout.ts` is byte-pinned to it by test), and `tools/gallery/atlas.mjs` paints the 2048² stand-in atlas and pins its digest for CI to recompute — toktx never runs in CI.
 - Built outputs (glTF/Meshopt, KTX2 textures) are committed under `public/assets/`, small by design and guarded by budgets. **Blender never runs in CI** — CI validates the committed artifacts.
 
 ## Quality tiers & performance budget
@@ -85,7 +88,7 @@ Tiers: **T0** (low: DPR 1, no bloom, 1 K shadow, near-LOD instancing) · **T1** 
 **Golden frames — implemented arrangement:** CI runs only the Playwright *smoke* project, in a
 separate `e2e` job on software GL (SwiftShader): deterministic T1 and T0 boots, HUD `data-*` budget
 assertions (draw calls ≤ 250, triangles ≤ 1.0 M), tier-label checks, generous hang bounds (`#title`
-≤ 15 s, settled ≤ 45 s) and a clean-console gate. Pixel goldens (`tests/e2e/golden.spec.ts`: noon, white night and the six room goldens — jordan J4 / gallery G1 × day/dusk/night at the shared det instants, deterministic mode, page-level clip of the `#scene` viewport, `maxDiffPixelRatio` 0.01) run locally on the
+≤ 15 s, settled ≤ 45 s) and a clean-console gate. Pixel goldens (`tests/e2e/golden.spec.ts`: 13 scenes — noon, white night, the December night, the S1 pin and the nine room goldens — jordan J4 / gallery G1 / 1812 M0 × day/dusk/night at the shared det instants, deterministic mode, page-level clip of the `#scene` viewport, `maxDiffPixelRatio` 0.01, plus 16 layout fixtures en/ru across 360/768/1280/1920 on both pages) run locally on the
 reference Mac's GPU. This is the charter's documented "goldens run locally" fallback, adopted
 deliberately rather than after observed flakiness: software-GL output is deterministic per machine,
 but baselines are not portable across platforms, so CI goldens would need their own generated

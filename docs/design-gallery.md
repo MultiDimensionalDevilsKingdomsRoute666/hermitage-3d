@@ -68,7 +68,7 @@ Phase 3 ships room three, the Military Gallery of 1812 (route `#/1812`), and wit
 
 4.4 Resolution: architecture 2k² (the largest surface area of the three rooms, and M2 looks straight into the vault), frame kit 1k² (335 small rectangles need texel density on gilt, not area), three states each → six lightmaps. Rejected: packing frames into the 2k (frame texels fall below the gilt's bevel pitch); rejected: 4k (VRAM line and bake time on the reference device).
 
-4.5 Bake discipline on the two-core reference device (charter risk 6): preview bakes at quarter resolution for layout checks; one full bake per light round, three states sequentially, fixed seeds and sample counts under the committed baker's determinism contract; declared ceiling 40 min per state, 2.5 h total (re-measure); bake artefacts committed and regenerate byte-identically.
+4.5 Bake discipline on the two-core reference device (charter risk 6): preview bakes at quarter resolution for layout checks; one full bake per light round, three states sequentially, fixed seeds and sample counts under the committed baker's determinism contract; declared ceiling 40 min per state, 2.5 h total — re-measured at R6: day 33.0 / dusk 41.9 / night 43.5 min, total ≈118 min (dusk and night over the per-state line, total under the bound); bake artefacts committed and regenerate byte-identically.
 
 4.6 The R4 rig (the specialist's ruling, adopted 2026-10-25; residuals open):
 
@@ -191,7 +191,7 @@ Phase 3 ships room three, the Military Gallery of 1812 (route `#/1812`), and wit
   read — the vault lit in all three states. The honest means (day 0.022239 / dusk 0.012466
   / night 0.020330; the old day and dusk rode the leak) re-ruled the fences: the order law
   is «day > night», the dusk > night leg and the day/night ratio floor retire at M0.
-- **Open residuals (owner's eyeball at M1):** the monarch/portal crown (the
+- **Residuals — accepted as-is for v1 (owner eyeball, 2026-10-27; no fix this phase; the day's light-design call parked post-v1):** the monarch/portal crown (the
   canvas top sits 0.3-0.7 m behind the valance/pediment band — "centred under
   the pediment" by design, the 34% share is the owner's call); the portrait
   atlas's v orientation (`_basis`'s v points down — check the hang at runtime);
@@ -227,20 +227,19 @@ The adopted probe law applies unchanged (ADR-0013): one static dusk environment 
 
 ## 8. Box office
 
-All 1812 values are declared and marked (re-measure); committed sibling values are restored by the orchestrator at integration. Whole-frame peak is the jordan→1812 swap, when both rooms are briefly resident.
+All 1812 values were declared and marked (re-measure); **the reference device owns them at the exit round — re-measured at R6 (2026-10-27, the device pass + the ledger walk)**. Whole-frame peak is the jordan→1812 swap, when both rooms are briefly resident; the measured swap peak equals the two mounts' ledger sums exactly.
 
-| Row | rastrelli | jordan | 1812 (declared) | peak at swap | cap |
+| Row | rastrelli | jordan | 1812 (measured R6) | peak at swap | cap |
 |---|---|---|---|---|---|
-| Triangles | committed | committed | 48 k (22 k frames) | jordan + 48 k | committed frame cap |
-| Draw calls | committed | committed | 19 (7 for portraits) | jordan + 19 | committed frame cap |
-| VRAM textures | committed | committed | ~14 MB (3×2k, 3×1k, atlas, probe) | jordan + ~14 MB | committed VRAM cap |
-| VRAM geometry | committed | committed | ~3 MB | jordan + ~3 MB | committed VRAM cap |
-| Payload (room) | committed | committed | ~3.8 MB (lightmaps 2.7, atlas 0.5, kit 0.4, probe, parquet) | n/a | 8 MB per room |
-| JS gzip delta | committed | committed | +9 KB (room 3, layout+kit 2.5, index 2, i18n 1, misc 0.5) | n/a | 350 KB cap; ~90 KB headroom |
-| First lit frame, cold | committed | committed | ≤ hold beat + 2.5 s on the reference device and committed network | n/a | committed |
-| Bake time (3 states) | committed | committed | ≤ 2.5 h | n/a | discipline only |
+| Triangles | committed | committed | 31,090 total (manifest; 30,990 in frustum at the stops) | jordan + ~31 k | committed frame cap |
+| Draw calls | committed | committed | 17 (15 at the M1 block view) | jordan + 17 | committed frame cap |
+| VRAM (ledger walk) | committed | committed | 31.3 MB resident at the 1812 mount (all kinds; the HUD attr does not split kinds) | 38.4 MB — exactly the two mounts' sums | committed VRAM cap |
+| Payload (room) | committed | committed | 1,944,413 B (lm 550 k, atlas 419 k, glb 867 k, probe, parquet, manifest) | n/a | 4 MB (this room's manifest row) |
+| JS gzip delta | committed | committed | +12.4 KB landed (258,248 → 270,685; vs the +9 KB estimate — a recorded over-line) | n/a | 350 KB cap; ~79 KB headroom |
+| First lit frame, cold | committed | committed | unthrottled 1.5 s; @10 Mbps + 40 ms 3.6 s (vs the hold + 2.5 s estimate — a recorded over-line) | n/a | committed |
+| Bake time (3 states) | committed | committed | ≈118 min (day 33.0 / dusk 41.9 / night 43.5) | n/a | discipline only |
 
-Tight line: VRAM at the swap — jordan's 2k set plus the gallery's six lightmaps and atlas on integrated graphics. If it fails, the fix is art or tier (frame-kit lightmap to 512², atlas mips trimmed by content — never the number). The basis decoder row does not move: zero new loaders.
+Tight line: VRAM at the swap — jordan's 2k set plus the gallery's six lightmaps and atlas on integrated graphics. Measured R6: the peak is 38.4 MB of 256 — the line not approached, the 512² kit fallback never rehearsed. If it fails, the fix is art or tier (frame-kit lightmap to 512², atlas mips trimmed by content — never the number). The basis decoder row does not move: zero new loaders.
 
 ## 9. Golden frames plan
 
