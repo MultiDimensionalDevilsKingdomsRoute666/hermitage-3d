@@ -27,10 +27,7 @@ Ideas parked on purpose. Each carries a "why parked" line.
   осмотреться» is ~2.5× the old copy under `white-space: nowrap` at `--hint-size`; the hint's CSS
   was untouched this round. If the new RU copy clips at 360, allow a two-line wrap (or
   `text-wrap: balance`) for it — the R007 mobile corner law holds either way.
-- **The full v1 announcement prose (R6)** — the README banner landed minimal (one RU-first + EN line,
-  the owner's call: «very-very minimally for now»); the expanded announcement (the why-it-matters
-  prose, RU first + EN, the route as a story) rides a future CREATIVE relay together with another
-  taste task, per the owner's backlog ruling (2026-10-27). Why parked: taste work rides the strong
-  specialist only when a batch of it is queued; a lone banner is not that batch.
+- **The full v1 announcement prose (R6)** — LANDED in R8 (the README prose, RU first + EN); this item retires.
+- **The vision round (the conspectus + the new phases)** — when the current plan runs out (Phase 4 + the v2 menu): the orchestrator composes the full project conspectus (the ROUNDS history + STATE + the registers + the engineering laws → a ~2-page «what was built») and a CREATIVE relay proposes the project's next phases/directions from it, zero-steering. Why parked: the plan's end is the v2 menu's emptying; a vision before that would speculate past the committed direction (the owner's steer, 2026-10-27). Note: the charter's ≤ 7 rooms cap means the v2 menu's three room items exhaust the room budget — the vision round is where «what after» gets decided (more rooms need a charter ADR; non-room directions do not).
 
 Adding an item requires a "why parked" line; promoting one requires a phase slot and charter compatibility.
