@@ -70,14 +70,17 @@ export const SNOW_ROLL_SEGMENTS = 3;
 /** Design §2: 6–8 surface segments. */
 export const SNOW_SEGMENTS = SNOW_TOP_SEGMENTS + SNOW_ROLL_SEGMENTS;
 
-/** TUNING TARGET (DEC-033): bulge thickness at the crown's edge, metres (design §2: 10–15 cm). */
-export const SNOW_THICKNESS = 0.12;
+/** TUNING TARGET (DEC-033): bulge thickness at the crown's edge, metres. Tuned by the owner's
+ * verdict (2026-10-27): the design's 0.12 m was sub-pixel from the route (0.19 m/px at S0's
+ * 230 m) — raised to the cornice-drift scale (wind piles 2–3× the ground depth on cornices;
+ * real meteorology, within the license register's stylization). */
+export const SNOW_THICKNESS = 0.5;
 
-/** TUNING TARGET (DEC-033): overhang beyond the crown's outer edge, metres (design §2: a few cm). */
-export const SNOW_OVERHANG = 0.04;
+/** TUNING TARGET (DEC-033): overhang beyond the crown's outer edge, metres — proportional to the drift scale. */
+export const SNOW_OVERHANG = 0.1;
 
 /** TUNING TARGET (DEC-033): how far the drip hangs below the crown's top face, metres. */
-export const SNOW_DROOP = 0.03;
+export const SNOW_DROOP = 0.08;
 
 /** The lip tapers to nothing this far ahead of the run's back plane: no face in the wall plane. */
 export const SNOW_BACK_GAP = 0.02;

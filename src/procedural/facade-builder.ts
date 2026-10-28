@@ -572,7 +572,9 @@ export type FacadeSurfaceUniforms = Readonly<{ uSnow: { value: number } }>;
 
 export const FACADE_SURFACE_UNIFORMS: FacadeSurfaceUniforms = { uSnow: { value: 0 } };
 
-/** Snow catches on up-facing surfaces: dot(shadingNormal, worldUp) across this smoothstep. */
+/** Snow catches on up-facing surfaces: dot(shadingNormal, worldUp) across this smoothstep.
+ * Tuned by the owner's verdict (2026-10-27): the band lowered (0.45→0.8 → 0.3→0.75) so the
+ * shallower slopes — pediment rakes, broken-arch tops — catch the dusting from the rail. */
 export const SNOW_FACING = { lo: 0.45, hi: 0.8 } as const;
 
 /** TUNING TARGET (DEC-033): the cleared, trampled zone — coverage fades out below topM world height. */
