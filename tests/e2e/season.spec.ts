@@ -27,9 +27,11 @@ const hashParams = (page: Page): URLSearchParams => {
   return new URLSearchParams(mark === -1 ? '' : hash.slice(mark + 1));
 };
 
+const SETTLE_TIMEOUT_MS = 45_000; // the sibling-spec law: SwiftShader CI boots are slow, never gate on the default
+
 const settle = async (page: Page): Promise<void> => {
-  await expect(page.locator('#scrub')).toBeVisible();
-  await expect(page.locator('#season')).toBeVisible();
+  await expect(page.locator('#scrub')).toBeVisible({ timeout: SETTLE_TIMEOUT_MS });
+  await expect(page.locator('#season')).toBeVisible({ timeout: SETTLE_TIMEOUT_MS });
   await page.waitForTimeout(300);
 };
 
