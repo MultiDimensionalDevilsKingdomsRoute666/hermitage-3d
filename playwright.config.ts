@@ -48,7 +48,7 @@ export default defineConfig({
     {
       // The only project CI runs: `playwright test --project=chromium`.
       name: 'chromium',
-      testMatch: /(smoke|travel-hint|index-dialog)\.spec\.ts$/,
+      testMatch: /(smoke|season|travel-hint|index-dialog)\.spec\.ts$/,
       retries: isCi ? 1 : 0,
     },
     {

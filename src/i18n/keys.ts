@@ -27,7 +27,14 @@ export type ChromeKey =
   | 'chrome.canvasLabel'
   | 'chrome.descriptionNotes'
   | 'chrome.backLink'
-  | 'chrome.noscriptNotes';
+  | 'chrome.noscriptNotes'
+  | 'chrome.seasonLabel'
+  | 'chrome.seasonHelp'
+  | 'chrome.seasonNow'
+  | 'chrome.seasonWinter'
+  | 'chrome.seasonSpring'
+  | 'chrome.seasonSummer'
+  | 'chrome.seasonAutumn';
 
 /** Room index (design-gallery §6.2–6.4): the chrome button, the dialog heading, the current marker. */
 export type IndexKey = 'index.open' | 'index.title' | 'index.current';

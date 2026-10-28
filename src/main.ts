@@ -44,7 +44,7 @@ import {
   resolveQualityScale,
   TIERS,
 } from './engine/tier';
-import { t } from './i18n';
+import { type Key, t } from './i18n';
 import { formatDate, formatTime, PETERSBURG_OFFSET_LABEL } from './i18n/format';
 import { activateLang, activeLang, onLangChange, resolveLang } from './i18n/locale';
 import { noteTransitFrame, openTransitLog, type TransitLog } from './perf/transit-log';
@@ -58,6 +58,7 @@ import type { ArrivalState } from './sky/arrival';
 import { advanceArrival, initialArrival, presentationForArrival } from './sky/arrival';
 import { lightmapWeights } from './sky/lightmap-weights';
 import { createSkyRig } from './sky/rig';
+import { isSeasonId, type SeasonId, seasonInstant, seasonOf } from './sky/season';
 import { canonicalAt, parseTime, queryOf, scrubEpoch, type TimeState } from './sky/time';
 import {
   type CaptionStop,
@@ -166,6 +167,10 @@ const travelHint = document.querySelector('#travel-hint');
 if (!(travelHint instanceof HTMLElement)) throw new Error('#travel-hint missing');
 const edgePrompt = document.querySelector('#edge-prompt');
 if (!(edgePrompt instanceof HTMLButtonElement)) throw new Error('#edge-prompt missing');
+const season = document.querySelector('#season');
+if (!(season instanceof HTMLSelectElement)) throw new Error('#season select missing');
+const seasonHelp = document.querySelector('#season-help');
+if (!(seasonHelp instanceof HTMLElement)) throw new Error('#season-help missing');
 
 const isDeterministic = (state: TimeState): boolean =>
   state.mode === 'fixed' ? state.deterministic : false;
@@ -195,6 +200,14 @@ if (langResolution.override.kind === 'clear') clearStoredLang();
 // The overlay chrome the page owns, bound from the active dictionary on every switch
 // (§1.2: <html lang>, <title>, the meta description, every overlay string). The static
 // shell is RU — this bind is the only EN path, and it runs before the overlays show.
+const SEASON_OPTION_KEYS = {
+  now: 'chrome.seasonNow',
+  winter: 'chrome.seasonWinter',
+  spring: 'chrome.seasonSpring',
+  summer: 'chrome.seasonSummer',
+  autumn: 'chrome.seasonAutumn',
+} as const satisfies Readonly<Record<'now' | SeasonId, Key>>;
+
 const bindChrome = (): void => {
   document.documentElement.lang = activeLang();
   document.title = t('chrome.titleMain');
@@ -211,7 +224,13 @@ const bindChrome = (): void => {
   notesLink.textContent = t('chrome.notesLink');
   indexButton.textContent = t('index.open'); // §6.3: the dim index button
   indexHeading.textContent = t('index.title'); // the dialog's aria-labelledby heading
-  travelHint.textContent = t('chrome.travelHint'); // §9: swaps in place, timers untouched
+  travelHint.textContent = t('chrome.travelHint');
+  season.setAttribute('aria-label', t('chrome.seasonLabel'));
+  seasonHelp.textContent = t('chrome.seasonHelp');
+  for (const option of Array.from(season.options)) {
+    const value = option.value;
+    if (value === 'now' || isSeasonId(value)) option.textContent = t(SEASON_OPTION_KEYS[value]);
+  } // §9: swaps in place, timers untouched
   // The door label's text composes in the frame block (it names the current boundary's
   // destination); the language swap re-composes on the next visible frame.
   // The clock labels bind per minute-change; a fixed ?at= boot has no live resample, so
@@ -220,6 +239,16 @@ const bindChrome = (): void => {
   lastLabelEpochMs = -1;
   applyEpoch(epochMs);
 };
+
+// The select is DERIVED from the committed time state, never stored: live → now, fixed →
+// the local meteorological season of the instant. Re-derived after every commit and every
+// hashchange re-parse; never during scrub preview, never in the frame loop (design-
+// season-chooser.md §3).
+const syncSeasonSelect = (): void => {
+  const value = timeState.mode === 'live' ? 'now' : seasonOf(timeState.epochMs);
+  if (season.value !== value) season.value = value;
+};
+syncSeasonSelect();
 
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true }); // r22 experiment: MSAA on — the far-field aliasing fix; the budgets decide keep/revert
 renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -756,7 +785,10 @@ onLangChange(() => {
   bindChrome();
   seedRail(railNode);
 });
-void activateLang(langResolution.lang).then(() => bindChrome());
+void activateLang(langResolution.lang).then(() => {
+  bindChrome();
+  syncSeasonSelect();
+});
 bindLangToggle((target) => {
   setLangParam(target);
   writeStoredLang(target);
@@ -1190,6 +1222,7 @@ const cancelGesture = (): void => {
   timeState = restore;
   // A restored live mode samples current now, not the old anchor (§9).
   applyEpoch(restore.mode === 'live' ? Date.now() : restore.epochMs);
+  syncSeasonSelect();
 };
 
 const commitGesture = (): void => {
@@ -1205,7 +1238,35 @@ const commitGesture = (): void => {
   timeState = { mode: 'fixed', deterministic: isDeterministic(timeState), epochMs: committed };
   applyEpoch(committed);
   writeTimeUrl(committed); // one replaceState per commit; det and other params preserved (§9)
+  syncSeasonSelect();
 };
+
+const commitSeason = (targetMs: number): void => {
+  if (targetMs < TIME.minEpochMs || targetMs >= TIME.maxEpochMsExclusive) {
+    // refused: state unchanged, the select re-derives from it; diagnostics only (§9)
+    console.warn('zimny: season issue — out-of-range');
+    syncSeasonSelect();
+    return;
+  }
+  timeState = { mode: 'fixed', deterministic: isDeterministic(timeState), epochMs: targetMs };
+  applyEpoch(targetMs);
+  writeTimeUrl(targetMs); // one replaceState per commit; det and other params preserved (§9)
+  syncSeasonSelect();
+};
+
+season.addEventListener('change', () => {
+  cancelGesture(); // an external action cancels an in-progress scrub gesture (§9)
+  const choice = season.value;
+  if (choice === 'now') {
+    returnToNow();
+    return;
+  }
+  if (!isSeasonId(choice)) {
+    syncSeasonSelect();
+    return;
+  }
+  commitSeason(seasonInstant(epochMs, choice));
+});
 
 /** The room's own route into the hash at the transit's completion (the URL-is-the-state
  * law): route keys are ENTRIES' static data ('/' the resident, '/gallery', '/jordan');
@@ -1467,6 +1528,7 @@ function returnToNow(): void {
     writeTimeUrl();
     applyEpoch(now);
   }
+  syncSeasonSelect();
 }
 
 window.addEventListener('hashchange', () => {
@@ -1527,6 +1589,7 @@ window.addEventListener('hashchange', () => {
   } else {
     queuedTarget = target; // picked up by the settle hook
   }
+  syncSeasonSelect();
   // A probe still running when an explicit tier lands is cancelled by settleTier above;
   // an auto navigation leaves an open probe running to its own window end.
 });

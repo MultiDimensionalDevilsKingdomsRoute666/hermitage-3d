@@ -44,6 +44,15 @@ export const ru = {
   'chrome.backLink': '←\u00A0Дворцовая площадь',
   'chrome.noscriptNotes':
     'Для чисел нужен JavaScript: при загрузке страница заново запускает решатель фасада.',
+  'chrome.seasonLabel': 'Время года сцены',
+  'chrome.seasonHelp':
+    'Выбор времени года переносит дату сцены, сохраняя время суток; «Сейчас»\u00A0— ' +
+    'вернуться к текущему моменту.',
+  'chrome.seasonNow': 'Сейчас',
+  'chrome.seasonWinter': 'Зима',
+  'chrome.seasonSpring': 'Весна',
+  'chrome.seasonSummer': 'Лето',
+  'chrome.seasonAutumn': 'Осень',
   'index.open': 'Залы',
   'index.title': 'Залы',
   'index.current': 'Текущий зал',

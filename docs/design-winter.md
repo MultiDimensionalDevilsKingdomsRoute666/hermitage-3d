@@ -27,11 +27,10 @@ Phase 4 · Reach, round R8 (2026-10-27). Design by the CREATIVE relay (docs/brie
 - At wSnow = 0 every term is an exact identity (mix with 0, multiply by 1): out-of-season frames are analytically unchanged. Fence fallback if ≤1-LSB drift appears out of season: a compile-time define so the out-of-season program is literally today's source.
 - THE SLOT'S CONTRACT (fixing DEC-019's «material height gradient sharing a slot with Phase 4 snow» for the 5+ Floodlit item): inputs are world height, world normal and clock scalars; composition order is SURFACE TERMS BEFORE LIGHT TERMS (snow alters albedo/roughness/metalness before lighting; the floodlight later adds irradiance after) — floodlit snow glows warm without either term knowing the other; the cap's material registers in the same set (the cap is floodlit automatically later); no Light objects (light counts frozen); the world-height varying snow adds today is the one the gradient will use. Reserve the name and the order; ship NO dead flood uniform.
 
-## §4 The mode surface: NO mode
+## §4 The mode surface: the season chooser (amended R10/R11, 2026-10-28)
 
-- Winter is a law of the existing clock — the date drives snow the way elevation drives the lattice. No chrome control (principle 3; DEC-019's must-not-touch UI list), no new URL grammar, nothing persisted. at= is already the way to see any hour; it is now the way to see any season (a shareable winter link is an at= in January).
-- Rejected: a chrome toggle (violates principle 3 outright); a URL flag as the primary surface (a hidden feature nobody finds; a snowless December Petersburg as the default is incoherent with the thesis). A dev-only ?snow= override under the ?lm= precedent is acceptable LATER if the fence or art direction needs an out-of-season snow render — not in base scope.
-- Real weather via an API: a backend AND non-deterministic — doubly excluded by the charter.
+- Winter is a law of the existing clock — the date drives snow the way elevation drives the lattice. AMENDED by R10 (the owner's ratification; DEC-034): the chrome gains ONE control, a view of the clock — a native season `<select>` in the clock row that chooses the DATE (design-season-chooser.md). No new URL grammar (`at=` already carries the result), nothing persisted, the default stays the real clock.
+- The original rejections stand where the chooser does not touch them: a snow override independent of the date (breaks the thesis — sky and snow would disagree), real weather via an API (a backend AND non-deterministic). The «dev-only ?snow= override» residual is RETIRED — an out-of-season snow render is reachable by pinning `at=`, and the fence pins winter instants directly.
 
 ## §5 Budget accounting
 

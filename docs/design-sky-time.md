@@ -459,6 +459,12 @@ Clamp the requested offset to ±1,440 minutes before multiplication, round the r
 - Arrow keys step one minute; PageUp/PageDown step one hour; Home/End select the gesture bounds. Escape cancels. A focused-control `N` action returns to now, with an accessible instruction for that action. A pointer double-click may expose the same reset without adding permanent chrome.
 - Cancel, pointercancel, or focus loss restores the pre-gesture mode. A restored live mode samples current now, not the old anchor.
 - An external URL navigation cancels the gesture and takes precedence. Hiding the document also cancels an incomplete gesture.
+
+### The season transaction (R11; design-season-chooser.md §3, DEC-034)
+
+- The season `<select>` in the clock row is a view of the committed time state: live reads «now», fixed reads the local meteorological season of the instant. It is re-derived after every commit and on every hashchange re-parse; it is never written during scrub preview, and it lives outside this module's parser — the URL carries only the resulting canonical `at=`.
+- Choosing a season commits `seasonInstant(...)` — the season's anchor day in the scene instant's local civil year at the scene instant's local time of day — through the same transaction as the scrub: enter fixed time (det preserved), apply locally, one `history.replaceState` writing canonical `at=` with unrelated keys preserved, no history entry, no preview phase. Choosing «now» is the return-to-now law verbatim.
+- An in-progress scrub gesture is cancelled by a season change (the external-action clause). A resolved instant outside the supported epoch bounds is refused: state unchanged, the select re-synced, one console diagnostic — validation, not a clamp.
 - A later gesture may establish a new ±24-hour window. This is a per-gesture clamp, not a permanent prohibition on exploring other dates.
 
 The fixed UTC+03:00 policy means every local scrub day is exactly 24 hours; no DST discontinuity exists in this product’s time model.

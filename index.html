@@ -22,12 +22,25 @@
       aria-label="Прогулка по Зимнему дворцу"
       aria-describedby="scene-help caption-live"
     ></canvas>
-    <!-- Overlay, design-sky-time.md §9/§10: title on beat 2, hairline scrub only after settling. -->
+    <!-- Overlay, design-sky-time.md §9/§10: title on beat 2, hairline scrub only after settling.
+         R11: the season select is a date control at season granularity (its value is derived
+         from the committed time state, never stored); it rides the title reveal. -->
     <header id="title" hidden>
       <h1 id="wordmark">Зимний дворец</h1>
       <p id="timeline">
         <time id="clock">--:--</time>
         <span id="clock-date"></span>
+        <select id="season" aria-label="Время года сцены" aria-describedby="season-help">
+          <option value="now">Сейчас</option>
+          <option value="winter">Зима</option>
+          <option value="spring">Весна</option>
+          <option value="summer">Лето</option>
+          <option value="autumn">Осень</option>
+        </select>
+        <span id="season-help" class="sr-only"
+          >Выбор времени года переносит дату сцены, сохраняя время суток; «Сейчас» — вернуться
+          к текущему моменту.</span
+        >
       </p>
     </header>
     <input

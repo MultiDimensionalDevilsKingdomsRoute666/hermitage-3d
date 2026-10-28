@@ -47,12 +47,52 @@ body {
     line-height: 26px;
   }
 }
-/* §2.2: clock sans 400 15 with tabular numerals. */
+/* §2.2: clock sans 400 15 with tabular numerals. One line at every width: #index-open's
+   top offset is derived from this block's height. */
 #timeline {
   margin: 6px 0 0;
   font-size: 15px;
   color: rgba(255, 255, 255, 0.72);
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+/* R11: the season chooser is a date control in the clock row's register — the chrome's
+   0.55 white, the lang toggle's hover/focus law, a chevron drawn from gradients (no image,
+   no icon font). The 24 px hit target is folded back into the 18 px row with negative
+   vertical margins so the block's height, and #index-open's offset, do not move. */
+#season {
+  appearance: none;
+  -webkit-appearance: none;
+  margin: -3px 0 -3px 10px;
+  padding: 0 14px 0 0;
+  min-height: 24px;
+  border: 0;
+  border-radius: 0;
+  font: inherit;
+  line-height: 18px;
+  font-variant-numeric: inherit;
+  color: rgba(255, 255, 255, 0.55);
+  background-color: transparent;
+  background-image:
+    linear-gradient(45deg, transparent 50%, currentColor 50%),
+    linear-gradient(135deg, currentColor 50%, transparent 50%);
+  background-position:
+    right 5px top 50%,
+    right 0 top 50%;
+  background-size: 5px 5px;
+  background-repeat: no-repeat;
+  vertical-align: top;
+  cursor: pointer;
+}
+#season:hover,
+#season:focus-visible {
+  color: #fff;
+  text-decoration: underline;
+}
+/* the popup list is UA-painted: keep its items legible regardless of the page's white text */
+#season option {
+  color: #111;
+  background: #fff;
 }
 /* Hairline scrub — design-sky-time.md §9: a native focusable range, one pixel tall. */
 #scrub {

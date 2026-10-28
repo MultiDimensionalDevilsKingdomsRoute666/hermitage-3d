@@ -16,7 +16,7 @@ Status: **v1 · Phase 3 · The Gallery — shipped 2026-10-27** (Phase 0 · Mass
 
 Проект держали четыре правила. Зал — единица работы. Процедурное — там, где архитектура повторяется; ручное — только там, куда камера подходит близко. Свет — это и есть содержание, интерфейс почти отсутствует. Механики ровно столько, сколько уважил бы строгий рецензент. И всё сделано открыто: реестр из шестнадцати допущенных вольностей и семнадцати источников, шесть дневников разработки — от «Массы и неба» до «Галереи · v1», — и страница /notes прямо в приложении: как это устроено. Без бэкенда — статический сайт, который просто открывается в браузере.
 
-[hermitage-3d.pages.dev](https://hermitage-3d.pages.dev). Приходите в разное время суток и в разное время года — дворец будет другим. Дальше — зима: снег на карнизах.
+[hermitage-3d.pages.dev](https://hermitage-3d.pages.dev). Приходите в разное время суток и в разное время года — дворец будет другим. Зима — снег на карнизах — выбирается в часах рядом с датой, а зимний полдень открывается сразу: [ссылка в январь](https://hermitage-3d.pages.dev/#/?at=2026-01-15T10:00:00Z).
 
 ### Winter Palace · v1
 
@@ -28,7 +28,7 @@ The route is a single line; there is no free roaming. It begins on Palace Square
 
 Four rules held the project. The room is the unit of work. Procedural where the architecture repeats; handmade only where the camera gets close. Light is the feature, and the UI is nearly absent. Exactly as much machinery as a strict reviewer would respect. And all of it in the open: a register of sixteen artistic licenses and seventeen attributions, six devlogs — from "Mass & Sky" to "The Gallery · v1" — and a /notes page inside the app: how it is built. No backend — a static site that simply opens in a browser.
 
-[hermitage-3d.pages.dev](https://hermitage-3d.pages.dev). Come at different hours and in different seasons — the palace will be different. Next: winter — snow on the cornices.
+[hermitage-3d.pages.dev](https://hermitage-3d.pages.dev). Come at different hours and in different seasons — the palace will be different. Winter — snow on the cornices — is one click away in the clock beside the date, and a winter noon opens directly: [a link into January](https://hermitage-3d.pages.dev/#/?at=2026-01-15T10:00:00Z).
 
 ## What this is
 

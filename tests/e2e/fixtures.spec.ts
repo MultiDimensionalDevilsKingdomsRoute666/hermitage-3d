@@ -40,6 +40,13 @@ for (const viewport of VIEWPORTS) {
         });
         // Hide the canvas: visibility keeps layout, the dithering pixels leave the gate.
         await page.addStyleTag({ content: '#scene { visibility: hidden !important; }' });
+        // Pin the hint's PIXELS against the 6 s hold timer (the R11 en-1280 lesson: a slow
+        // page-level capture — 2–6 s per ADR-0012 — can cross HINT_HOLD_MS and dismiss the
+        // hint mid-shot, so two runs captured different states). The data-visible assert
+        // above still guards the state machine; this style only de-races the capture.
+        await page.addStyleTag({
+          content: '#travel-hint { opacity: 1 !important; transition: none !important; }',
+        });
         await page.waitForTimeout(300); // one settle margin: the fade transitions finish
         // Strict threshold: the overlays are deterministic DOM (the canvas is hidden), and a
         // loose ratio would swallow a whole layout change — text is <1% of the viewport.

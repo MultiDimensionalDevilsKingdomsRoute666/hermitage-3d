@@ -37,6 +37,15 @@ export const en = {
     'declared numbers, the kit of parts and the budget projection.',
   'chrome.backLink': '← Palace Square',
   'chrome.noscriptNotes': 'Numbers need JavaScript: the page re-runs the facade solver at load.',
+  'chrome.seasonLabel': 'Season of the scene',
+  'chrome.seasonHelp':
+    'Choosing a season moves the scene date and keeps the time of day; “Now” returns to the ' +
+    'current moment.',
+  'chrome.seasonNow': 'Now',
+  'chrome.seasonWinter': 'Winter',
+  'chrome.seasonSpring': 'Spring',
+  'chrome.seasonSummer': 'Summer',
+  'chrome.seasonAutumn': 'Autumn',
   'index.open': 'Rooms',
   'index.title': 'Rooms',
   'index.current': 'Current room',
