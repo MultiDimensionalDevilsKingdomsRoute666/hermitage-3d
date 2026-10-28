@@ -137,22 +137,22 @@ file in the same session.
 **Relay loop.** One self-contained English brief at a time to the specialist chat (no tools, no
 repo); wait for the reply; salvage-integrate (never paste wholesale); validate; commit own paths
 only; push; watch CI via gh CLI. One ROUNDS.md row per round (multi-relay rounds list their relay
-commits in the row). Open briefs live in docs/briefs/ as files; deleted once integrated.
-Owner reads Russian; briefs and code in English.
+commits in the row). Briefs are composed as .md files in the owner's vault folder
+(`/Users/vasilij/Documents/vasyapym-Vault/02_projects/projects v5`) and handed over as files —
+never typed into the chat (owner, 2026-10-28; not committed to the repo, not parked in
+docs/briefs/). Owner reads Russian; briefs and code in English.
 
 **Relay routing (owner, 2026-10-21).** Two tiers, declared by the orchestrator per round:
 - **creative** (design docs, art/generator laws, anything taste decides) → the strong specialist;
 - **mechanical** (bpy kits, wiring, docs, number-pinned work) → a cheaper fast model. Its briefs
-  pin every contract explicitly and lean HARDER on the MASKED-marker protocol — a cheap model
-  guesses a masked number instead of emitting the marker unless the brief says otherwise; the
-  orchestrator restores against the committed tree and validates harder.
+  pin every contract explicitly; the orchestrator validates harder.
 - Trivial mechanical work stays orchestrator-direct (no relay at all — the r24b/R006 precedent).
 
 **Transport traps (cost a full relay each when ignored).**
-1. Numbers in verbatim material get MASKED by the transport. Specialist protocol: never guess —
-   emit `MASKED-IN-BRIEF: keep the <name> value`; the orchestrator restores against the committed
-   tree. Best: briefs carry no verbatim numbers at all (room coordinates/budgets live in
-   orchestrator-owned files, not in the brief).
+1. RETIRED (owner, 2026-10-28): the MASKED-marker protocol. The transport masked verbatim
+   numbers exactly once — the single incident that wrote this list — so the marker protocol
+   (`MASKED-IN-BRIEF: keep the <name> value`) is no longer used in briefs. Numbers still belong
+   in orchestrator-owned files where convenient, as ordinary content.
 2. Long replies get truncated. Split whales at file boundaries; instruct: end with
    `TRUNCATED-HERE: <next file>`; continuation brief carries the adopted constants block + the
    committed file.
@@ -172,7 +172,7 @@ Owner reads Russian; briefs and code in English.
   tests live in tests/ (never beside modules), Vitest node style describe/it/expect, no jsdom;
   pure modules are three-free and DOM-free (regex-scannable); state laws in comments once, plain
   declarative style.
-- NUMBERS UNDER TRANSPORT paragraph + FORBIDDEN fence (per-round «must not touch» from design §10)
+- FORBIDDEN fence (per-round «must not touch» from design §10)
   + OUTPUT CONTRACT (numbered fenced blocks per file, one rationale line each, then CHALLENGES
   bullets) + closing line: «Before answering, challenge key assumptions, consider a credible
   alternative, and check likely failure cases; give the requested output with concise rationale
