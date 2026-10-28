@@ -12,7 +12,7 @@ Phase 4 · Reach, round R8 (2026-10-27). Design by the CREATIVE relay (docs/brie
 ## §2 The cornice cap (the signature element)
 
 - ONE merged mesh following the solver's UPPER cornice-run paths — 9 runs (5 section fronts + 4 risalit returns; the upper band is acrossPortal). The 8 LOWER cornice-runs (baseY 10.2) carry the slot term only — the cap belongs to the crown (~22 m).
-- The settled-snow profile: 6–8 segments — a convex bulge 10–15 cm thick rounding over the crown's outer edge with a few centimetres of overhang.
+- The settled-snow profile: 6–8 segments — a convex bulge rounding over the crown's outer edge with a small overhang. (TUNED R9.1 — the owner's first look verdict FAIL «no hint of snow»: the design's 10–15 cm lip is ~0.6 px from S0 at 230 m, ~0.19 m/px — sub-pixel; raised to the cornice-drift scale, SNOW_THICKNESS 0.5 m ≈ 2.6 px at S0 / 4.7 px at S1, SNOW_OVERHANG 0.1, SNOW_DROOP 0.08; the slot's SNOW_FACING band lowered 0.45→0.3 to catch the pediment rakes. LESSON: the metres-per-pixel visibility math belongs in every visual design review.)
 - The morph law: the base geometry is the profile collapsed onto the crown's top edge (sunk ~1 cm so no face is coplanar), the target is the full lip, the per-frame morph influence is wSnow — snow grows through November, melts through March–April, no custom GLSL, one built-in deterministic path.
 - Hidden outright at wSnow = 0 (the night lattice's mirror law): out of season the cap costs nothing and the frame is pixel-identical to today.
 - The cap's own MeshStandardMaterial: near-white, slightly cool albedo (linear ~0.82/0.86/0.92), roughness ~0.9, metalness 0, no texture. Free consequence of the existing law: at night hemi's ground warm-up (by wNight) draws a faint warm underline under the lip's cold sky-lit top.
@@ -78,6 +78,6 @@ Phase 4 · Reach, round R8 (2026-10-27). Design by the CREATIVE relay (docs/brie
 
 ## §9 Residuals for the owner
 
-- The four anchor dates: taste; tune against the first dec-noon render.
+- The four anchor dates: taste; tune against the first dec-noon render. (DONE R9.1: the owner's verdict tuned the constants — see §2.)
 - The prose's closing «Дальше — зима» line: removable if the owner prefers not to promise.
 - The ?snow= dev override: deferred, not in base scope.
