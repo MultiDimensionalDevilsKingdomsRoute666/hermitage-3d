@@ -79,4 +79,4 @@ Phase 4 · Reach, round R8 (2026-10-27). Design by the CREATIVE relay (docs/brie
 
 - The four anchor dates: taste; tune against the first dec-noon render. (DONE R9.1: the owner's verdict tuned the constants — see §2.)
 - The prose's closing «Дальше — зима» line: removable if the owner prefers not to promise.
-- The ?snow= dev override: deferred, not in base scope.
+- The ground term (R12): the square carries trampled snow — docs/design-ground-snow.md; the «?snow= dev override» residual above is retired by §4 (R10/R11).

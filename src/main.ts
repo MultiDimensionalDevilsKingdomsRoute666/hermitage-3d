@@ -50,6 +50,7 @@ import { activateLang, activeLang, onLangChange, resolveLang } from './i18n/loca
 import { noteTransitFrame, openTransitLog, type TransitLog } from './perf/transit-log';
 import { buildFacade, FACADE_SURFACE_UNIFORMS } from './procedural/facade-builder';
 import { solveSouthFacade } from './procedural/facade-solver';
+import { GROUND_SNOW_UNIFORMS, patchGroundSnowSlot } from './procedural/ground-snow';
 import { buildNightLattice } from './procedural/night-lattice';
 import { buildSnowCap } from './procedural/snow-cap';
 import { buildThroat, openGroundArch, setThroatOpacity } from './procedural/throat';
@@ -102,6 +103,7 @@ import {
   finishTransit,
   type TransitState,
 } from './world/airlock';
+import { snowBounceGround } from './world/ground-snow';
 import { parseLmParam } from './world/lm-mode';
 import { WINDOW_WARM_LINEAR, warmGround } from './world/night-facade';
 import {
@@ -374,6 +376,8 @@ const groundMaterial = new THREE.MeshLambertMaterial({
   transparent: true,
   opacity: 0,
 });
+// R12: the ground-snow slot — the one onBeforeCompile on the ground material (design-ground-snow.md §2).
+patchGroundSnowSlot(groundMaterial);
 const ground = new THREE.Mesh(new THREE.PlaneGeometry(600, 600), groundMaterial);
 ground.rotation.x = -Math.PI / 2;
 palace.add(
@@ -486,13 +490,12 @@ const applyEpoch = (nextEpochMs: number): void => {
   const wNight = lightmapWeights(elevationDegOf(sample)).nightChandeliers;
   nightLattice.setNight(wNight);
   // DEC-033: the season law reads the same instant the sun samples (at=/det=), never Date.now();
-  // three writes per frame — morph influence + cap visibility, and the kit slot's one uniform.
+  // four writes per frame — morph influence + cap visibility, and the two slots' uniforms (R12).
   const wSnow = snowWeight(nextEpochMs);
   snowCap.setSnow(wSnow);
   FACADE_SURFACE_UNIFORMS.uSnow.value = wSnow;
-  hemi.groundColor.setRGB(
-    ...warmGround([0.25 * h[0], 0.25 * h[1], 0.25 * h[2]], WINDOW_WARM_LINEAR, wNight),
-  );
+  GROUND_SNOW_UNIFORMS.uSnow.value = wSnow;
+  hemi.groundColor.setRGB(...warmGround(snowBounceGround(h, wSnow), WINDOW_WARM_LINEAR, wNight));
   // Label churn guard: the DOM text only changes when the minute actually changes.
   if (nextEpochMs !== lastLabelEpochMs) {
     lastLabelEpochMs = nextEpochMs;
