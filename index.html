@@ -3,8 +3,9 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <!-- R13: the page's own widgets (the season select's UA-painted popup) follow the dark
-         chrome, not the UA default light scheme — color-scheme is the popup's only lever. -->
+    <!-- R16: the page's UA-painted surfaces (residual UA widgets, engine scrollbars) keep the
+         dark chrome; the season control is in-page now — its native popup is retired
+         (DEC-036), so color-scheme is no longer a popup lever. -->
     <meta name="color-scheme" content="dark" />
     <meta
       name="description"
@@ -26,20 +27,32 @@
       aria-describedby="scene-help caption-live"
     ></canvas>
     <!-- Overlay, design-sky-time.md §9/§10: title on beat 2, hairline scrub only after settling.
-         R11: the season select is a date control at season granularity (its value is derived
-         from the committed time state, never stored); it rides the title reveal. -->
+         R16: the season control stays a date control at season granularity (its value is
+         derived from the committed time state, never stored — DEC-034) but opens an in-page
+         listbox instead of the UA-painted native popup; the closed face is a plain button
+         in the clock row's voice (DEC-036). -->
     <header id="title" hidden>
       <h1 id="wordmark">Зимний дворец</h1>
       <p id="timeline">
         <time id="clock">--:--</time>
         <span id="clock-date"></span>
-        <select id="season" aria-label="Время года сцены" aria-describedby="season-help">
-          <option value="now">Сейчас</option>
-          <option value="winter">Зима</option>
-          <option value="spring">Весна</option>
-          <option value="summer">Лето</option>
-          <option value="autumn">Осень</option>
-        </select>
+        <span id="season-label" class="sr-only">Время года сцены</span>
+        <button
+          id="season"
+          type="button"
+          aria-haspopup="listbox"
+          aria-expanded="false"
+          aria-controls="season-list"
+          aria-labelledby="season-label season"
+          aria-describedby="season-help"
+        >Сейчас</button>
+        <div id="season-list" role="listbox" aria-labelledby="season-label" hidden>
+          <div role="option" tabindex="-1" data-season="now" aria-selected="true">Сейчас</div>
+          <div role="option" tabindex="-1" data-season="winter">Зима</div>
+          <div role="option" tabindex="-1" data-season="spring">Весна</div>
+          <div role="option" tabindex="-1" data-season="summer">Лето</div>
+          <div role="option" tabindex="-1" data-season="autumn">Осень</div>
+        </div>
         <span id="season-help" class="sr-only"
           >Выбор времени года переносит дату сцены, сохраняя время суток; «Сейчас» — вернуться
           к текущему моменту.</span

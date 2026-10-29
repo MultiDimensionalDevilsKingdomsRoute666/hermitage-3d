@@ -408,3 +408,11 @@ The sequencing ruling (2026-10-28, the owner): R11 (the chooser, mechanical) →
 caption-collision defect round (parking lot) → R12 (the ground-snow look) → the index-face
 round (parking lot; the Rooms menu restyled to the /notes design language) → the Phase-4
 queue.
+
+R16 amendment (2026-10-29, DEC-036): the §5 «native select opens the OS picker» carrier is
+amended — the native popup is retired (three Windows engines paint it from UA color
+providers no gate reaches; V1) and the open face is an in-page listbox under the clock row
+(the room menu's row voice and keyboard law without its modality). The closed face, the
+derived-value law, the anchors and the at= transaction are untouched; the §5 hit-target and popup
+records stay superseded by the listbox (the 24 px target-size note rides the a11y pass
+unchanged).

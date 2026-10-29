@@ -96,6 +96,7 @@ import {
   setLangParam,
   writeStoredLang,
 } from './ui/lang-host';
+import { createSeasonMenu } from './ui/season-menu';
 import {
   advanceTransit,
   beatProgress,
@@ -170,7 +171,11 @@ if (!(travelHint instanceof HTMLElement)) throw new Error('#travel-hint missing'
 const edgePrompt = document.querySelector('#edge-prompt');
 if (!(edgePrompt instanceof HTMLButtonElement)) throw new Error('#edge-prompt missing');
 const season = document.querySelector('#season');
-if (!(season instanceof HTMLSelectElement)) throw new Error('#season select missing');
+if (!(season instanceof HTMLButtonElement)) throw new Error('#season button missing');
+const seasonList = document.querySelector('#season-list');
+if (!(seasonList instanceof HTMLElement)) throw new Error('#season-list missing');
+const seasonLabel = document.querySelector('#season-label');
+if (!(seasonLabel instanceof HTMLElement)) throw new Error('#season-label missing');
 const seasonHelp = document.querySelector('#season-help');
 if (!(seasonHelp instanceof HTMLElement)) throw new Error('#season-help missing');
 
@@ -227,11 +232,13 @@ const bindChrome = (): void => {
   indexButton.textContent = t('index.open'); // §6.3: the dim index button
   indexHeading.textContent = t('index.title'); // the dialog's aria-labelledby heading
   travelHint.textContent = t('chrome.travelHint');
-  season.setAttribute('aria-label', t('chrome.seasonLabel'));
+  seasonMenu.closeIfOpen(); // R16: a language swap closes the menu; the next open relabels
+  seasonLabel.textContent = t('chrome.seasonLabel');
   seasonHelp.textContent = t('chrome.seasonHelp');
-  for (const option of Array.from(season.options)) {
-    const value = option.value;
-    if (value === 'now' || isSeasonId(value)) option.textContent = t(SEASON_OPTION_KEYS[value]);
+  for (const row of Array.from(seasonList.querySelectorAll<HTMLElement>('[data-season]'))) {
+    const value = row.dataset.season;
+    if (value === undefined) throw new Error('season row without data-season');
+    if (value === 'now' || isSeasonId(value)) row.textContent = t(SEASON_OPTION_KEYS[value]);
   } // §9: swaps in place, timers untouched
   // The door label's text composes in the frame block (it names the current boundary's
   // destination); the language swap re-composes on the next visible frame.
@@ -242,15 +249,35 @@ const bindChrome = (): void => {
   applyEpoch(epochMs);
 };
 
-// The select is DERIVED from the committed time state, never stored: live → now, fixed →
-// the local meteorological season of the instant. Re-derived after every commit and every
-// hashchange re-parse; never during scrub preview, never in the frame loop (design-
-// season-chooser.md §3).
+// The season control is DERIVED from the committed time state, never stored: live → now,
+// fixed → the local meteorological season of the instant. Re-derived after every commit
+// and every hashchange re-parse; never during scrub preview, never in the frame loop.
 const syncSeasonSelect = (): void => {
   const value = timeState.mode === 'live' ? 'now' : seasonOf(timeState.epochMs);
-  if (season.value !== value) season.value = value;
+  season.textContent = t(SEASON_OPTION_KEYS[value]);
+  for (const row of Array.from(seasonList.querySelectorAll<HTMLElement>('[data-season]'))) {
+    row.setAttribute('aria-selected', String(row.dataset.season === value));
+  }
 };
 syncSeasonSelect();
+
+// R16 (DEC-036): the season menu — the in-page listbox owning the open face; the commit
+// path is the select's old change law verbatim (§9: cancel the scrub gesture, «Сейчас»
+// commits the return-to-now law, a season commits its anchor instant).
+const commitSeasonChoice = (choice: 'now' | SeasonId): void => {
+  cancelGesture(); // an external action cancels an in-progress scrub gesture (§9)
+  if (choice === 'now') {
+    returnToNow();
+    return;
+  }
+  commitSeason(seasonInstant(epochMs, choice));
+};
+const seasonMenu = createSeasonMenu({
+  button: season,
+  list: seasonList,
+  sync: syncSeasonSelect,
+  commit: commitSeasonChoice,
+});
 
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true }); // r22 experiment: MSAA on — the far-field aliasing fix; the budgets decide keep/revert
 renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -1246,7 +1273,7 @@ const commitGesture = (): void => {
 
 const commitSeason = (targetMs: number): void => {
   if (targetMs < TIME.minEpochMs || targetMs >= TIME.maxEpochMsExclusive) {
-    // refused: state unchanged, the select re-derives from it; diagnostics only (§9)
+    // refused: state unchanged, the control re-derives from it; diagnostics only (§9)
     console.warn('zimny: season issue — out-of-range');
     syncSeasonSelect();
     return;
@@ -1256,20 +1283,6 @@ const commitSeason = (targetMs: number): void => {
   writeTimeUrl(targetMs); // one replaceState per commit; det and other params preserved (§9)
   syncSeasonSelect();
 };
-
-season.addEventListener('change', () => {
-  cancelGesture(); // an external action cancels an in-progress scrub gesture (§9)
-  const choice = season.value;
-  if (choice === 'now') {
-    returnToNow();
-    return;
-  }
-  if (!isSeasonId(choice)) {
-    syncSeasonSelect();
-    return;
-  }
-  commitSeason(seasonInstant(epochMs, choice));
-});
 
 /** The room's own route into the hash at the transit's completion (the URL-is-the-state
  * law): route keys are ENTRIES' static data ('/' the resident, '/gallery', '/jordan');

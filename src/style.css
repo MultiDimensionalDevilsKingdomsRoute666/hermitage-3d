@@ -58,11 +58,11 @@ body {
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
-/* R11 native select, unchanged behaviour (the value re-derived from the committed time
-   state; the season commits through the scrub's hash transaction). Face = the clock's
-   own type (inherit), one 4 px chevron at currentColor; no weight, size or alpha of its
-   own. The popup list is UA-painted (color-scheme dark in index.html). The 24 px hit
-   target folds into the 18 px line with negative vertical margins. */
+/* R16 (DEC-036): the closed face — the clock's own type (inherit), one 4 px chevron at
+   currentColor; no weight, size or alpha of its own. The season control is a plain button
+   with aria-haspopup="listbox"; the 24 px hit target folds into the 18 px line with
+   negative vertical margins. The open face (#season-list) is the room menu's row voice
+   without its modality: no dialog, no backdrop, no centering (the r16 disposition). */
 #season {
   appearance: none;
   -webkit-appearance: none;
@@ -94,6 +94,64 @@ body {
 #season:focus-visible {
   color: #fff;
   text-decoration: underline;
+}
+#season[aria-expanded="true"] {
+  color: #fff;
+}
+/* The list hangs under the clock row, left-aligned to the header's 24px inset. Tokens
+   duplicate the #index-dialog values by value (::backdrop precedent — custom properties
+   do not cross element scopes; r14's recorded trade). */
+#timeline {
+  position: relative;
+}
+#season-list {
+  --ink: #e8e4dc;
+  --ink-2: #a1a6a3;
+  position: absolute;
+  left: 0;
+  top: calc(100% + 8px);
+  z-index: 1;
+  margin: 0;
+  padding: 12px 24px;
+  list-style: none;
+  width: max-content;
+  min-width: 9rem;
+  max-width: calc(100vw - 48px);
+  border: 1px solid #4e565f;
+  border-radius: 3px;
+  background: #151a21;
+  color: var(--ink);
+  font-family: var(--font-sans, system-ui, sans-serif);
+  font-size: 15px;
+  line-height: 22px;
+}
+#season-list[hidden] {
+  display: none;
+}
+#season-list [data-season] {
+  margin: 0;
+  padding: 8px 0;
+  cursor: pointer;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+  color: var(--ink-2);
+  transition: color var(--dur, 160ms);
+}
+#season-list [data-season]:hover,
+#season-list [data-season]:focus-visible {
+  color: var(--ink);
+}
+#season-list [data-season]:focus-visible {
+  text-decoration: underline;
+}
+#season-list [data-season][aria-selected="true"] {
+  color: var(--ink);
+  font-weight: 500;
+}
+@media (prefers-reduced-motion: reduce) {
+  #season-list [data-season] {
+    transition: none;
+  }
 }
 /* Hairline scrub — design-sky-time.md §9: a native focusable range, one pixel tall. */
 #scrub {
@@ -312,6 +370,8 @@ body {
   margin: 0;
   padding: 8px 0;
   border: 0;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
   background: none;
   text-align: left;
   cursor: pointer;
@@ -324,9 +384,16 @@ body {
 #index-list button:focus-visible {
   color: var(--ink);
 }
+/* R16 (the V3 disposition): focus is shown by the chrome's own law — the label rises to
+   ink and takes the underline (the #season/#edge-prompt voice), not a box; the focus
+   ring returns only where the engine strips colour (forced-colors). */
 #index-list button:focus-visible {
-  outline: 2px solid var(--ink);
-  outline-offset: 2px;
+  text-decoration: underline;
+}
+@media (forced-colors: active) {
+  #index-list button:focus-visible {
+    outline: auto;
+  }
 }
 /* aria-current stays the carrier; the face is ink + medium. */
 #index-list button[aria-current="true"] {
@@ -472,9 +539,10 @@ body {
    phases (transit / S0 settle / rail-end settle), so opacity is the only thing that ever
    animates — no fixed offset can overlap the caption's lines again (the §4 «a two-line
    caption can never overlap its own title» law, now structural). The stack anchors at
-   the notes link's line (bottom 40); at ≤767 px it steps above the chrome row (bottom
-   69 = 40 + the 14px/1.5 link line + one 8 px gap — the recorded §9 raise, restored in
-   R004 coordinates after the R004/R007 corner reshuffles dropped it). */
+   the notes link's line (bottom 40). R16: on phones (≤767.98) the caption's slot is not
+   shown (SR mirror and state machine keep running) and the stack returns to that same
+   40 px line — the R13 69 px step existed to clear the link for the caption's slot;
+   see the ≤767 media block below. */
 #corner-stack {
   position: fixed;
   right: 24px;
@@ -487,8 +555,17 @@ body {
   pointer-events: none;
 }
 @media (max-width: 767.98px) {
+  /* R16 (the V2 disposition): the caption's slot is not shown on phones (the SR mirror
+     and the state machine run on — the travel-hint precedent); the surviving members
+     (the transit card, the door button) sit on the link's own line (bottom 40 — the
+     69 px step was the R13 anchor for the caption's slot), their column capped left of
+     the link «Как это устроено →» (~168 px at 14 px in both languages) + the 24 px
+     insets. */
+  #caption {
+    display: none;
+  }
   #corner-stack {
-    bottom: 69px;
+    max-width: calc(100vw - 48px - 10.5rem);
   }
 }
 .caption-title,

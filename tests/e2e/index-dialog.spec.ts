@@ -39,6 +39,11 @@ test('arrows move, Enter jumps — the jump takes the cold-entry path (§6.4)', 
   await settleIndex(page, 'rastrelli-gallery');
   await page.locator('#index-open').click();
   await page.keyboard.press('ArrowDown'); // the current room (gallery) → jordan
+  // R16 (the V3 disposition): no box — the label rises to ink and takes the underline
+  // (the chrome's one focus law); forced-colors keeps the engine outline (untestable here).
+  const focusedRow = page.locator('#index-list button').nth(2); // jordan after the arrow
+  await expect(focusedRow).toHaveCSS('text-decoration-line', 'underline');
+  await expect(focusedRow).toHaveCSS('outline-style', 'none');
   await page.keyboard.press('Enter');
   await expect(page.locator('#index-dialog')).toBeHidden();
   // The card carries the destination's sentence title (the sticky breadcrumb row)…

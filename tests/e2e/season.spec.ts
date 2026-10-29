@@ -1,10 +1,13 @@
 // tests/e2e/season.spec.ts
-// R11 — the manual season chooser (design-season-chooser.md; DEC-034). The select is a
+// R16 — the season menu (design-season-chooser.md + DEC-034/036). The control is a
 // DERIVED view of the committed time state: choosing a season commits the anchor day
 // through the scrub's at= transaction (one replaceState, unrelated keys preserved, no
-// history entry); «Сейчас» is the scrub's return-to-now law. Ground rules (the sibling
-// specs): ?hud=1 rides the HASH query; a deep link boots on a FRESH page; the settle
-// proxy is #scrub visible + the select + one margin.
+// history entry); «Сейчас» is the scrub's return-to-now law. R16 moved the open face
+// in-page: the control is a button with aria-haspopup="listbox" whose listbox borrows
+// the room menu's row voice and keyboard law without its modality (no dialog, no
+// backdrop, no centering). Ground rules (the sibling specs): ?hud=1 rides the HASH
+// query; a deep link boots on a FRESH page; the settle proxy is #scrub visible + the
+// control + one margin.
 import { expect, type Page, test } from '@playwright/test';
 
 const JUNE_AT = '2026-06-22T03:18:00Z'; // the committed det day instant (06:18 +03)
@@ -12,6 +15,7 @@ const DEC_AT = '2026-12-21T10:00:00Z'; // the dec-noon golden
 const EDGE_AT = '2099-12-31T22:00:00Z'; // 2100-01-01 01:00 +03: the only window whose anchors leave the bounds
 
 type Lang = 'ru' | 'en';
+type SeasonChoice = 'now' | 'winter' | 'spring' | 'summer' | 'autumn';
 
 const seedUrl = (at: string | null, lang: Lang, det = true): string => {
   const parts: string[] = [];
@@ -35,40 +39,59 @@ const settle = async (page: Page): Promise<void> => {
   await page.waitForTimeout(300);
 };
 
+// The menu interaction: open (click), choose (a row click). The list closes on every
+// commit; the derived value is the aria-selected carrier plus the button's label.
+const openMenu = async (page: Page): Promise<void> => {
+  await page.locator('#season').click();
+  await expect(page.locator('#season-list')).toBeVisible({ timeout: SETTLE_TIMEOUT_MS });
+};
+
+const choose = async (page: Page, id: SeasonChoice): Promise<void> => {
+  await openMenu(page);
+  await page.locator(`#season-list [data-season="${id}"]`).click();
+};
+
+const expectDerived = async (page: Page, id: SeasonChoice): Promise<void> => {
+  await expect(page.locator(`#season-list [data-season="${id}"]`)).toHaveAttribute(
+    'aria-selected',
+    'true',
+  );
+};
+
 test.describe('season chooser — choosing a season commits the anchor day', () => {
   test('winter from a June det boot moves at= to Jan 15 at the same time, keeps the seed params', async ({
     page,
   }) => {
     await page.goto(seedUrl(JUNE_AT, 'ru'));
     await settle(page);
-    await expect(page.locator('#season')).toHaveValue('summer');
-    await page.selectOption('#season', 'winter');
+    await expectDerived(page, 'summer');
+    await choose(page, 'winter');
     const params = hashParams(page);
     expect(params.get('at')).toBe('2026-01-15T03:18:00.000Z');
     expect(params.get('det')).toBe('1');
     expect(params.get('hud')).toBe('1');
     expect(params.get('lang')).toBe('ru');
-    await expect(page.locator('#season')).toHaveValue('winter');
+    await expectDerived(page, 'winter');
     await expect(page.locator('#clock-date')).toContainText('15 января 2026');
   });
 
   test('the same commit under lang=en writes the same instant', async ({ page }) => {
     await page.goto(seedUrl(JUNE_AT, 'en'));
     await settle(page);
-    await page.selectOption('#season', 'winter');
+    await choose(page, 'winter');
     const params = hashParams(page);
     expect(params.get('at')).toBe('2026-01-15T03:18:00.000Z');
     expect(params.get('det')).toBe('1');
     expect(params.get('lang')).toBe('en');
-    await expect(page.locator('#season')).toHaveValue('winter');
+    await expectDerived(page, 'winter');
   });
 
   test('autumn from a December boot keeps the local time of day', async ({ page }) => {
     await page.goto(seedUrl(DEC_AT, 'en'));
     await settle(page);
-    await page.selectOption('#season', 'autumn');
+    await choose(page, 'autumn');
     expect(hashParams(page).get('at')).toBe('2026-10-15T10:00:00.000Z');
-    await expect(page.locator('#season')).toHaveValue('autumn');
+    await expectDerived(page, 'autumn');
   });
 });
 
@@ -79,7 +102,7 @@ test.describe('season chooser — «now» under det', () => {
     await page.goto(seedUrl(DEC_AT, 'en'));
     await settle(page);
     const before = Date.now();
-    await page.selectOption('#season', 'now');
+    await choose(page, 'now');
     const params = hashParams(page);
     const at = params.get('at');
     expect(at).not.toBeNull();
@@ -90,9 +113,8 @@ test.describe('season chooser — «now» under det', () => {
     expect(params.get('det')).toBe('1');
     expect(params.get('hud')).toBe('1');
     expect(params.get('lang')).toBe('en');
-    // frozen time is never «now»: the select shows the season of the captured instant
-    const value = await page.locator('#season').inputValue();
-    expect(['winter', 'spring', 'summer', 'autumn']).toContain(value);
+    // frozen time is never «now»: the button shows the season of the captured instant
+    await expect(page.locator('#season')).toHaveText('Winter');
   });
 });
 
@@ -100,20 +122,23 @@ test.describe('season chooser — the value is derived from the time state at bo
   test('a December at= boot reads winter before any interaction', async ({ page }) => {
     await page.goto(seedUrl(DEC_AT, 'en'));
     await settle(page);
-    await expect(page.locator('#season')).toHaveValue('winter');
+    await expect(page.locator('#season')).toHaveText('Winter');
+    await expectDerived(page, 'winter');
     expect(hashParams(page).get('at')).toBe(DEC_AT); // the derive writes nothing
   });
 
   test('a June at= boot reads summer', async ({ page }) => {
     await page.goto(seedUrl(JUNE_AT, 'ru'));
     await settle(page);
-    await expect(page.locator('#season')).toHaveValue('summer');
+    await expect(page.locator('#season')).toHaveText('Лето');
+    await expectDerived(page, 'summer');
   });
 
   test('a live boot reads now', async ({ page }) => {
     await page.goto(seedUrl(null, 'en', false));
     await settle(page);
-    await expect(page.locator('#season')).toHaveValue('now');
+    await expect(page.locator('#season')).toHaveText('Now');
+    await expectDerived(page, 'now');
     expect(hashParams(page).has('at')).toBe(false);
   });
 });
@@ -122,17 +147,21 @@ test.describe('season chooser — language switch', () => {
   test('keeps the value and swaps the labels', async ({ page }) => {
     await page.goto(seedUrl(DEC_AT, 'en'));
     await settle(page);
-    const select = page.locator('#season');
-    await expect(select).toHaveValue('winter');
-    await expect(select).toHaveAttribute('aria-label', 'Season of the scene');
-    await expect(select.locator('option[value="winter"]')).toHaveText('Winter');
-    await expect(select.locator('option[value="now"]')).toHaveText('Now');
-    await page.locator('#lang-toggle').click();
+    const button = page.locator('#season');
+    await expectDerived(page, 'winter');
+    await expect(page.locator('#season-label')).toHaveText('Season of the scene');
+    await openMenu(page);
+    await expect(page.locator('[data-season="winter"]')).toHaveText('Winter');
+    await expect(page.locator('[data-season="now"]')).toHaveText('Now');
+    await page.locator('#lang-toggle').click(); // an open menu closes on a language swap
     await expect(page.locator('html')).toHaveAttribute('lang', 'ru');
-    await expect(select).toHaveValue('winter');
-    await expect(select).toHaveAttribute('aria-label', 'Время года сцены');
-    await expect(select.locator('option[value="winter"]')).toHaveText('Зима');
-    await expect(select.locator('option[value="now"]')).toHaveText('Сейчас');
+    await expect(page.locator('#season-list')).toBeHidden();
+    await expectDerived(page, 'winter');
+    await expect(button).toHaveText('Зима');
+    await expect(page.locator('#season-label')).toHaveText('Время года сцены');
+    await openMenu(page);
+    await expect(page.locator('[data-season="winter"]')).toHaveText('Зима');
+    await expect(page.locator('[data-season="now"]')).toHaveText('Сейчас');
     await expect(page.locator('#season-help')).toContainText('Выбор времени года');
     expect(hashParams(page).get('at')).toBe(DEC_AT);
   });
@@ -147,21 +176,31 @@ test.describe('season chooser — the clock row stays one line at 360 px', () =>
       await settle(page);
       const row = await page.locator('#timeline').boundingBox();
       const clock = await page.locator('#clock').boundingBox();
-      const select = await page.locator('#season').boundingBox();
+      const button = await page.locator('#season').boundingBox();
       expect(row).not.toBeNull();
       expect(clock).not.toBeNull();
-      expect(select).not.toBeNull();
-      if (row === null || clock === null || select === null) return;
+      expect(button).not.toBeNull();
+      if (row === null || clock === null || button === null) return;
       expect(row.height).toBeLessThanOrEqual(40);
-      // a wrapped row would place the select on a second line below the clock
-      expect(Math.abs(select.y - clock.y)).toBeLessThanOrEqual(6);
-      expect(select.x + select.width).toBeLessThanOrEqual(360);
+      // a wrapped row would place the control on a second line below the clock
+      expect(Math.abs(button.y - clock.y)).toBeLessThanOrEqual(6);
+      expect(button.x + button.width).toBeLessThanOrEqual(360);
+
+      // R16: the opened list stays inside the viewport at the phone width
+      await openMenu(page);
+      const list = await page.locator('#season-list').boundingBox();
+      expect(list).not.toBeNull();
+      if (list === null) return;
+      expect(list.x).toBeGreaterThanOrEqual(0);
+      expect(list.y).toBeGreaterThanOrEqual(0);
+      expect(list.x + list.width).toBeLessThanOrEqual(360);
+      expect(list.y + list.height).toBeLessThanOrEqual(744);
     });
   }
 });
 
 test.describe('season chooser — the bounds refusal', () => {
-  test('an anchor outside 1901–2100 is refused: state unchanged, select re-synced, one warn', async ({
+  test('an anchor outside 1901–2100 is refused: state unchanged, control re-synced, one warn', async ({
     page,
   }) => {
     const warnings: string[] = [];
@@ -170,12 +209,103 @@ test.describe('season chooser — the bounds refusal', () => {
     });
     await page.goto(seedUrl(EDGE_AT, 'en'));
     await settle(page);
-    await expect(page.locator('#season')).toHaveValue('winter');
-    await page.selectOption('#season', 'summer');
+    await expectDerived(page, 'winter');
+    await choose(page, 'summer');
     const params = hashParams(page);
     expect(params.get('at')).toBe(EDGE_AT);
     expect(params.get('det')).toBe('1');
-    await expect(page.locator('#season')).toHaveValue('winter');
+    await expectDerived(page, 'winter');
+    await expect(page.locator('#season-list')).toBeHidden();
     expect(warnings.filter((w) => w.includes('season issue — out-of-range'))).toHaveLength(1);
+  });
+});
+
+test.describe('season menu — the open-face laws (DEC-036)', () => {
+  test('the keyboard opens, the selected row takes focus, and the row focus is the chrome law', async ({
+    page,
+  }) => {
+    await page.goto(seedUrl(JUNE_AT, 'en'));
+    await settle(page);
+    await page.locator('#season').focus();
+    await page.keyboard.press('ArrowDown');
+    await expect(page.locator('#season-list')).toBeVisible();
+    await expect(page.locator('#season')).toHaveAttribute('aria-expanded', 'true');
+    await expect(page.locator('[data-season="summer"]')).toBeFocused(); // the derived row
+    // the one focus law (the r16 blocks 5–6): the label underline, never a box
+    const row = page.locator('[data-season="summer"]');
+    await expect(row).toHaveCSS('text-decoration-line', 'underline');
+    await expect(row).toHaveCSS('outline-style', 'none');
+  });
+
+  test('ArrowUp from the first row wraps to the last row', async ({ page }) => {
+    await page.goto(seedUrl(JUNE_AT, 'en'));
+    await settle(page);
+    await openMenu(page);
+    await expect(page.locator('[data-season="now"]')).toBeFocused();
+    await page.keyboard.press('ArrowUp');
+    await expect(page.locator('[data-season="autumn"]')).toBeFocused();
+  });
+
+  test('Enter on a row commits through the keyboard; Escape closes without a commit', async ({
+    page,
+  }) => {
+    await page.goto(seedUrl(JUNE_AT, 'en'));
+    await settle(page);
+    await openMenu(page);
+    await page.keyboard.press('ArrowDown'); // now → winter
+    await expect(page.locator('[data-season="winter"]')).toBeFocused();
+    await page.keyboard.press('Enter');
+    const params = hashParams(page);
+    expect(params.get('at')).toBe('2026-01-15T03:18:00.000Z');
+    await expect(page.locator('#season-list')).toBeHidden();
+    await expect(page.locator('#season')).toBeFocused(); // focus returns to the control
+    await expect(page.locator('#season')).toHaveAttribute('aria-expanded', 'false');
+
+    // Escape: close, no commit, focus returns
+    await expect(page.locator('#season')).toHaveText('Winter');
+    await openMenu(page);
+    await page.keyboard.press('Escape');
+    await expect(page.locator('#season-list')).toBeHidden();
+    await expect(page.locator('#season')).toBeFocused();
+    expect(hashParams(page).get('at')).toBe('2026-01-15T03:18:00.000Z'); // unchanged
+  });
+
+  test('a pointer/outside click closes; Tab closes into the browser order; the open list never touches the scrub', async ({
+    page,
+  }) => {
+    await page.goto(seedUrl(JUNE_AT, 'en'));
+    await settle(page);
+    const scrub = page.locator('#scrub');
+    await openMenu(page);
+    const before = await scrub.evaluate((el) => (el as HTMLInputElement).valueAsNumber);
+    await page.keyboard.press('ArrowDown'); // handled by the list, stopped from the page
+    await expect(page.locator('[data-season="winter"]')).toBeFocused();
+    expect(await scrub.evaluate((el) => (el as HTMLInputElement).valueAsNumber)).toBe(before);
+    await page.mouse.click(180, 500); // outside the button and the list
+    await expect(page.locator('#season-list')).toBeHidden();
+
+    // Tab: the module closes silently; the browser's default tab order proceeds
+    await openMenu(page);
+    await page.keyboard.press('Tab');
+    await expect(page.locator('#season-list')).toBeHidden();
+  });
+
+  test('the list never overlaps the viewport chrome: it clears the top-right controls', async ({
+    page,
+  }) => {
+    await page.goto(seedUrl(JUNE_AT, 'en'));
+    await settle(page);
+    await openMenu(page);
+    const list = await page.locator('#season-list').boundingBox();
+    const controls = await page.locator('#controls').boundingBox();
+    expect(list).not.toBeNull();
+    expect(controls).not.toBeNull();
+    if (list === null || controls === null) return;
+    const overlapX =
+      Math.min(list.x + list.width, controls.x + controls.width) - Math.max(list.x, controls.x);
+    const overlapY =
+      Math.min(list.y + list.height, controls.y + controls.height) - Math.max(list.y, controls.y);
+    expect(overlapX).toBeLessThanOrEqual(0);
+    expect(overlapY).toBeLessThanOrEqual(0);
   });
 });
