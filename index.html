@@ -78,14 +78,12 @@
       Прокручивайте, перетаскивайте или нажимайте стрелки, чтобы двигаться по маршруту от
       остановки к остановке.
     </p>
-    <!-- The controls corner (R15, the owner's V3): the two "where am I" controls in one
-         row, one chrome register — «Залы» then the language toggle (tab order follows
-         DOM order; the dialog's focus-return targets #index-open by reference). The
-         toggle's old fixed top-right anchor and the index button's old top-left law
-         died with this move. data-visible rows per §6.3. -->
+    <!-- The controls corner (R16.1, the owner's verdict): «Залы» alone at the top-right —
+         the language toggle moved to the bottom-right corner (the empty corner stack's
+         base). Tab order follows DOM order; the dialog's focus-return targets #index-open
+         by reference. data-visible rows per §6.3. -->
     <div id="controls">
       <button id="index-open" type="button" data-visible="false" aria-haspopup="dialog">Залы</button>
-      <button id="lang-toggle" type="button" lang="en" aria-label="Русский">RU</button>
     </div>
     <!-- Debug HUD (?hud=1 or the H key): client-only overlay per architecture.md delivery
          rules. aria-hidden: a developer tool, repeated state already announced elsewhere.
@@ -118,8 +116,17 @@
            corner, right-aligned (R004: it swapped places with the language toggle — the
            toggle went to the top-right, opposite the wordmark). Hidden from AT because
            #caption-live mirrors it. Visible at a rest stop, faded while gliding, the
-           dark-card caption during an airlock dwell. data-stop/data-visible are e2e rows. -->
+           dark-card caption during an airlock dwell. data-stop/data-visible are e2e rows.
+           R16.1 (the owner's verdict «get rid of these texts» on desktop too): the caption's
+           slot never shows — display:none at every width; the SR mirror and the state
+           machine run on (the travel-hint precedent); the element stays in the DOM and its
+           data-* rows keep writing. -->
       <p id="caption" class="caption" aria-hidden="true" data-visible="false" data-stop=""></p>
+      <!-- The language toggle (R16.1, the owner's verdict): the corner stack's base — the
+           bottom-right corner it was asked for («currently it is empty there»); «Залы»
+           alone stays top-right. The swap law unchanged (§1.2: the TARGET language in its
+           own script; the toggle says the target's name). -->
+      <button id="lang-toggle" type="button" lang="en" aria-label="Русский">RU</button>
     </div>
     <!-- Live region: «<stop id> · <caption>», rewritten only when it changes (§1.2: stops
          are named in a11y text). -->
