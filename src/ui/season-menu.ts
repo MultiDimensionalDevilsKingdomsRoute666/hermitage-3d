@@ -19,13 +19,15 @@
 // preventDefault, no refocus — the default tab move must not fight the module). The open
 // list stops propagation on the keys it handles, so the rail's and the scrub's shortcut
 // handlers never fire while the menu is open. Dismissal: a pointerdown outside the
-// button/list (capture), a focusout to outside, or a language swap (closeIfOpen).
+// button/list (capture), a focusout to outside, or a language swap (closeIfOpen). The
+// list's horizontal anchor is the button's own text (the owner's R16 verdict):
+// #timeline is the containing block, so every open re-nails left to button.offsetLeft.
 import { isSeasonId, type SeasonId } from '../sky/season';
 import { nextIndex } from './room-index';
 
 export interface SeasonMenuDeps {
   button: HTMLButtonElement;
-  list: HTMLUListElement;
+  list: HTMLElement;
   /** Re-derives the button label and every row's aria-selected from the committed time state. */
   sync: () => void;
   /** Commits a choice through the host's law: return-to-now or the season transaction. */
@@ -72,6 +74,9 @@ export const createSeasonMenu = (deps: SeasonMenuDeps): SeasonMenu => {
     deps.sync();
     button.setAttribute('aria-expanded', 'true');
     list.hidden = false;
+    // The horizontal anchor is the button's own text (the owner's R16 verdict): the
+    // containing block is #timeline, so every open renails the left edge to the button.
+    list.style.left = `${Math.round(button.offsetLeft)}px`;
     const selected = rows().find((row) => row.getAttribute('aria-selected') === 'true');
     (selected ?? rowFor('now') ?? rows()[0])?.focus();
   };

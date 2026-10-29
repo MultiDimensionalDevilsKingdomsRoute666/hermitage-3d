@@ -60,20 +60,23 @@ body {
 }
 /* R16 (DEC-036): the closed face — the clock's own type (inherit), one 4 px chevron at
    currentColor; no weight, size or alpha of its own. The season control is a plain button
-   with aria-haspopup="listbox"; the 24 px hit target folds into the 18 px line with
-   negative vertical margins. The open face (#season-list) is the room menu's row voice
-   without its modality: no dialog, no backdrop, no centering (the r16 disposition). */
+   with aria-haspopup="listbox". R16.1 (the owner's verdict «the same size as the month
+   text; it reads a bit bigger»): the box band collapses to the row's own text band —
+   min-height 24px and its negative-margin fold retire (the 24 px hit-target item rides
+   the a11y pass's record with «Залы» and the lang toggle), line-height goes normal so
+   the button box measures like the neighbouring #clock/#clock-date. The open face
+   (#season-list) is the room menu's row voice without its modality: no dialog, no
+   backdrop, no centering (the r16 disposition). */
 #season {
   appearance: none;
   -webkit-appearance: none;
-  margin: -3px 0 -3px 8px;
+  margin: 0 0 0 8px;
   padding: 0 11px 0 0;
-  min-height: 24px;
   border: 0;
   border-radius: 0;
   font-family: inherit;
   font-size: inherit;
-  line-height: 18px;
+  line-height: normal;
   font-weight: inherit;
   letter-spacing: inherit;
   font-variant-numeric: inherit;
@@ -98,9 +101,11 @@ body {
 #season[aria-expanded="true"] {
   color: #fff;
 }
-/* The list hangs under the clock row, left-aligned to the header's 24px inset. Tokens
-   duplicate the #index-dialog values by value (::backdrop precedent — custom properties
-   do not cross element scopes; r14's recorded trade). */
+/* The list hangs under the clock row: the horizontal anchor is the button's own text
+   (the owner's verdict, 2026-10-29 — the r16 landing anchored the header inset; the
+   season-menu module sets left = button.offsetLeft on every open). Tokens duplicate
+   the #index-dialog values by value (::backdrop precedent — custom properties do not
+   cross element scopes; r14's recorded trade). */
 #timeline {
   position: relative;
 }
@@ -111,6 +116,7 @@ body {
   left: 0;
   top: calc(100% + 8px);
   z-index: 1;
+  box-sizing: border-box; /* content-box would make min-width a 144 CONTENT minimum (the outer 194 overflowed 360); the #index-dialog's own precedent */
   margin: 0;
   padding: 12px 24px;
   list-style: none;
@@ -252,6 +258,11 @@ body {
    "where am I" controls) share one fixed anchor and one register; the toggle's own
    fixed position died with that move. §2.2: sans 500 14, tracking +0.02em, underline
    on hover/focus. */
+/* R16.1: the language toggle is the bottom-right corner's base — the owner's verdict
+   («the corner is empty there»; «Залы» alone stays top-right in #controls). The page's
+   voice is one register (the notes link's own faint-white .55, §2.2: sans 500 14,
+   tracking +0.02em, underline on hover/focus). pointer-events: auto — the corner stack
+   is none, and the toggle is a real button. */
 #lang-toggle {
   appearance: none;
   margin: 0;
@@ -259,6 +270,7 @@ body {
   border: 0;
   background: none;
   cursor: pointer;
+  pointer-events: auto;
   font-family: inherit;
   color: rgba(255, 255, 255, 0.55);
   font-size: var(--chrome-size);
@@ -271,10 +283,10 @@ body {
   color: #fff;
   text-decoration: underline;
 }
-/* The controls corner (R15, the owner's V3): the room-index button and the language
-   toggle in one row at the toggle's old 24/24 anchor — controls grouped by kind, not
-   by proximity. Tab order: the index button now precedes the toggle (DOM order).
-   The HUD drops below this row's line as before (its shown-top is unchanged). */
+/* The controls corner (R16.1): «Залы» alone at the top-right (the language toggle moved
+   to the corner stack's base; the R15 grouped row's 16px gap holds nothing today and
+   stays tokenless). Tab order follows DOM order. The HUD drops below this row's line as
+   before (its shown-top is unchanged). */
 #controls {
   position: fixed;
   top: 24px;
@@ -555,15 +567,10 @@ body {
   pointer-events: none;
 }
 @media (max-width: 767.98px) {
-  /* R16 (the V2 disposition): the caption's slot is not shown on phones (the SR mirror
-     and the state machine run on — the travel-hint precedent); the surviving members
-     (the transit card, the door button) sit on the link's own line (bottom 40 — the
-     69 px step was the R13 anchor for the caption's slot), their column capped left of
-     the link «Как это устроено →» (~168 px at 14 px in both languages) + the 24 px
-     insets. */
-  #caption {
-    display: none;
-  }
+  /* R16: the surviving members (the transit card, the door button, now the language
+     toggle) sit on the link's own line (bottom 40 — the 69 px step was the R13 anchor
+     for the caption's slot), their column capped left of the link «Как это устроено →»
+     (~168 px at 14 px in both languages) + the 24 px insets. */
   #corner-stack {
     max-width: calc(100vw - 48px - 10.5rem);
   }
@@ -598,6 +605,14 @@ body {
 .caption-title[data-visible="false"],
 .caption[data-visible="false"] {
   opacity: 0;
+}
+/* R16.1 (the owner's verdict «get rid of these texts» — desktop too): the caption's slot
+   is retired at every width. display:none, NOT aria-hidden: the element stays in the DOM
+   and its data-* rows keep writing; the screen-reader mirror is the separate
+   #caption-live region (§1.2), which keeps announcing every stop. The swap state machine
+   runs on (the ≤767 travel-hint precedent promoted to the general law). */
+#caption {
+  display: none;
 }
 @media (prefers-reduced-motion: reduce) {
   .caption-title,

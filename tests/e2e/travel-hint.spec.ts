@@ -42,11 +42,17 @@ test('(c) the first travel intent dismisses with data-dismissed=travel', async (
   // Waiting for data-visible=true here would race the 6 s hold against a janked main
   // thread (the watch: a slow protocol round-trip pushed the wheel past the hold and the
   // unprompted timeout won).
-  // Wheel:
+  // Wheel (the smoke walk's dispatchEvent law — one protocol round-trip: the CDP wheel
+  // sequence of page.mouse can land a full protocol cycle past the hold under load —
+  // the recorded r11 watch; a synthetic in-page event fires synchronously and the first
+  // intent is the dismissal either way):
   let p = await freshSettled(`${AT}&lang=en`);
   const hint = p.locator(HINT);
-  await p.mouse.move(640, 360);
-  await p.mouse.wheel(0, 120);
+  await p.locator('#scene').dispatchEvent('wheel', {
+    deltaY: 120,
+    cancelable: true,
+    bubbles: true,
+  });
   await expect(hint).toHaveAttribute('data-visible', 'false');
   await expect(hint).toHaveAttribute('data-dismissed', 'travel');
   await p.close();

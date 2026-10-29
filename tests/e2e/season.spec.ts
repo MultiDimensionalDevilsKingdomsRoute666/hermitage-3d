@@ -113,8 +113,12 @@ test.describe('season chooser — «now» under det', () => {
     expect(params.get('det')).toBe('1');
     expect(params.get('hud')).toBe('1');
     expect(params.get('lang')).toBe('en');
-    // frozen time is never «now»: the button shows the season of the captured instant
-    await expect(page.locator('#season')).toHaveText('Winter');
+    // frozen time is never «now»: the button shows the season of the captured instant —
+    // the capture is LIVE (return-to-now), so the season is whatever today is; the law
+    // holds as long as the label is a season name, never «Now» (the r25 date-independence
+    // lesson: a pinned month breaks at the season boundary — measured Oct 29).
+    const label = await page.locator('#season').textContent();
+    expect(['Winter', 'Spring', 'Summer', 'Autumn']).toContain(label);
   });
 });
 
@@ -241,6 +245,9 @@ test.describe('season menu — the open-face laws (DEC-036)', () => {
     await page.goto(seedUrl(JUNE_AT, 'en'));
     await settle(page);
     await openMenu(page);
+    // The open focuses the SELECTED row (summer here); the wrap law starts from the
+    // FIRST row — the keyboard-equivalent focus lands there first.
+    await page.locator('[data-season="now"]').focus();
     await expect(page.locator('[data-season="now"]')).toBeFocused();
     await page.keyboard.press('ArrowUp');
     await expect(page.locator('[data-season="autumn"]')).toBeFocused();
@@ -252,6 +259,8 @@ test.describe('season menu — the open-face laws (DEC-036)', () => {
     await page.goto(seedUrl(JUNE_AT, 'en'));
     await settle(page);
     await openMenu(page);
+    // the wrap law's start state: the first row (the open itself focuses the selected)
+    await page.locator('[data-season="now"]').focus();
     await page.keyboard.press('ArrowDown'); // now → winter
     await expect(page.locator('[data-season="winter"]')).toBeFocused();
     await page.keyboard.press('Enter');
@@ -277,6 +286,8 @@ test.describe('season menu — the open-face laws (DEC-036)', () => {
     await settle(page);
     const scrub = page.locator('#scrub');
     await openMenu(page);
+    // the start state: the first row (the open itself focuses the selected)
+    await page.locator('[data-season="now"]').focus();
     const before = await scrub.evaluate((el) => (el as HTMLInputElement).valueAsNumber);
     await page.keyboard.press('ArrowDown'); // handled by the list, stopped from the page
     await expect(page.locator('[data-season="winter"]')).toBeFocused();
@@ -298,9 +309,13 @@ test.describe('season menu — the open-face laws (DEC-036)', () => {
     await openMenu(page);
     const list = await page.locator('#season-list').boundingBox();
     const controls = await page.locator('#controls').boundingBox();
+    const button = await page.locator('#season').boundingBox();
     expect(list).not.toBeNull();
     expect(controls).not.toBeNull();
-    if (list === null || controls === null) return;
+    expect(button).not.toBeNull();
+    if (list === null || controls === null || button === null) return;
+    // The anchor law (the owner's verdict): the list's left edge = the button's own text.
+    expect(Math.abs(list.x - button.x)).toBeLessThanOrEqual(2);
     const overlapX =
       Math.min(list.x + list.width, controls.x + controls.width) - Math.max(list.x, controls.x);
     const overlapY =

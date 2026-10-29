@@ -240,6 +240,12 @@ const bindChrome = (): void => {
     if (value === undefined) throw new Error('season row without data-season');
     if (value === 'now' || isSeasonId(value)) row.textContent = t(SEASON_OPTION_KEYS[value]);
   } // §9: swaps in place, timers untouched
+  // R16.1: the language swap rewrites the row texts above, but the BUTTON's label is
+  // syncSeasonSelect's own write — and that sync also runs SYNCHRONOUSLY in the
+  // hashchange listener, BEFORE activateLang resolves and installs the new dictionary
+  // (the r16 full-suite finding: the label sat at the previous language after a swap).
+  // The re-sync at the end of bindChrome rewrites the label with the installed dictionary.
+  syncSeasonSelect();
   // The door label's text composes in the frame block (it names the current boundary's
   // destination); the language swap re-composes on the next visible frame.
   // The clock labels bind per minute-change; a fixed ?at= boot has no live resample, so
