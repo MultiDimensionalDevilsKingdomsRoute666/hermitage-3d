@@ -79,3 +79,50 @@ for (const viewport of VIEWPORTS) {
     }
   });
 }
+
+// R13: the room-corner fixture — the /1812 settled M0 state at the narrow width, where the
+// caption × chrome-row collision lived (the main fixtures never leave `/`, so the defect
+// was invisible to them). The overlays are the subject; the canvas hides (the room render
+// is the golden project's det-pinned subject, not this file's). No hint here: the §9 hint
+// is S0-only; the corner stack's caption anchor (69 px above the chrome row at ≤767) is
+// what this pair pins.
+test.describe('room corner 360', () => {
+  test.use({ viewport: { width: 360, height: 744 } });
+
+  for (const lang of LANGS) {
+    test(`fixtures: 1812 ${lang} 360`, async ({ page }) => {
+      // hud=1: the data-* settle contract writes only while the HUD is open (main.ts's
+      // hudOpen gate) — the fixture reads the attrs from the hidden node and hides the
+      // HUD's pixels out of the shot.
+      await page.goto(`/#/1812?${AT}&lang=${lang}&hud=1`);
+      // The room settle contract (the smoke's): the room mounted, its payload staged
+      // (the ledger non-zero), the threshold hold elapsed.
+      await expect(page.locator('#hud')).toHaveAttribute('data-room', 'military-gallery', {
+        timeout: SETTLE_TIMEOUT_MS,
+      });
+      await expect(page.locator('#hud')).not.toHaveAttribute('data-ledger-bytes', '0', {
+        timeout: SETTLE_TIMEOUT_MS,
+      });
+      await expect(page.locator('#hud')).toHaveAttribute('data-hold-ms', '0', {
+        timeout: SETTLE_TIMEOUT_MS,
+      });
+      // The settled rest beat: the card faded, M0's caption visible.
+      await expect(page.locator('#caption')).toHaveAttribute('data-visible', 'true', {
+        timeout: 10_000,
+      });
+      await expect(page.locator('#caption-title')).toHaveAttribute('data-visible', 'false', {
+        timeout: 10_000,
+      });
+      // Hide the canvas (the room render is the golden project's subject) and the HUD
+      // box (a dev tool): visibility keeps layout, their pixels leave the gate.
+      await page.addStyleTag({
+        content: '#scene, #hud { visibility: hidden !important; }',
+      });
+      await page.waitForTimeout(300); // one settle margin: the fade transitions finish
+      await expect(page).toHaveScreenshot(`fixtures-1812-360-${lang}.png`, {
+        maxDiffPixelRatio: 0,
+        timeout: 60_000,
+      });
+    });
+  }
+});

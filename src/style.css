@@ -47,8 +47,10 @@ body {
     line-height: 26px;
   }
 }
-/* §2.2: clock sans 400 15 with tabular numerals. One line at every width: #index-open's
-   top offset is derived from this block's height. */
+/* §2.2: clock sans 400 15 with tabular numerals. One line at every width. The season
+   select sits IN this line and inherits its voice: the row is data with one 4 px chevron,
+   not data plus a second control register (the R15 owner verdict: the top-left reads as
+   one command = the clock row, one typeface, one size, one alpha). */
 #timeline {
   margin: 6px 0 0;
   font-size: 15px;
@@ -56,43 +58,42 @@ body {
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
-/* R11: the season chooser is a date control in the clock row's register — the chrome's
-   0.55 white, the lang toggle's hover/focus law, a chevron drawn from gradients (no image,
-   no icon font). The 24 px hit target is folded back into the 18 px row with negative
-   vertical margins so the block's height, and #index-open's offset, do not move. */
+/* R11 native select, unchanged behaviour (the value re-derived from the committed time
+   state; the season commits through the scrub's hash transaction). Face = the clock's
+   own type (inherit), one 4 px chevron at currentColor; no weight, size or alpha of its
+   own. The popup list is UA-painted (color-scheme dark in index.html). The 24 px hit
+   target folds into the 18 px line with negative vertical margins. */
 #season {
   appearance: none;
   -webkit-appearance: none;
-  margin: -3px 0 -3px 10px;
-  padding: 0 14px 0 0;
+  margin: -3px 0 -3px 8px;
+  padding: 0 11px 0 0;
   min-height: 24px;
   border: 0;
   border-radius: 0;
-  font: inherit;
+  font-family: inherit;
+  font-size: inherit;
   line-height: 18px;
+  font-weight: inherit;
+  letter-spacing: inherit;
   font-variant-numeric: inherit;
-  color: rgba(255, 255, 255, 0.55);
+  color: inherit;
   background-color: transparent;
   background-image:
     linear-gradient(45deg, transparent 50%, currentColor 50%),
     linear-gradient(135deg, currentColor 50%, transparent 50%);
   background-position:
-    right 5px top 50%,
+    right 4px top 50%,
     right 0 top 50%;
-  background-size: 5px 5px;
+  background-size: 4px 4px;
   background-repeat: no-repeat;
-  vertical-align: top;
+  vertical-align: baseline;
   cursor: pointer;
 }
 #season:hover,
 #season:focus-visible {
   color: #fff;
   text-decoration: underline;
-}
-/* the popup list is UA-painted: keep its items legible regardless of the page's white text */
-#season option {
-  color: #111;
-  background: #fff;
 }
 /* Hairline scrub — design-sky-time.md §9: a native focusable range, one pixel tall. */
 #scrub {
@@ -188,17 +189,17 @@ body {
 #notes-link[hidden] {
   display: none;
 }
-/* §1.2: the language toggle — a text button in the target language's script; the r26.1
-   owner law (R004): the TOP-RIGHT corner, opposite the wordmark (it swapped places with
-   the caption). §2.2: sans 500 14, tracking +0.02em, underline on hover/focus. */
+/* §1.2: the language toggle — a text button in the target language's script. R15: the
+   top-right corner is the CONTROLS row (#controls) — the toggle and «Залы» (the two
+   "where am I" controls) share one fixed anchor and one register; the toggle's own
+   fixed position died with that move. §2.2: sans 500 14, tracking +0.02em, underline
+   on hover/focus. */
 #lang-toggle {
-  position: fixed;
-  top: 24px;
-  right: 24px;
   appearance: none;
-  background: none;
-  border: 0;
+  margin: 0;
   padding: 0;
+  border: 0;
+  background: none;
   cursor: pointer;
   font-family: inherit;
   color: rgba(255, 255, 255, 0.55);
@@ -212,16 +213,23 @@ body {
   color: #fff;
   text-decoration: underline;
 }
-/* §6.3: the room index — a dim text button, always present (Q4a). The corner law: the
-   toggle owns the top-right, the wordmark the top-left — the button sits under the #title
-   BLOCK's line + the committed 12 px gap (the HUD's top-56 derivation law, mirrored): the
-   block is the wordmark's 30 px line + the timeline's 6 + 18 px row → 24 + 54 = 78.
-   It fades WITH the captions (§6.3): the button carries #caption's visibility flag,
-   revealed at the first settle. */
-#index-open {
+/* The controls corner (R15, the owner's V3): the room-index button and the language
+   toggle in one row at the toggle's old 24/24 anchor — controls grouped by kind, not
+   by proximity. Tab order: the index button now precedes the toggle (DOM order).
+   The HUD drops below this row's line as before (its shown-top is unchanged). */
+#controls {
   position: fixed;
-  top: 90px;
-  left: 24px;
+  top: 24px;
+  right: 24px;
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+}
+/* The room-index open button — the same dim text register, its caption-fade kept
+   (data-visible mirrors #caption's flag, revealed at the first settle); it keeps its
+   box while invisible, so the row never shifts at the reveal. It left the top-left
+   corner (the old fixed top 90/left 24 law died with the move). */
+#index-open {
   appearance: none;
   background: none;
   border: 0;
@@ -246,71 +254,107 @@ body {
   color: #fff;
   text-decoration: underline;
 }
-/* §6.3: the index dialog — centred, dark, typographic; a list, no thumbnails, no map.
-   The palette is the chrome register's (the HUD's border, the caption's text levels);
-   the heading is the museum serif (.caption-title's register). */
+/* §6.3 v2 (the owner's V1 verdict: the v1 «/notes fragment» face failed — it
+   illustrated the idea: ledger rules, mono numerals, a gilt chip, a serif heading,
+   four voices for four rows). v2 is a MENU: one typeface (the chrome sans), one row
+   size, nothing drawn — no rules, no counters, no chips. The heading stays in the DOM
+   for the dialog's accessible name (aria-labelledby) and is visually clipped: the
+   button that opened this menu already said «Залы». Colour is spent exactly once:
+   the current room sits at ink + medium, the others at ink-2 (the mark survives a
+   hovered neighbour also at ink). Centered by the native dialog default — zero
+   positioning code. Tokens by value from notes.css: the three the face uses. */
 #index-dialog {
-  border: 1px solid rgba(255, 255, 255, 0.24);
-  border-radius: 4px;
-  padding: 24px 32px;
-  background: rgba(0, 0, 0, 0.85);
-  color: rgba(255, 255, 255, 0.85);
-  max-width: min(28rem, 80vw);
+  color-scheme: dark;
+  --ground: #151a21;
+  --ink: #e8e4dc;
+  --ink-2: #a1a6a3;
+  --rule-strong: #4e565f;
+  --dur: 160ms;
+  box-sizing: border-box;
+  width: min(20rem, 100vw - 48px);
+  padding: 12px 24px;
+  border: 1px solid var(--rule-strong);
+  border-radius: 3px;
+  background: var(--ground);
+  color: var(--ink);
+  font-family: var(--font-sans, system-ui, sans-serif);
+  font-size: 15px;
+  line-height: 22px;
 }
+/* --ground at 0.6, written literally: ::backdrop does not reliably inherit custom
+   properties across engines. Lighter than v1: the scene stays legible as context. */
 #index-dialog::backdrop {
-  background: rgba(0, 0, 0, 0.72);
+  background: rgba(21, 26, 33, 0.6);
 }
+/* Clipped, not removed: aria-labelledby still resolves to it. */
 #index-dialog h2 {
-  margin: 0 0 16px;
-  font-family: var(--font-serif, Georgia, serif);
-  font-size: 18px;
-  line-height: 1.5;
-  font-weight: 400;
-  letter-spacing: 0.01em;
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
 }
 #index-list {
   list-style: none;
   margin: 0;
   padding: 0;
 }
+#index-list li {
+  margin: 0;
+}
 #index-list button {
   display: block;
   width: 100%;
-  text-align: left;
-  background: none;
+  margin: 0;
+  padding: 8px 0;
   border: 0;
-  padding: 10px 0;
+  background: none;
+  text-align: left;
   cursor: pointer;
-  font-family: var(--font-sans, system-ui, sans-serif);
-  color: rgba(255, 255, 255, 0.72);
-  font-size: var(--chrome-size);
-  font-weight: 500;
-  letter-spacing: 0.02em;
+  font: inherit;
+  letter-spacing: 0;
+  color: var(--ink-2);
+  transition: color var(--dur);
 }
 #index-list button:hover,
 #index-list button:focus-visible {
-  color: #fff;
-  text-decoration: underline;
+  color: var(--ink);
 }
+#index-list button:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+/* aria-current stays the carrier; the face is ink + medium. */
 #index-list button[aria-current="true"] {
-  color: #fff;
+  color: var(--ink);
+  font-weight: 500;
 }
+@media (prefers-reduced-motion: reduce) {
+  #index-list button {
+    transition: none;
+  }
+}
+
 /* §9 travel hint — the r26.1 law: one line above the bottom-right caption, right-aligned
    (R004: the caption owns the corner again — the hint stacks directly over it). 12 px (the
    notes link's step), the notes link's faint-white opacity, the caption's text shadow,
-   nowrap, no box. The host rewrites transition-duration per exit (240 travel / 1200 timeout
-   / 0 reduced motion). bottom 69 = the caption's 40 + one 14px/1.5 line (21) + one 8 px gap;
-   the S0 beat the hint accompanies is a single line at every width. */
+   no box. The host rewrites transition-duration per exit (240 travel / 1200 timeout
+   / 0 reduced motion). R13: the hint is a corner-stack member — its reserved slot IS the
+   «one line above the caption» law at every width (the 8 px stack gap + one line), and
+   the RU copy may wrap there (the parked ≤360 clipping note resolved); ≥768 it breaks
+   out of the flow to the free bottom-center axis (R007: centered on desktop), fixed one
+   line above the caption's line there (40 + one 14px/1.5 line + one 8 px gap = 69; the
+   1600 step-up follows the taller 17px line at 74). */
 #travel-hint {
-  position: fixed;
-  right: 24px;
-  bottom: 69px;
   margin: 0;
   color: rgba(255, 255, 255, 0.55);
   font-size: var(--hint-size);
   line-height: 1.5;
   text-align: right;
-  white-space: nowrap;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
   opacity: 1;
   transition: opacity 240ms ease;
@@ -323,12 +367,25 @@ body {
 /* The r26.1 owner law (R007, F016): on desktop the hint sits CENTERED horizontally —
    the bottom-center axis is free there (the link is bottom-left, the caption
    bottom-right); mobile keeps the R004 corner law (one line above the caption,
-   right-aligned). The vertical anchor stays one line above the caption at every width. */
+   right-aligned, wrapping allowed). */
 @media (min-width: 768px) {
   #travel-hint {
+    position: fixed;
     right: 0;
     left: 0;
+    bottom: 69px;
     text-align: center;
+    white-space: nowrap;
+  }
+}
+/* ≤767.98: no travel hint (the owner's V2 verdict — the corner's text mass goes
+   minimal-or-gone, and the hint is the heaviest repeated member). The verbs describe
+   wheel-and-pointer input either way; on a phone the sentence is wrong before it is
+   long. The dismissal state machine still runs — it just has nothing to fade; the
+   reserved slot goes with the display:none (nothing else in the stack references it). */
+@media (max-width: 767.98px) {
+  #travel-hint {
+    display: none;
   }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -350,17 +407,15 @@ body {
     bottom: 74px;
   }
 }
-/* The boundary prompt (2026-10-21): the travel hint's register on the FREE bottom-center
-   axis (the r26 law freed it: the link bottom-left, the caption bottom-right, the toggle
-   top-right), one line ABOVE the chrome row; visible only while settled at a rail end
-   whose airlock side is next. A real button: the chrome's colors, no border, the caption's
-   text shadow; the hover/focus underline mirrors the lang toggle. data-visible is the e2e
-   contract row; the golden fixtures hide it. */
+/* The boundary prompt (2026-10-21): the travel hint's register; visible only while settled
+   at a rail end whose airlock side is next. A real button: the chrome's colors, no border,
+   the caption's text shadow; the hover/focus underline mirrors the lang toggle.
+   data-visible is the e2e contract row; the golden fixtures hide it. R13: a corner-stack
+   member — its reserved slot rides one gap above the caption and it is right-aligned
+   there (at ≤767 the bottom-center axis IS the caption's own lines: the old fixed 46
+   collided with the link at one end and the caption at the other); ≥768 it breaks out to
+   the free bottom-center axis under the caption (fixed 24; 30 at 1600). */
 #edge-prompt {
-  position: fixed;
-  right: 0;
-  left: 0;
-  bottom: 46px;
   margin: 0;
   padding: 0;
   border: 0;
@@ -368,8 +423,7 @@ body {
   color: rgba(255, 255, 255, 0.55);
   font-size: var(--hint-size);
   line-height: 1.5;
-  text-align: center;
-  white-space: nowrap;
+  text-align: right;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
   opacity: 1;
   transition:
@@ -393,7 +447,12 @@ body {
 }
 @media (min-width: 768px) {
   #edge-prompt {
+    position: fixed;
+    right: 0;
+    left: 0;
     bottom: 24px;
+    text-align: center;
+    white-space: nowrap;
   }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -405,25 +464,35 @@ body {
   #edge-prompt {
     bottom: 30px;
   }
-  .caption-title {
-    bottom: 74px; /* the title card follows the taller-line anchor (§4) */
-  }
 }
-/* Caption overlay — design-staircase.md §6.1 beats: visible at a rest stop, faded while
-   gliding, the dark-card caption during an airlock dwell (§8.4). Write-on-change from the
-   pure core (src/ui/captions.ts); --caption-fade must stay equal to CAPTION_FADE_MS there.
-   r26.1 (the owner's law, R004): the caption anchors to the BOTTOM-RIGHT corner,
-   right-aligned — it swapped places with the language toggle (the toggle went top-right,
-   opposite the wordmark; the caption tried the top line and the row slot before that).
-   The hint stacks one line above it on the same side.
-   R-UX1 (design-walkthrough-ux.md §4): the title card joins the same corner as a stack —
-   the room title above the caption while the threshold is black (DEC-017 rewritten); a
-   two-line caption can never overlap its own title (a fixed offset would). */
-.caption-title,
-.caption {
+/* Corner stack (R13) — design-staircase.md §6.1 beats + design-walkthrough-ux.md §4: the
+   bottom-right chrome texts are ONE bottom-anchored column. The caption is the stack's
+   base (it always occupies its box — the text persists through fades); the title card,
+   the travel hint and the edge prompt hold reserved slots above it and show in disjoint
+   phases (transit / S0 settle / rail-end settle), so opacity is the only thing that ever
+   animates — no fixed offset can overlap the caption's lines again (the §4 «a two-line
+   caption can never overlap its own title» law, now structural). The stack anchors at
+   the notes link's line (bottom 40); at ≤767 px it steps above the chrome row (bottom
+   69 = 40 + the 14px/1.5 link line + one 8 px gap — the recorded §9 raise, restored in
+   R004 coordinates after the R004/R007 corner reshuffles dropped it). */
+#corner-stack {
   position: fixed;
   right: 24px;
+  bottom: 40px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
   max-width: min(32rem, 80vw);
+  pointer-events: none;
+}
+@media (max-width: 767.98px) {
+  #corner-stack {
+    bottom: 69px;
+  }
+}
+.caption-title,
+.caption {
   margin: 0;
   padding: 0;
   text-align: right;
@@ -436,11 +505,6 @@ body {
 }
 .caption-title {
   --caption-fade: 240ms;
-  /* The title card rides the chrome axis ONE LINE ABOVE the caption (the hint's r26.1
-     anchor: 40 + one 14px/1.5 line + one 8 px gap) — the same slot the travel hint uses,
-     at a different phase: the hint is dismissed by the first travel intent, the card
-     lives only while a transit is open, so the two never show together. */
-  bottom: 69px;
   font-family: var(--font-serif, Georgia, serif); /* the room label's museum register */
   font-size: 18px;
   line-height: 1.5;
@@ -449,7 +513,6 @@ body {
 }
 .caption {
   --caption-fade: 240ms;
-  bottom: 40px; /* the notes link's line */
   font-size: var(--chrome-size); /* the timeline's size — one quieter step than the wordmark */
   line-height: 1.5;
   letter-spacing: 0.02em;

@@ -419,6 +419,17 @@ Verified against the committed data (the specialist's R11): `Total height with r
   right-aligned, `white-space: nowrap`, no box (a box would read as a control next to the
   scrub hairline). Not top-right: it collides with ?hud=1 during the very debugging
   sessions where the hint is tuned.
+- **R15 amendment (the owner's verdicts after the live inspection)**: the ≤719 px raise
+  the block above records was never shipped (lost in the R004/R007 reshuffles) and is
+  RESTORED in R004 coordinates via the corner stack — the caption's anchor at ≤767.98 px
+  is bottom 69 px (= the link's 40 + one 14px/1.5 line + one 8 px gap), the hint's slot
+  riding the stack one gap above it. The recorded numbers 81/110 px were derived from the
+  caption's OLD bottom 52 and are superseded by the stack's arithmetic. The hint itself
+  is HIDDEN at ≤767.98 px (`display: none` — the owner's «make the text minimal or get
+  rid of it whatsoever» at 360; the dismissal state machine still runs). The five long
+  stop captions (Gj, M0, J1b, J2, J2b) are shortened to one clause each in both languages
+  (the corpus already defined the register as one quiet clause; the SR announcement
+  shortens with the same key). The spec tables above describe the ≥768 px face.
 - **Show law**: main page only; shown only when the initial stop of the load is S0 (the rail's
   start — the only place a visitor lands without a shared link); deep links into any other
   stop never show it. Appears at the arrival-settle beat together with the notes link (after

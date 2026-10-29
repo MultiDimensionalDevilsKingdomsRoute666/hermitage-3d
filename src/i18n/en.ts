@@ -53,12 +53,10 @@ export const en = {
   'caption.s0': 'the facade and the hour',
   'caption.s1': 'the arch opens',
   'caption.g0': 'dark; the square behind',
-  'caption.gj':
-    'Where the passage meets the gallery the way turns east and runs unbroken: pilaster after pilaster, sconce after sconce, pacing the forty-odd metres to the far door.',
+  'caption.gj': 'The turn east: pilaster after pilaster, forty metres to the far door.',
   'caption.g1': 'compression',
   'caption.g2': 'the door (airlock)',
-  'caption.m0':
-    'The threshold — the long view south along the axis, toward the portraits of the heroes of 1812.',
+  'caption.m0': 'The threshold: the long view south, to the portraits of the heroes of 1812.',
   'caption.m1': 'The west wall — a block of portraits in gilt frames.',
   'caption.m2': 'The lantern — the vault and the glazing bars above the gallery.',
   'caption.m3': 'The monarchs — the end wall, the large portraits above the small.',
@@ -66,11 +64,11 @@ export const en = {
   'caption.j0': 'looking up into light',
   'caption.j1': 'the flight',
   'caption.j1b':
-    'Halfway up the first flight the gilded sconce of the upper run shows across the well. Rastrelli lights the turn before you reach it.',
+    'The upper flight\u2019s sconce shows across the well: Rastrelli lights the turn in advance.',
   'caption.j2':
-    'On the landing the stair divides. The sconce above the second flight marks where the two runs meet again beneath the painted ceiling.',
+    'The landing: the stair divides; the flights meet again beneath the painted ceiling.',
   'caption.j2b':
-    'Halfway up the second flight the upper tier of windows opens over the climb. The Neva light enters high here and carries the last run of the stair up to the landing.',
+    'The upper tier of windows: the Neva light enters high and carries the last flight.',
   'caption.j3':
     'Near the top the eastern portal comes square to the eye: the doorway to the state rooms, framed in gilt between columns of grey granite.',
   'caption.j4': 'arrival; the portal (landing airlock)',

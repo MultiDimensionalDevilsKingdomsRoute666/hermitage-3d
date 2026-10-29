@@ -297,18 +297,18 @@ test('keyboard walk: every stop reachable, reduced-motion cuts', async ({ page }
     S0: 'the facade and the hour',
     S1: 'the arch opens',
     G0: 'dark; the square behind',
-    Gj: 'Where the passage meets the gallery the way turns east and runs unbroken: pilaster after pilaster, sconce after sconce, pacing the forty-odd metres to the far door.',
+    Gj: 'The turn east: pilaster after pilaster, forty metres to the far door.',
     G1: 'compression',
     G2: 'the door (airlock)',
     J0: 'looking up into light',
     J1: 'the flight',
-    J1b: 'Halfway up the first flight the gilded sconce of the upper run shows across the well. Rastrelli lights the turn before you reach it.',
-    J2: 'On the landing the stair divides. The sconce above the second flight marks where the two runs meet again beneath the painted ceiling.',
-    J2b: 'Halfway up the second flight the upper tier of windows opens over the climb. The Neva light enters high here and carries the last run of the stair up to the landing.',
+    J1b: 'The upper flight\u2019s sconce shows across the well: Rastrelli lights the turn in advance.',
+    J2: 'The landing: the stair divides; the flights meet again beneath the painted ceiling.',
+    J2b: 'The upper tier of windows: the Neva light enters high and carries the last flight.',
     J3: 'Near the top the eastern portal comes square to the eye: the doorway to the state rooms, framed in gilt between columns of grey granite.',
     J4: 'arrival; the portal (landing airlock)',
     // R3 (DEC-025): the five 1812 landings join the walk — the EN corpus verbatim.
-    M0: 'The threshold — the long view south along the axis, toward the portraits of the heroes of 1812.',
+    M0: 'The threshold: the long view south, to the portraits of the heroes of 1812.',
     M1: 'The west wall — a block of portraits in gilt frames.',
     M2: 'The lantern — the vault and the glazing bars above the gallery.',
     M3: 'The monarchs — the end wall, the large portraits above the small.',
@@ -468,7 +468,7 @@ test('smoke walk: the 1812 edge runs both ways, the ledger returns at boot', asy
   await expect(hud).toHaveAttribute('data-room', 'military-gallery', { timeout: 60_000 });
   await expect(page).toHaveURL(/#\/1812/, { timeout: 60_000 });
   await expect(page.locator('#caption')).toHaveText(
-    'The threshold — the long view south along the axis, toward the portraits of the heroes of 1812.',
+    'The threshold: the long view south, to the portraits of the heroes of 1812.',
     { timeout: 60_000 },
   );
   await expect(hud).toHaveAttribute('data-hold-ms', '0', { timeout: 60_000 });
@@ -543,7 +543,7 @@ for (const [label, hops] of [
       { timeout: 60_000 },
     );
     await expect(page.locator('#caption')).toHaveText(
-      'The threshold — the long view south along the axis, toward the portraits of the heroes of 1812.',
+      'The threshold: the long view south, to the portraits of the heroes of 1812.',
       { timeout: 60_000 },
     );
     await expect(page).toHaveURL(/#\/1812/, { timeout: 60_000 });
