@@ -258,11 +258,10 @@ body {
    "where am I" controls) share one fixed anchor and one register; the toggle's own
    fixed position died with that move. §2.2: sans 500 14, tracking +0.02em, underline
    on hover/focus. */
-/* R16.1: the language toggle is the bottom-right corner's base — the owner's verdict
-   («the corner is empty there»; «Залы» alone stays top-right in #controls). The page's
-   voice is one register (the notes link's own faint-white .55, §2.2: sans 500 14,
-   tracking +0.02em, underline on hover/focus). pointer-events: auto — the corner stack
-   is none, and the toggle is a real button. */
+/* R16.2: the language toggle sits in the top-right controls row — the owner's verdict
+   reverses the R16.1 corner placement (the toggle reads top-right again; «Залы» takes
+   the corner stack's base). One chrome register — the notes link's own faint-white .55
+   (§2.2: sans 500 14, tracking +0.02em, underline on hover/focus). */
 #lang-toggle {
   appearance: none;
   margin: 0;
@@ -270,7 +269,6 @@ body {
   border: 0;
   background: none;
   cursor: pointer;
-  pointer-events: auto;
   font-family: inherit;
   color: rgba(255, 255, 255, 0.55);
   font-size: var(--chrome-size);
@@ -283,10 +281,10 @@ body {
   color: #fff;
   text-decoration: underline;
 }
-/* The controls corner (R16.1): «Залы» alone at the top-right (the language toggle moved
-   to the corner stack's base; the R15 grouped row's 16px gap holds nothing today and
-   stays tokenless). Tab order follows DOM order. The HUD drops below this row's line as
-   before (its shown-top is unchanged). */
+/* The controls corner (R16.2): the row carries the language toggle (RU/EN; «Залы»
+   moved to the corner stack's base); the R15 grouped row's 16px gap law is back in
+   force as the row's law (currently one child). Tab order follows DOM order. The HUD
+   drops below this row's line as before (its shown-top is unchanged). */
 #controls {
   position: fixed;
   top: 24px;
@@ -296,9 +294,11 @@ body {
   gap: 16px;
 }
 /* The room-index open button — the same dim text register, its caption-fade kept
-   (data-visible mirrors #caption's flag, revealed at the first settle); it keeps its
-   box while invisible, so the row never shifts at the reveal. It left the top-left
-   corner (the old fixed top 90/left 24 law died with the move). */
+   (data-visible mirrors #caption's flag, revealed at the first settle); while invisible
+   it keeps its box, so the stack never shifts at the reveal. R16.2 (the owner's
+   verdict): it rides the corner stack's base, the caption-fade + invisible-box law
+   unchanged (the R16.1 top-right verdict reversed); the old fixed top 90/left 24 law
+   died at R15. */
 #index-open {
   appearance: none;
   background: none;
@@ -567,8 +567,8 @@ body {
   pointer-events: none;
 }
 @media (max-width: 767.98px) {
-  /* R16: the surviving members (the transit card, the door button, now the language
-     toggle) sit on the link's own line (bottom 40 — the 69 px step was the R13 anchor
+  /* R16: the surviving members (the transit card, the door button, now the rooms
+     opener) sit on the link's own line (bottom 40 — the 69 px step was the R13 anchor
      for the caption's slot), their column capped left of the link «Как это устроено →»
      (~168 px at 14 px in both languages) + the 24 px insets. */
   #corner-stack {

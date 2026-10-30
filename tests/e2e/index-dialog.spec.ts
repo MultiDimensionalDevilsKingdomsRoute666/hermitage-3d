@@ -71,6 +71,10 @@ test('Escape closes and focus returns to the button (§6.4)', async ({ page }) =
 });
 
 test('jumping to the current room just closes (§6.4)', async ({ page }) => {
+  // R16.2 storm-day slack: the 1812 boot + the trace screencast's GL-readback stalls can
+  // burn the default 90 s on Playwright's own click/stability retries (the R73 differential:
+  // the probe ran the same flow clean; the per-test instrumentation cost the margin).
+  test.setTimeout(240_000);
   await page.goto(`/#/1812?${QUERY}`);
   await settleIndex(page, 'military-gallery');
   await page.locator('#index-open').click();
@@ -88,6 +92,10 @@ test('jumping to the current room just closes (§6.4)', async ({ page }) => {
 test('jumping to the square cuts to its stop 0 with the ledger back at boot (§6.4/§7.2)', async ({
   page,
 }) => {
+  // R16.2 storm-day slack (the R73 differential class): this test's waits (60–90 s asserts)
+  // can exceed the default 90-s test cap on the 2-core reference device when GL-readback
+  // stalls slow the page — its own budget must span its own asserted windows.
+  test.setTimeout(360_000);
   await page.goto(`/#/1812?${QUERY}`);
   await settleIndex(page, 'military-gallery');
   await page.locator('#index-open').click();

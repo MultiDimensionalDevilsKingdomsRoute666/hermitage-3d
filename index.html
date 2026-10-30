@@ -78,12 +78,15 @@
       Прокручивайте, перетаскивайте или нажимайте стрелки, чтобы двигаться по маршруту от
       остановки к остановке.
     </p>
-    <!-- The controls corner (R16.1, the owner's verdict): «Залы» alone at the top-right —
-         the language toggle moved to the bottom-right corner (the empty corner stack's
-         base). Tab order follows DOM order; the dialog's focus-return targets #index-open
-         by reference. data-visible rows per §6.3. -->
+    <!-- The controls corner (R16.2, the owner's verdict): the language toggle reads
+         top-right again; «Залы» takes the bottom-right corner as the corner stack's base
+         (the R16.1 (B) placement reversed). Tab order follows DOM order; the dialog's
+         focus-return targets #index-open by reference. -->
     <div id="controls">
-      <button id="index-open" type="button" data-visible="false" aria-haspopup="dialog">Залы</button>
+      <!-- The language toggle (R16.2, the owner's verdict): back in the top-right row —
+           the R16.1 corner placement reversed. The swap law unchanged (§1.2: the TARGET
+           language in its own script; the toggle says the target's name). -->
+      <button id="lang-toggle" type="button" lang="en" aria-label="Русский">RU</button>
     </div>
     <!-- Debug HUD (?hud=1 or the H key): client-only overlay per architecture.md delivery
          rules. aria-hidden: a developer tool, repeated state already announced elsewhere.
@@ -100,7 +103,8 @@
          so no two slots ever show together); hidden slots are transparent, the caption
          never moves, every fade is opacity-only. ≤767 px the whole stack steps above
          #chrome-row's line (the §9 law restored, in R004 coordinates); ≥768 px the hint
-         and the prompt break out of the flow to their fixed centered axes. -->
+         and the prompt break out of the flow to their fixed centered axes. R16.2: the
+         rooms opener «Залы» is the stack's base member (its last child). -->
     <div id="corner-stack">
       <p id="caption-title" class="caption-title" aria-hidden="true" data-visible="false"></p>
       <!-- §9 travel hint (r26.1): one line above the bottom-right caption; S0-only at the
@@ -122,11 +126,11 @@
            machine run on (the travel-hint precedent); the element stays in the DOM and its
            data-* rows keep writing. -->
       <p id="caption" class="caption" aria-hidden="true" data-visible="false" data-stop=""></p>
-      <!-- The language toggle (R16.1, the owner's verdict): the corner stack's base — the
-           bottom-right corner it was asked for («currently it is empty there»); «Залы»
-           alone stays top-right. The swap law unchanged (§1.2: the TARGET language in its
-           own script; the toggle says the target's name). -->
-      <button id="lang-toggle" type="button" lang="en" aria-label="Русский">RU</button>
+      <!-- The rooms opener (R16.2, the owner's verdict): the corner stack's base — the
+           bottom-right corner it was asked for; the R16.1 (B) placement reversed, the
+           language toggle reads top-right again. The dialog's focus-return targets
+           #index-open by reference; data-visible rows per §6.3. -->
+      <button id="index-open" type="button" data-visible="false" aria-haspopup="dialog">Залы</button>
     </div>
     <!-- Live region: «<stop id> · <caption>», rewritten only when it changes (§1.2: stops
          are named in a11y text). -->

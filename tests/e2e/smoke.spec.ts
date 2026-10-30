@@ -316,8 +316,10 @@ test('keyboard walk: every stop reachable, reduced-motion cuts', async ({ page }
   };
   // A leg spans the data-bound load + mount behind the card (seconds on a starved page; the
   // backward entries re-mount, since the exit disposes the room left), the card's hold, one
-  // exit frame and up to one 500 ms HUD bind.
-  const LEG_TIMEOUT_MS = 90_000;
+  // exit frame and up to one 500 ms HUD bind. 180 s: the R16.2 storm-day finding — a leg can
+  // burn 60–90 s inside Playwright's own click/stability retries on GL-readback stalls (the
+  // 2-core reference device under any load); 90 s starved ONE leg (G1→Gj) into a flake.
+  const LEG_TIMEOUT_MS = 180_000;
   const IDLE_HOLD = '0';
   type HudSample = Readonly<{ stop: string | null; holdMs: string | null; room: string | null }>;
   // One page task reads all three attributes, so the sample is one tick's write, never a mix.
