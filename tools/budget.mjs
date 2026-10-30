@@ -48,7 +48,9 @@ if (ruGzip > RU_CHUNK_LIMIT) {
 // Payload rows — design-staircase.md §3.3/§9, DEC-016. Additive: the JS rows above are untouched
 // and still gate first. Raw bytes of the committed tree, no git plumbing: each public/assets/<room>/
 // vs its manifest's budget.payloadBytesMax (≤ 8 000 000), the exterior row (4 000 000 B), the
-// shared public/basis/ row (500 000 B). Every row prints; any breach exits 1 naming room and row.
+// shared public/basis/ row (600 000 B — common.mjs BASIS_CAP; the 500 000 stub here was
+// stale and corrected 2026-10-30 with the trace: collectPayloadRows() enforces 600 000).
+// Every row prints; any breach exits 1 naming room and row.
 import { collectPayloadRows } from './common.mjs';
 
 let breached = 0;

@@ -50,7 +50,7 @@ Pure modules complete and gate-green: solar (NOAA, four contract vectors at 1e-5
 - **Builds underneath:** instanced frames + portrait atlas; second airlock; golden frames for every room; README and architecture polish.
 - **Exit: v1 announced** · all budgets green · license register complete.
 
-### Phase 4 · Reach — **in progress** (the winter mode R8–R12 + the senior-minimal chrome batch R13–R15 + R16 the chrome's three verdicts landed 2026-10-27…2026-10-29; the queue: the mobile tier (R17, the fact dossier gathered) / the a11y pass / the Neva facade / the WebGPU ADR)
+### Phase 4 · Reach — **in progress** (the winter mode R8–R12 + the senior-minimal chrome batch R13–R15 + the chrome verdicts R16/R16.1 (+ its delivery completion `d050c18`) landed 2026-10-27…2026-10-29; the R16.2 chrome swap (the language toggle top-right ⇄ «Залы» to the corner stack's base) sits in the working tree, golden gates pending mains; **the mobile tier DESIGN landed 2026-10-30** (R17 — docs/design-mobile-tier.md, NOT ratified; the owner's ratification of §16's six calls gates the Mobile-A/B/C implementation rounds); then the a11y pass / the Neva facade / the WebGPU ADR)
 
 - **Ships:** works on a phone (T0); a keyboard-only tour; winter mode — snow on the cornices (LANDED); the Neva facade (cheap: same kit).
 - **Builds underneath:** mobile tier + touch rail; accessibility pass; snow-mask material (LANDED — DEC-033..035: the lip + the facade slot + the season chooser + the ground snow); WebGPU evaluation ADR.
