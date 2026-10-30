@@ -47,11 +47,9 @@ test('FINE-PROBE uses the existing desktop probe', async ({ page }) => {
   // count stays an integer ≥ 0 and the TIER settles to some valid tier label. The unit
   // suite pins the classifier; this case pins that the probe SURFACES reached the rows.
   await expect(hud).toHaveAttribute('data-probe-count', /^\d+$/);
-  await expect(hud).toHaveAttribute(
-    'data-tier',
-    /^(T0 · low|T1 · default|T2 · discrete GPU)$/,
-    { timeout: SETTLE_TIMEOUT_MS },
-  );
+  await expect(hud).toHaveAttribute('data-tier', /^(T0 · low|T1 · default|T2 · discrete GPU)$/, {
+    timeout: SETTLE_TIMEOUT_MS,
+  });
 });
 
 test('OVERRIDE-PRECEDENCE applies and persists both explicit tiers', async ({ context }) => {
