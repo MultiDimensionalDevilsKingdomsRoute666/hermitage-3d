@@ -1,9 +1,10 @@
-# Mobile tier + touch rail — the R17 design (PROPOSED FOR RATIFICATION)
+# Mobile tier + touch rail — the R17 design (RATIFIED 2026-10-30)
 
 Round R17 · designed 2026-10-29 against commit `d050c18`; integrated 2026-10-30 · CREATIVE relay ×1.
-Status: design only — no implementation, no ratification yet. The owner ratifies §16; then the
-round map in §15 executes. §0.1 records every fact the integration corrected (the design's
-claims vs the verified tree) — the numbered sections below carry the corrected text.
+Status: RATIFIED 2026-10-30 — every §16 call adopted with the owner's verdict tool (§17); the
+hint copy KEPT as-is. The Mobile-A/B/C implementation rounds follow §15. §0.1 records every
+fact the integration corrected (the design's claims vs the verified tree) — the numbered
+sections below carry the corrected text.
 
 ## §0.1 Integration corrections (fact-check record)
 
@@ -406,6 +407,36 @@ finishing remains after the whole Phase-4 queue.
   scoped fixture re-baselines; no scene DEC. Basis enforcement resolved (600,000 B).
   Ratification authorizes implementation, not a performance claim. This document contains
   no new measurement and cannot close either Phase-4 exit checkbox by itself.
+
+## §17 Ratification record (2026-10-30, the owner's verdict through the question tool)
+
+ALL SIX §16 CALLS ADOPTED as recommended, with one resolution recorded:
+
+1. **R17-A ADOPTED** — the conservative pre-probe T0 at coarse pointer or RAM < 4 GiB;
+   touch laptops included; probe/ladder/§11/`?q=`/det precedence untouched.
+2. **R17-B ADOPTED** — the touch rail = the native Back/Forward pair, left free-band
+   placement (not a corner), the visibility rule, the 72×44 targets; drag stays look-only;
+   continuous touch travel is not promised.
+3. **R17-C ADOPTED IN FULL** — browser pinch-zoom (canvas `touch-action` none →
+   pinch-zoom), the admission/cancellation laws (one primary contact, per-move readiness
+   re-check, the cancellation surfaces; the no-glide button gate per §5 NOTE stands as
+   designed), Safari verification mandatory.
+4. **R17-C COPY KEPT** — «Прокрутите, чтобы идти · потяните, чтобы осмотреться» /
+   «Scroll to walk · drag to look around» stays VERBATIM; the design's optional tweak is
+   REJECTED; the §13 baseline estimate drops the hint-copy clause (the ten DOM baselines
+   move from the controls face only, plus the four new coarse fixtures in Mobile-B).
+5. **R17-D ADOPTED (p95+99)** — the floor statistic is now the law's stated form:
+   per-scenario 60-second windows, nearest-rank p95 ≤ 33.0 ms with the p99 ≤ 50 guard,
+   zero post-load long tasks > 50 ms, `MOBILE_FIRST_EXTERIOR_MS = 3,000` at 10 Mbps/100 ms.
+6. **R17-E ADOPTED (A13 + iPhone)** — the Galaxy A13 4G SM-A135F 4-GiB sentinel (verify its
+   model/SoC on the live device before adoption), the owner's iPhone, the soak protocol,
+   the battery-only handset exception (50–80%, 20–25°C; the reference Mac stays on mains).
+7. **R17-F ADOPTED** — the three-round map (Mobile-A/B/C ceilings 278,707/284,707/285,707
+   JS; RU 6,962/7,462/7,462; case totals 44/33 → 60/37 → 60/37), the 20 new functional
+   cases, the 4 new coarse fixtures, the no-scene-DEC rule, the basis resolution (600,000
+   B enforced) standing done. Ratification authorizes IMPLEMENTATION, not a performance
+   claim — §§9/10's numbers remain proposals until measured (the doc still closes no
+   exit checkbox).
 
 ## CHALLENGES (the specialist's, dispositioned at integration)
 
