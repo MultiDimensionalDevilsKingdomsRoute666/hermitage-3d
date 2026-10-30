@@ -7,6 +7,8 @@
  *
  * See docs/architecture.md → Tiers (T0 low · T1 default · T2 discrete GPU; ~1 s GPU
  * microbenchmark plus heuristics; `?q=` override, persisted) and
+ * docs/design-mobile-tier.md §3 (the R17-A amendment: coarse pointer or reported memory
+ * below 4 GiB settles T0 BEFORE any probe; the §11 numbers stay the ladder's law) and
  * docs/design-sky-time.md §11 (designated-device gate: no MSAA, DPR ≤ 1, drawing buffer
  * ≤ 1,048,576 px, fit larger viewports by render scale, chosen before arrival). T1 sits
  * exactly on the §11 numbers; T2 relaxes them upward, T0 tightens them downward. In
@@ -182,4 +184,23 @@ function lowerMedian(values: readonly number[]): number {
   const sorted = [...values].sort((a, b) => a - b);
   // Callers guarantee a non-empty set; the fallback only satisfies noUncheckedIndexedAccess.
   return sorted[Math.floor((sorted.length - 1) / 2)] ?? 0;
+}
+
+export const MOBILE_AUTO_TIER = 't0' satisfies QualityTierId;
+export const AUTO_LOW_MEMORY_GIB = 4;
+export const MOBILE_COARSE_QUERY = '(any-pointer: coarse)';
+
+/**
+ * The R17-A conservative automatic choice (docs/design-mobile-tier.md §3): a coarse
+ * pointer OR reported memory below 4 GiB settles T0 BEFORE any probe; everything else
+ * runs the existing T2-surface probe. Injected facts only — this module never reads
+ * matchMedia (the host does, once at boot). Exactly 4.0 and null are NOT low.
+ */
+export function resolveAutoTier(
+  capabilities: Readonly<{ deviceMemoryGiB: number | null; coarsePointer: boolean }>,
+): QualityTierId | 'probe' {
+  const { deviceMemoryGiB, coarsePointer } = capabilities;
+  return coarsePointer || (deviceMemoryGiB !== null && deviceMemoryGiB < AUTO_LOW_MEMORY_GIB)
+    ? MOBILE_AUTO_TIER
+    : 'probe';
 }

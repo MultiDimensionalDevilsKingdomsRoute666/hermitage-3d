@@ -4,6 +4,8 @@
  * DEC-018, §9 gates): the four round-11 keys are byte-identical, the three new keys are
  * plain ungrouped integers or the room id as is, and the fourth prose line is appended
  * without touching the first three. Purity of hud.ts stays gated by tests/hud.test.ts.
+ * Mobile-A (design-mobile-tier.md §3, amendment R17-A) adds data-tier-source and
+ * data-probe-count after the ledger row and the source/probe suffix on the tier line.
  */
 import { describe, expect, it } from 'vitest';
 import { buildHudAttrs, buildHudLines, type HudState } from '../src/ui/hud';
@@ -17,6 +19,8 @@ const fixture = {
   stop: 'G1',
   holdMs: 1_200,
   ledgerBytes: 4_321_987,
+  tierSource: 'probe',
+  probeSampleCount: 8,
 } satisfies HudState;
 
 describe('buildHudAttrs', () => {
@@ -27,15 +31,17 @@ describe('buildHudAttrs', () => {
     expect(attrs['data-tris']).toBe('132264');
     expect(attrs['data-frame-ms']).toBe('16.67');
   });
-  it('exposes exactly the eight contract keys', () => {
+  it('exposes exactly the ten contract keys (Mobile-A adds tier-source + probe-count)', () => {
     expect(Object.keys(buildHudAttrs(fixture)).sort()).toEqual([
       'data-draws',
       'data-frame-ms',
       'data-hold-ms',
       'data-ledger-bytes',
+      'data-probe-count',
       'data-room',
       'data-stop',
       'data-tier',
+      'data-tier-source',
       'data-tris',
     ]);
   });
@@ -65,9 +71,9 @@ describe('buildHudAttrs', () => {
 });
 
 describe('buildHudLines', () => {
-  it('keeps the three legacy lines unchanged', () => {
+  it('keeps the grouped digits and fps legacy lines; the tier line gains the Mobile-A suffix', () => {
     const lines = buildHudLines(fixture);
-    expect(lines[0]).toBe('tier high · q=2');
+    expect(lines[0]).toBe('tier tier high · q=2 · source probe · probe 8');
     expect(lines[1]).toBe('draws 132 · tris 132 264');
     expect(lines[2]).toBe('fps 60 · 16.67 ms');
   });

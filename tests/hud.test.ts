@@ -24,6 +24,8 @@ const STATE: HudState = Object.freeze({
   stop: 'S0',
   holdMs: 0,
   ledgerBytes: 0,
+  tierSource: 'probe',
+  probeSampleCount: 8,
 });
 describe('parseHudParam', () => {
   it('is off without issues when the param is absent or empty', () => {
@@ -137,15 +139,17 @@ describe('rollingMedianFrameMs', () => {
   });
 });
 describe('buildHudAttrs', () => {
-  it('exposes exactly the eight contract keys', () => {
+  it('exposes exactly the ten contract keys (Mobile-A adds tier-source + probe-count)', () => {
     expect(Object.keys(buildHudAttrs(STATE)).sort()).toEqual([
       'data-draws',
       'data-frame-ms',
       'data-hold-ms',
       'data-ledger-bytes',
+      'data-probe-count',
       'data-room',
       'data-stop',
       'data-tier',
+      'data-tier-source',
       'data-tris',
     ]);
   });
@@ -169,10 +173,10 @@ describe('buildHudAttrs', () => {
   });
 });
 describe('buildHudLines', () => {
-  it('four lines: tier verbatim, grouped digits, fps from the median, room row', () => {
+  it('four lines: tier row (label · source · probe count), grouped digits, fps, room row', () => {
     // 1000 / 16.5 = 60.6… → rounds to 61 (not 60).
     expect(buildHudLines(STATE)).toEqual([
-      'T1 · default',
+      'tier T1 · default · source probe · probe 8',
       'draws 132 · tris 132 264',
       'fps 61 · 16.5 ms',
       'room square · hold 0 ms · ledger 0 B',

@@ -37,10 +37,12 @@ import {
   BENCHMARK,
   classifyProbe,
   DEFAULT_TIER_ID,
+  MOBILE_COARSE_QUERY,
   type ProbeResult,
   parseQualityUpdate,
   type QualityTier,
   type QualityTierId,
+  resolveAutoTier,
   resolveQualityScale,
   TIERS,
 } from './engine/tier';
@@ -1091,6 +1093,12 @@ let probeActive = false;
 let probeStartAtMs: number | null = null;
 const probeIntervals: number[] = [];
 
+// The coarse-pointer fact reads ONCE here (the R17-A law): rotation/resize never
+// re-classifies and never re-probes.
+const coarsePointer = window.matchMedia(MOBILE_COARSE_QUERY).matches;
+let tierSource: 'override' | 'stored' | 'det' | 'coarse' | 'memory' | 'probe' = 'probe';
+let probeSampleCount = 0;
+
 const persistTier = (value: QualityTierId | 'auto'): void => {
   try {
     if (value === 'auto') localStorage.removeItem(TIER_STORAGE_KEY);
@@ -1113,20 +1121,23 @@ const settleTier = (next: QualityTier): void => {
   applyViewport();
 };
 
-const capabilities = (): { deviceMemoryGiB: number | null } => ({
+const capabilities = (): { deviceMemoryGiB: number | null; coarsePointer: boolean } => ({
   deviceMemoryGiB:
     // Device Memory API: Chromium-only, `unknown` in the DOM lib until it ships.
     (navigator as Navigator & { deviceMemory?: number }).deviceMemory ?? null,
+  coarsePointer,
 });
 
 const finishProbe = (result: ProbeResult): void => {
+  probeSampleCount = result.sampleCount;
   settleTier(TIERS[result.tier]);
 };
 
 // Boot resolution order — override → persisted override → T1 in det (probe skipped, the
-// golden-frame boot must not depend on wall-clock timing) → probe at T2 surfaces.
+// golden-frame boot must not depend on wall-clock timing) → conservative auto → probe.
 const quality = parseQualityUpdate(new URLSearchParams(queryOf(location.hash)));
 if (quality.tier !== 'auto') {
+  tierSource = 'override';
   settleTier(TIERS[quality.tier]);
   persistTier(quality.tier);
 } else {
@@ -1138,13 +1149,22 @@ if (quality.tier !== 'auto') {
     // No storage → default auto behavior.
   }
   if (stored !== null) {
+    tierSource = 'stored';
     settleTier(TIERS[stored]);
   } else if (isDeterministic(timeState)) {
+    tierSource = 'det';
     settleTier(TIERS[DEFAULT_TIER_ID]);
   } else {
-    // Probe posture: T2 surfaces arm the greatest pre-arrival load the scene can pose.
-    tier = TIERS.t2;
-    probeActive = true;
+    const autoTier = resolveAutoTier(capabilities());
+    if (autoTier !== 'probe') {
+      tierSource = coarsePointer ? 'coarse' : 'memory';
+      settleTier(TIERS[autoTier]);
+    } else {
+      // Probe posture: T2 surfaces arm the greatest pre-arrival load the scene can pose.
+      tierSource = 'probe';
+      tier = TIERS.t2;
+      probeActive = true;
+    }
   }
 }
 
@@ -1565,7 +1585,10 @@ window.addEventListener('hashchange', () => {
   // clears the override and keeps the current auto choice (no re-probe after settle).
   const quality = parseQualityUpdate(new URLSearchParams(queryOf(location.hash)));
   persistTier(quality.tier);
-  if (quality.tier !== 'auto') settleTier(TIERS[quality.tier]);
+  if (quality.tier !== 'auto') {
+    tierSource = 'override'; // the redirect-style navigation re-applies the override
+    settleTier(TIERS[quality.tier]);
+  }
   // The language mirrors the ?q= lifecycle verbatim: a navigation without lang= resets to
   // the default and clears the override; one with it re-applies and persists (§1.1).
   const langNext = resolveLang({
@@ -1808,6 +1831,8 @@ const tick = (timeMs: number): void => {
         stop: rail.stops[nearestStopIndex(rail, railState.u)]?.id ?? '—',
         holdMs: hudHoldMs(),
         ledgerBytes: ledger.snapshot().total,
+        tierSource,
+        probeSampleCount,
       };
       for (const [key, value] of Object.entries(buildHudAttrs(hudState))) {
         hud.setAttribute(key, value); // round-11 Playwright asserts the data-* contract

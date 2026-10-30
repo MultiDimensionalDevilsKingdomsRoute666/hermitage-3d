@@ -31,6 +31,10 @@ export type HudState = Readonly<{
   holdMs: number;
   /** The disposal ledger's total registered bytes (§8.3). */
   ledgerBytes: number;
+  /** Where the tier came from: override | stored | det | coarse | memory | probe. */
+  tierSource: string;
+  /** The probe's sample count; 0 when no probe ran (never a fabricated median). */
+  probeSampleCount: number;
 }>;
 /** Length of the rolling frame-interval buffer (about half a second at 60 Hz). */
 export const HUD_FRAME_WINDOW = 32 as const;
@@ -104,6 +108,8 @@ export function buildHudAttrs(state: HudState): Readonly<Record<string, string>>
     'data-stop': state.stop,
     'data-hold-ms': integerText(state.holdMs),
     'data-ledger-bytes': integerText(state.ledgerBytes),
+    'data-tier-source': state.tierSource,
+    'data-probe-count': integerText(state.probeSampleCount),
   };
 }
 /**
@@ -119,7 +125,12 @@ export function buildHudLines(state: HudState): readonly string[] {
     `room ${state.room} · hold ${integerText(state.holdMs)} ms` +
     ` · ledger ${grouped(state.ledgerBytes)} B`;
   return [
-    state.tierLabel,
+    'tier ' +
+      state.tierLabel +
+      ' · source ' +
+      state.tierSource +
+      ' · probe ' +
+      integerText(state.probeSampleCount),
     `draws ${grouped(state.frameDrawCalls)} · tris ${grouped(state.frameTriangles)}`,
     `fps ${fps} · ${frameMsText(medianFrameMs)} ms`,
     ledgerLine,

@@ -5,6 +5,7 @@ import {
   classifyProbe,
   DEFAULT_TIER_ID,
   parseQualityUpdate,
+  resolveAutoTier,
   resolveQualityScale,
   TIERS,
 } from '../src/engine/tier';
@@ -217,5 +218,27 @@ describe('purity', () => {
     for (const [name, pattern] of forbidden) {
       expect(code, `tier.ts must not reference ${name}`).not.toMatch(pattern);
     }
+  });
+});
+
+describe('the R17-A auto policy (resolveAutoTier)', () => {
+  it('coarse pointer OR memory below 4 selects T0 without a probe; else probe', () => {
+    expect(resolveAutoTier({ coarsePointer: false, deviceMemoryGiB: null })).toBe('probe');
+    expect(resolveAutoTier({ coarsePointer: false, deviceMemoryGiB: 3.75 })).toBe('t0');
+    expect(resolveAutoTier({ coarsePointer: false, deviceMemoryGiB: 4 })).toBe('probe');
+    expect(resolveAutoTier({ coarsePointer: false, deviceMemoryGiB: 8 })).toBe('probe');
+    expect(resolveAutoTier({ coarsePointer: true, deviceMemoryGiB: null })).toBe('t0');
+    expect(resolveAutoTier({ coarsePointer: true, deviceMemoryGiB: 8 })).toBe('t0');
+    expect(resolveAutoTier({ coarsePointer: true, deviceMemoryGiB: 2 })).toBe('t0');
+  });
+  it('treats exactly 4.0 and null as not low, but 3.99 as low', () => {
+    expect(resolveAutoTier({ coarsePointer: false, deviceMemoryGiB: 4.0 })).toBe('probe');
+    expect(resolveAutoTier({ coarsePointer: false, deviceMemoryGiB: null })).toBe('probe');
+    expect(resolveAutoTier({ coarsePointer: false, deviceMemoryGiB: 3.99 })).toBe('t0');
+  });
+  it('still caps a fast classified result independently of the policy gate', () => {
+    const fast = flatProbe(10, BENCHMARK.warmupFrames + BENCHMARK.minFrames);
+    expect(classifyProbe(fast, { deviceMemoryGiB: null }).tier).toBe('t2');
+    expect(classifyProbe(fast, { deviceMemoryGiB: 2 }).tier).toBe('t0');
   });
 });
