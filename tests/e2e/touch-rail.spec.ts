@@ -339,6 +339,10 @@ test('native keyboard / focus', async ({ browser, baseURL }) =>
       // index wraps 1 → 0 and the old +1 arithmetic read the lawful crossing as a miss).
       expect(routeIndex((await position(p)).stop)).toBe(before + 1);
       await expect(button(p, 1)).toBeFocused();
+      // The 1.4-s step glide must END before the next key block: the ratified no-glide
+      // admission lawfully DROPS a mid-glide command (hold-ms reads 0 during a glide —
+      // roomReady cannot see it; the CI's tighter cadence exposed the race).
+      await p.waitForTimeout(1_600);
     }
   }));
 
