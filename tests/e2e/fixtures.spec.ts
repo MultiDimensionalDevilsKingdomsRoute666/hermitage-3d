@@ -126,3 +126,41 @@ test.describe('room corner 360', () => {
     });
   }
 });
+
+// Mobile-B (design-mobile-tier.md §13): the four coarse DOM fixtures — the real auto boot
+// (no ?q=, no det — the coarse policy path) at 360×744 and 844×390, RU/EN, DPR 3. The
+// truth rows (data-tier-source ∈ {coarse, memory}, probe count 0) and the touch rail's
+// reveal are the subject; the canvas + HUD pixels leave the shot (the room-corner pattern).
+for (const viewport of [
+  { width: 360, height: 744 },
+  { width: 844, height: 390 },
+]) {
+  for (const lang of ['ru', 'en']) {
+    test.describe(`coarse chrome ${lang} ${viewport.width}x${viewport.height}`, () => {
+      test.use({ hasTouch: true, deviceScaleFactor: 3, viewport });
+      test('auto-tier DOM fixture', async ({ page }) => {
+        await page.goto(`/#/?${AT}&lang=${lang}&hud=1`);
+        const hud = page.locator('#hud[data-room]');
+        await expect(hud).toBeAttached({ timeout: 45_000 });
+        await expect(hud).toHaveAttribute('data-hold-ms', '0', { timeout: 45_000 });
+        await expect(page.locator('#touch-forward')).toHaveAttribute('aria-disabled', 'false', {
+          timeout: 45_000,
+        });
+        await expect(hud).toHaveAttribute('data-tier-source', /^(coarse|memory)$/);
+        await expect(hud).toHaveAttribute('data-probe-count', '0');
+        await expect(page.locator('#scrub')).toBeVisible();
+        await expect(page.locator('#travel-hint')).toHaveAttribute(
+          'data-dismissed',
+          /^(?!none$).+/,
+          { timeout: 15_000 },
+        );
+        await expect(page.locator('#touch-rail')).toHaveAttribute('data-visible', 'true');
+        await page.addStyleTag({ content: '#scene, #hud { visibility: hidden !important; }' });
+        await expect(page).toHaveScreenshot(
+          `coarse-chrome-${lang}-${viewport.width}x${viewport.height}.png`,
+          { maxDiffPixelRatio: 0, timeout: 60_000 },
+        );
+      });
+    });
+  }
+}

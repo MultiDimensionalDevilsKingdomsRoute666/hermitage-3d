@@ -384,7 +384,8 @@ describe('dictionary parity', () => {
             token,
           ) ||
             token.length < 4 ||
-            (key === 'chrome.toggleAria' && token === 'English'),
+            (key === 'chrome.toggleAria' && token === 'English') ||
+            (key === 'chrome.sceneUnsupported' && token === 'WebGL2.'), // the API's own name
           `ru ${key}: ${token}`,
         ).toBe(true);
       }

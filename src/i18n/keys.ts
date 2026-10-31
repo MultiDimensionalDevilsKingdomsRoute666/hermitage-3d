@@ -34,7 +34,14 @@ export type ChromeKey =
   | 'chrome.seasonWinter'
   | 'chrome.seasonSpring'
   | 'chrome.seasonSummer'
-  | 'chrome.seasonAutumn';
+  | 'chrome.seasonAutumn'
+  | 'chrome.touchRailLabel'
+  | 'chrome.touchRailBack'
+  | 'chrome.touchRailForward'
+  | 'chrome.travelHintTouch'
+  | 'chrome.sceneUnsupported'
+  | 'chrome.sceneInterrupted'
+  | 'chrome.sceneReload';
 
 /** Room index (design-gallery §6.2–6.4): the chrome button, the dialog heading, the current marker. */
 export type IndexKey = 'index.open' | 'index.title' | 'index.current';

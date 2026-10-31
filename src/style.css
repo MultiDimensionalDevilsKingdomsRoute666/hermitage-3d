@@ -21,8 +21,9 @@ body {
   display: block;
   width: 100%;
   height: 100%;
-  /* r21: the canvas owns touch drags — pointermove must arrive without the page scrolling. */
-  touch-action: none;
+  /* Mobile-B §7: one-finger look is app-owned; browser pinch zoom remains browser-owned.
+     (Was `touch-action: none` — the r21 pointermove law keeps its canvas listener.) */
+  touch-action: pinch-zoom;
 }
 #title {
   position: fixed;
@@ -292,6 +293,8 @@ body {
   display: flex;
   align-items: baseline;
   gap: 16px;
+  /* Mobile-B §7: the toggle stays usable above the recovery face (the face's z-index 1). */
+  z-index: 2;
 }
 /* The room-index open button — the same dim text register, its caption-fade kept
    (data-visible mirrors #caption's flag, revealed at the first settle); while invisible
@@ -403,7 +406,9 @@ body {
   text-decoration: underline;
 }
 @media (forced-colors: active) {
-  #index-list button:focus-visible {
+  #index-list button:focus-visible,
+  #touch-rail button:focus-visible,
+  #scene-reload:focus-visible {
     outline: auto;
   }
 }
@@ -619,4 +624,78 @@ body {
   .caption {
     transition: none;
   }
+}
+
+/* Mobile-B (design-mobile-tier.md §4): the touch rail — the separate navigation surface.
+   Position host-owned from JS (layoutTouchRail sets --touch-center); the inset is the
+   larger of the law's 24 px and the applicable safe-area inset via max(). Absence is
+   display:none (the #season-list[hidden] precedent: out of layout, focus and the a11y
+   tree); the geometry is reserved while busy. Insufficient space warns loudly in the
+   repo's zimny: convention and never hides navigation (§4's failed layout gate). */
+#touch-rail {
+  position: fixed;
+  display: flex;
+  gap: var(--touch-gap);
+  left: max(var(--touch-inset), env(safe-area-inset-left, 0px));
+  top: var(--touch-center);
+  transform: translateY(-50%);
+}
+#touch-rail[data-visible="false"],
+#scene-recovery[hidden] {
+  display: none;
+}
+#touch-rail button {
+  min-inline-size: var(--touch-min-inline);
+  min-block-size: var(--touch-min-block);
+}
+/* The chrome face: #lang-toggle's register (§2.2 sans 500 chrome-size, +0.02em, the
+   faint-white .55) with the #edge-prompt button reset (appearance/margin/padding/border,
+   no box, no background panel) and its caption text shadow over the scene; hover/focus
+   rise to ink + underline (the ink-and-underline law). No numeric face values copied —
+   the sources are cited and the type scale stays the shared tokens. */
+#touch-rail button,
+#scene-reload {
+  appearance: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  font-family: inherit;
+  color: rgba(255, 255, 255, 0.55);
+  font-size: var(--chrome-size);
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  text-decoration: none;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+}
+#touch-rail button:hover,
+#touch-rail button:focus-visible,
+#scene-reload:hover,
+#scene-reload:focus-visible {
+  color: #fff;
+  text-decoration: underline;
+}
+/* Mobile-B §7: the recovery face — fixed, centered, the page background (the html/body
+   #000), above the canvas and the overlays (z-index 1; #controls keeps the toggle
+   readable above it), below nothing else. No restoration path: reload re-opens the
+   existing URL. display:none rides the hidden attribute (the sheet's own [hidden] law). */
+#scene-recovery {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 24px;
+  background: #000;
+  z-index: 1;
+}
+#scene-recovery p {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.85); /* the caption register's ink for a readable face */
+  font-size: var(--chrome-size);
+  line-height: 1.5;
+  text-align: center;
 }

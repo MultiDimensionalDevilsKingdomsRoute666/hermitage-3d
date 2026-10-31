@@ -100,6 +100,17 @@ import {
 } from './ui/lang-host';
 import { createSeasonMenu } from './ui/season-menu';
 import {
+  admitTouchKey,
+  admitTouchTravel,
+  canvasContact,
+  TOUCH_BUTTON_MIN_BLOCK_PX,
+  TOUCH_BUTTON_MIN_INLINE_PX,
+  TOUCH_RAIL_CLEARANCE_PX,
+  TOUCH_RAIL_GAP_PX,
+  TOUCH_RAIL_INSET_PX,
+  touchRailVisible,
+} from './ui/touch-rail';
+import {
   advanceTransit,
   beatProgress,
   beginTransit,
@@ -180,6 +191,22 @@ const seasonLabel = document.querySelector('#season-label');
 if (!(seasonLabel instanceof HTMLElement)) throw new Error('#season-label missing');
 const seasonHelp = document.querySelector('#season-help');
 if (!(seasonHelp instanceof HTMLElement)) throw new Error('#season-help missing');
+const touchRail = document.querySelector('#touch-rail');
+if (!(touchRail instanceof HTMLElement)) throw new Error('#touch-rail missing');
+const touchBack = document.querySelector('#touch-back');
+if (!(touchBack instanceof HTMLButtonElement)) throw new Error('#touch-back button missing');
+const touchForward = document.querySelector('#touch-forward');
+if (!(touchForward instanceof HTMLButtonElement)) throw new Error('#touch-forward button missing');
+const chromeRow = document.querySelector('#chrome-row');
+if (!(chromeRow instanceof HTMLElement)) throw new Error('#chrome-row missing');
+const sceneRecovery = document.querySelector('#scene-recovery');
+if (!(sceneRecovery instanceof HTMLElement)) throw new Error('#scene-recovery missing');
+const sceneMessage = document.querySelector('#scene-message');
+if (!(sceneMessage instanceof HTMLElement)) throw new Error('#scene-message missing');
+const sceneAnnouncement = document.querySelector('#scene-announcement');
+if (!(sceneAnnouncement instanceof HTMLElement)) throw new Error('#scene-announcement missing');
+const sceneReload = document.querySelector('#scene-reload');
+if (!(sceneReload instanceof HTMLButtonElement)) throw new Error('#scene-reload button missing');
 
 const isDeterministic = (state: TimeState): boolean =>
   state.mode === 'fixed' ? state.deterministic : false;
@@ -233,7 +260,11 @@ const bindChrome = (): void => {
   notesLink.textContent = t('chrome.notesLink');
   indexButton.textContent = t('index.open'); // §6.3: the dim index button
   indexHeading.textContent = t('index.title'); // the dialog's aria-labelledby heading
-  travelHint.textContent = t('chrome.travelHint');
+  travelHint.textContent = t(coarsePointer ? 'chrome.travelHintTouch' : 'chrome.travelHint');
+  touchRail.setAttribute('aria-label', t('chrome.touchRailLabel'));
+  touchBack.textContent = t('chrome.touchRailBack');
+  touchForward.textContent = t('chrome.touchRailForward');
+  sceneReload.textContent = t('chrome.sceneReload');
   seasonMenu.closeIfOpen(); // R16: a language swap closes the menu; the next open relabels
   seasonLabel.textContent = t('chrome.seasonLabel');
   seasonHelp.textContent = t('chrome.seasonHelp');
@@ -269,6 +300,46 @@ const syncSeasonSelect = (): void => {
 };
 syncSeasonSelect();
 
+// --- The touch rail's layout (design-mobile-tier.md §4) --------------------------------------
+// Host-owned, called ONLY on layout changes (first settle, fonts.ready, the resize
+// listener, the language swap) — never in the frame loop. The width fact rides the SAME
+// boot-read coarsePointer + a fresh clientWidth per layout change; clearance/inset are
+// measured here and only here. Insufficient space warns loudly and NEVER hides the rail.
+const layoutTouchRail = (): void => {
+  for (const [name, value] of [
+    ['--touch-min-inline', TOUCH_BUTTON_MIN_INLINE_PX],
+    ['--touch-min-block', TOUCH_BUTTON_MIN_BLOCK_PX],
+    ['--touch-gap', TOUCH_RAIL_GAP_PX],
+    ['--touch-inset', TOUCH_RAIL_INSET_PX],
+  ] as const) {
+    touchRail.style.setProperty(name, `${value}px`);
+  }
+  const visible = touchRailVisible({
+    coarsePointer,
+    widthCssPx: document.documentElement.clientWidth,
+  });
+  touchRail.dataset.visible = String(visible);
+  if (!visible) return;
+  const top = title.getBoundingClientRect().bottom + TOUCH_RAIL_CLEARANCE_PX;
+  const blocks = [chromeRow, scrub].filter((e) => e.getClientRects().length > 0);
+  const bottom =
+    Math.min(...blocks.map((e) => e.getBoundingClientRect().top)) - TOUCH_RAIL_CLEARANCE_PX;
+  touchRail.style.setProperty('--touch-center', `${(top + bottom) / 2}px`);
+  const rect = touchRail.getBoundingClientRect();
+  if (
+    !Number.isFinite(bottom) ||
+    bottom - top < rect.height ||
+    rect.right > document.documentElement.clientWidth
+  ) {
+    console.warn('zimny: touch-rail layout gate failed', {
+      top,
+      bottom,
+      height: rect.height,
+      right: rect.right,
+    });
+  }
+};
+
 // R16 (DEC-036): the season menu — the in-page listbox owning the open face; the commit
 // path is the select's old change law verbatim (§9: cancel the scrub gesture, «Сейчас»
 // commits the return-to-now law, a season commits its anchor instant).
@@ -287,7 +358,63 @@ const seasonMenu = createSeasonMenu({
   commit: commitSeasonChoice,
 });
 
-const renderer = new THREE.WebGLRenderer({ canvas, antialias: true }); // r22 experiment: MSAA on — the far-field aliasing fix; the budgets decide keep/revert
+// Mobile-B §7: menu opening must cancel any active look before it owns input — the click
+// is the module's open path; the module owns its own listeners, so this rides beside them
+// (the keyboard open path relies on pointermove's own readiness re-check, D3).
+season.addEventListener('click', () => cancelCanvasLook());
+
+// --- The scene recovery face (design-mobile-tier.md §7) --------------------------------------
+// The WebGL2-unsupported boot and the context loss share one face: cancel all input,
+// announce ONCE, offer the reload of the EXISTING URL (no stop= writes, no restoration
+// promises). Language and the toggle stay usable; the announcement is its own surface —
+// #caption-live remains the ONE stop announcer.
+let failureKind: 'unsupported' | 'interrupted' | null = null;
+let sceneUnavailable = false;
+const showSceneFailure = (kind: 'unsupported' | 'interrupted'): void => {
+  if (failureKind !== null) return;
+  failureKind = kind;
+  sceneUnavailable = true;
+  if (kind === 'interrupted') {
+    cancelGesture();
+    railState = { ...railState, glide: null };
+    seasonMenu.closeIfOpen();
+    if (indexDialog.open) indexDialog.close();
+    syncTouchRail();
+  }
+  sceneMessage.textContent = t(
+    kind === 'unsupported' ? 'chrome.sceneUnsupported' : 'chrome.sceneInterrupted',
+  );
+  sceneRecovery.hidden = false;
+  sceneReload.hidden = kind === 'unsupported';
+  sceneAnnouncement.textContent = sceneMessage.textContent;
+  // The face carries its own reload label: bindChrome may never run (the unsupported
+  // boot path exits at the renderer construction).
+  sceneReload.textContent = t('chrome.sceneReload');
+};
+sceneReload.addEventListener('click', () => {
+  window.location.reload();
+});
+canvas.addEventListener('webglcontextlost', (event) => {
+  event.preventDefault();
+  showSceneFailure('interrupted');
+});
+
+// r22 experiment: MSAA on — the far-field aliasing fix; the budgets decide keep/revert.
+// Mobile-B §7 (the orchestrator ruling): a contextless constructor surfaces the localized
+// unsupported face, the console shows the labeled cause, and the boot exits loudly — the
+// face + announcement stand alone. The branch is untested by design (SwiftShader provides
+// WebGL2 everywhere the battery runs); the interrupted branch is the tested one.
+const createRenderer = (): THREE.WebGLRenderer => {
+  try {
+    return new THREE.WebGLRenderer({ canvas, antialias: true });
+  } catch (creationError) {
+    showSceneFailure('unsupported');
+    throw new Error('zimny: WebGL2 unavailable — renderer construction failed', {
+      cause: creationError,
+    });
+  }
+};
+const renderer = createRenderer();
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.AgXToneMapping;
 renderer.toneMappingExposure = sample.exposure;
@@ -458,6 +585,9 @@ let hudOpen = false;
 let hudIntervals: readonly number[] = [];
 let hudBoundAtMs = -1;
 let hudLastLines = '';
+// Mobile-B §5: the rail's aria/data-row cadence card — its own clock, so the HUD's binding
+// (hudOpen boots) can never consume the ≤500 ms slot that flips the buttons' availability.
+let railRowBoundAtMs = -1;
 const hudParams = parseHudParam(new URLSearchParams(queryOf(location.hash)));
 for (const issue of hudParams.issues) console.warn(`zimny: hud issue — ${issue}`);
 // The §4.4 measurement switch — dev-only, ephemeral per URL (the HUD's parsing contract).
@@ -822,6 +952,7 @@ window.matchMedia('(prefers-reduced-motion: reduce)').addEventListener('change',
 onLangChange(() => {
   bindChrome();
   seedRail(railNode);
+  layoutTouchRail(); // the language swap relays a layout change (the text-mass swap)
 });
 void activateLang(langResolution.lang).then(() => {
   bindChrome();
@@ -831,6 +962,11 @@ bindLangToggle((target) => {
   setLangParam(target);
   writeStoredLang(target);
   void activateLang(target);
+});
+// Mobile-B §4: the rail's clearance/inset are re-measured when the faces finish loading —
+// the hint's mid-session language swap needs no re-layout beyond the onLangChange call.
+document.fonts.ready.then(() => {
+  layoutTouchRail();
 });
 
 const UP_AXIS = new THREE.Vector3(0, 1, 0);
@@ -1029,7 +1165,11 @@ const beginTransitTo = (target: NodeHandle, cold = false): void => {
   // Entering through the airlock's home side (gallery ← jordan, square ← gallery) seeds the
   // far stop: the journey continues in the direction of travel (§6.1 seed law).
   seedAtFarStop = def.from === target;
+  // Mobile-B §5/D3: an ACCEPTED transit start cancels any active look + scrub gesture
+  // before the airlock owns the camera (§5's cancel/resume idempotence law).
+  cancelGesture();
   transit = { state, target, def };
+  syncTouchRail(); // the transit owns the input — the buttons flip off-cadence (the discrete point)
   // The threshold beat's exposure endpoints (§4): the departure drains the view the visitor
   // sees (outdoors E(h), indoors the room constant) and the arrival ramps to the
   // destination's own constant. A cold entry has no depart — the endpoints sit unused.
@@ -1190,6 +1330,9 @@ let lastLiveSampleAt = performance.now();
 let lastLabelEpochMs = -1;
 let resizePending = false;
 let titleShown = false;
+// Mobile-B §4: the rail's first layout runs ONCE the initialized chrome is laid out (the
+// settle reveal); fonts.ready, the resize listener and the language swap own the rest.
+let chromeLaidOut = false;
 
 const applyPresentation = (): void => {
   const presentation = presentationForArrival(arrival, isDeterministic(timeState));
@@ -1211,6 +1354,10 @@ const applyPresentation = (): void => {
   scrub.hidden = arrival.phase !== 'settled';
   notesLink.hidden = arrival.phase !== 'settled'; // DEC-004's in-app route to /notes
   if (arrival.phase === 'settled') indexRevealed = true; // §6.3: the index button's reveal
+  if (arrival.phase === 'settled' && !chromeLaidOut) {
+    chromeLaidOut = true;
+    layoutTouchRail(); // the chrome is laid out — the rail measures its band once
+  }
   // §9: the hint's show beat IS the settle — the chrome settles as one reveal. The step
   // fires once; a travel intent that landed before the beat already owns the dismissal
   // (the armed→gone transition makes the settled step a no-op). The beat RE-CHECKS the
@@ -1242,6 +1389,7 @@ applyPresentation();
 
 window.addEventListener('resize', () => {
   // §10: never resize targets during the massing fade — defer to the next settled frame.
+  cancelGesture(); // Mobile-B §5/D3: a resize removes the canvas look + the scrub gesture
   const width = window.innerWidth;
   const height = window.innerHeight;
   camera.aspect = width / height;
@@ -1251,6 +1399,7 @@ window.addEventListener('resize', () => {
     return;
   }
   applyViewport();
+  layoutTouchRail(); // §4: visibility + clearance re-read on layout changes only, never per frame
 });
 
 // --- Scrub transaction (§9) -------------------------------------------------------------
@@ -1270,6 +1419,9 @@ const writeTimeUrl = (fixedEpochMs?: number): void => {
 };
 
 const cancelGesture = (): void => {
+  // Mobile-B §5/D3: the shared cancel law frees an active canvas look too — with or
+  // without a scrub gesture (idempotent; the scrub cleanup below is retained verbatim).
+  cancelCanvasLook();
   if (gesture === null) return;
   pendingEpochMs = null;
   scrub.valueAsNumber = 0;
@@ -1295,6 +1447,7 @@ const commitGesture = (): void => {
   applyEpoch(committed);
   writeTimeUrl(committed); // one replaceState per commit; det and other params preserved (§9)
   syncSeasonSelect();
+  syncTouchRail(); // the scrub released the input set — the rail's rows re-sync (the discrete point)
 };
 
 const commitSeason = (targetMs: number): void => {
@@ -1329,8 +1482,10 @@ const writeRoomUrl = (node: NodeHandle | null): void => {
 };
 
 const startGesture = (): void => {
+  if (sceneUnavailable) return; // §7: on the recovery face the scrub stays inert
   if (gesture !== null) return;
   gesture = { anchorMs: epochMs, restore: timeState };
+  syncTouchRail(); // the scrub now owns input — the rail's availability flips off-cadence
 };
 
 scrub.addEventListener('pointerdown', startGesture);
@@ -1363,7 +1518,8 @@ scrub.addEventListener('focusout', cancelGesture);
 // The pure core owns every law; these listeners only translate DOM events into intents.
 // Gates: the arrival beats own the pre-settle frames and an open airlock owns the camera
 // (its swap re-seeds the rail), so inputs act only when settled and transit-free.
-const railInputReady = (): boolean => arrival.phase === 'settled' && transit === null;
+const railInputReady = (): boolean =>
+  !sceneUnavailable && arrival.phase === 'settled' && transit === null;
 canvas.addEventListener(
   'wheel',
   (event) => {
@@ -1399,15 +1555,91 @@ canvas.addEventListener(
   { passive: false },
 );
 let dragAnchor: Readonly<{ pointerId: number; x: number; y: number }> | null = null;
+// Mobile-B §5/D3: ONE primary contact admits a look; a second touch shadows and cancels
+// (it never replaces the anchor); re-arming waits for the touch sequence's true end. The
+// document-capture pair delimits the sequence — the canvas listeners below enforce it.
+const touchContacts = new Set<number>();
+let touchShadowed = false;
+const cancelCanvasLook = (): void => {
+  const anchor = dragAnchor;
+  dragAnchor = null;
+  canvas.removeAttribute('data-look-pointer');
+  if (touchContacts.size > 0) touchShadowed = true;
+  if (anchor === null) return;
+  railState = { ...railState, lookTarget: railState.look };
+  if (canvas.hasPointerCapture(anchor.pointerId)) canvas.releasePointerCapture(anchor.pointerId);
+  syncTouchRail(); // the decision moment — the diagnostic rows stay event-fresh (§5)
+};
+document.addEventListener(
+  'pointerdown',
+  (event) => {
+    if (event.pointerType !== 'touch') return;
+    if (event.isPrimary) {
+      touchContacts.clear();
+      touchShadowed = false;
+    }
+    touchContacts.add(event.pointerId);
+    if (
+      touchContacts.size > 1 ||
+      (dragAnchor !== null && dragAnchor.pointerId !== event.pointerId)
+    ) {
+      touchShadowed = true;
+      cancelCanvasLook();
+    }
+  },
+  true,
+);
+for (const type of ['touchend', 'touchcancel'] as const) {
+  document.addEventListener(
+    type,
+    (event) => {
+      if (
+        canvasContact({
+          primaryDown: false,
+          secondContactShadowed: touchShadowed,
+          reArmableAfterSequenceEnd: event.touches.length === 0,
+        }) === 'rearm'
+      ) {
+        touchContacts.clear();
+        touchShadowed = false;
+      }
+    },
+    { capture: true, passive: true },
+  );
+}
 canvas.addEventListener('pointerdown', (event) => {
   hintTravel(); // §9: a pointer drag start of ANY pointerType (touch included) is travel
-  if (!railInputReady()) return;
+  const decision = canvasContact({
+    primaryDown: event.isPrimary,
+    secondContactShadowed: event.pointerType === 'touch' && touchShadowed,
+    reArmableAfterSequenceEnd: false,
+  });
+  if (decision === 'cancel') {
+    cancelCanvasLook();
+    return;
+  }
+  if (
+    decision !== 'admit' ||
+    dragAnchor !== null ||
+    !railInputReady() ||
+    menuOwnsInput() ||
+    (event.pointerType === 'mouse' && event.button !== 0)
+  ) {
+    return;
+  }
   dragAnchor = { pointerId: event.pointerId, x: event.clientX, y: event.clientY };
+  canvas.dataset.lookPointer = String(event.pointerId); // the e2e's release-order row
   canvas.setPointerCapture(event.pointerId);
 });
 canvas.addEventListener('pointermove', (event) => {
   const anchor = dragAnchor;
   if (anchor === null || event.pointerId !== anchor.pointerId) return;
+  // §5: readiness re-checked on EVERY move — a transit (or an owner) that began mid-drag
+  // must stop feeding drag() here.
+  if (!railInputReady() || menuOwnsInput()) {
+    cancelCanvasLook();
+    return;
+  }
   // r21: tracked client deltas — PointerEvent.movementX is unreliable on touch (iOS often 0).
   const dxPx = event.clientX - anchor.x;
   const dyPx = event.clientY - anchor.y;
@@ -1426,13 +1658,12 @@ canvas.addEventListener('pointermove', (event) => {
     toPointerType(event.pointerType),
   );
 });
-const endDrag = (event: PointerEvent): void => {
-  if (dragAnchor === null) return;
-  if (event.pointerId === dragAnchor.pointerId) dragAnchor = null;
-  if (canvas.hasPointerCapture(event.pointerId)) canvas.releasePointerCapture(event.pointerId);
+const endLook = (event: PointerEvent): void => {
+  if (dragAnchor?.pointerId === event.pointerId) cancelCanvasLook();
 };
-canvas.addEventListener('pointerup', endDrag);
-canvas.addEventListener('pointercancel', endDrag);
+canvas.addEventListener('pointerup', endLook);
+canvas.addEventListener('pointercancel', endLook);
+canvas.addEventListener('lostpointercapture', endLook);
 // The rail graph is the linear chain of §1.1, so a boundary intent past an end stop IS the
 // keyboard's airlock: forward from the square is the gallery, backward from it is the square;
 // forward from the landing is the retargeted 1812 room (DEC-025), and M4 — the route's far
@@ -1443,6 +1674,76 @@ const RAIL_CHAIN: readonly NodeHandle[] = [
   'jordan',
   'military-gallery',
 ];
+// Mobile-B §5: the menu-ownership union over the LIVE hosts' symbols — the index dialog's
+// open flag, the season listbox's open state (the season-menu module's own state law is
+// list.hidden — its every open/close writes that exact boolean) and the scrub's own
+// gesture variable (§9's Gesture|null).
+const menuOwnsInput = (): boolean => indexDialog.open || !seasonList.hidden || gesture !== null;
+const chainNext = (boundary: 'forward' | 'backward'): NodeHandle | undefined =>
+  RAIL_CHAIN[RAIL_CHAIN.indexOf(railNode) + (boundary === 'forward' ? 1 : -1)];
+/** ONE route resolution for the arrows and the touch buttons (§5: no second graph). */
+const performRailStep = (direction: 1 | -1): void => {
+  const result = stepStop(rail, railState, direction, reducedMotion);
+  railState = result.state;
+  if (result.boundary === null) return;
+  const next = chainNext(result.boundary);
+  framePush = result.boundary; // §2: a boundary step is a push (the same door law)
+  if (next !== undefined) beginTransitTo(next);
+};
+// The buttons' joint admission facts (§5): the no-glide gate here is STRICTER than the
+// arrows' established mid-glide retarget law — that difference lives here and only here.
+const touchAdmitted = (): boolean =>
+  admitTouchTravel({
+    settled: !sceneUnavailable && arrival.phase === 'settled',
+    transitNull: transit === null,
+    glideNull: railState.glide === null,
+    canvasGestureFree: dragAnchor === null,
+    menuOwningInput: menuOwnsInput(),
+  }) === 'accept';
+const touchAvailable = (direction: 1 | -1): boolean => {
+  if (!touchAdmitted()) return false;
+  const boundary = stepStop(rail, railState, direction, reducedMotion).boundary;
+  return boundary === null || chainNext(boundary) !== undefined;
+};
+const syncTouchRail = (): void => {
+  touchBack.setAttribute('aria-disabled', String(!touchAvailable(-1)));
+  touchForward.setAttribute('aria-disabled', String(!touchAvailable(1)));
+  touchRail.dataset.u = String(railState.u);
+  touchRail.dataset.look = JSON.stringify(railState.lookTarget);
+};
+// §4/CHALLENGE 3: click is the sole command path; native Enter/Space stay native while the
+// repeat storm is suppressed in keydown (one held activation = ONE command). aria-disabled
+// never blocks events — the guards below drop the activation and keep focus.
+for (const [buttonEl, direction] of [
+  [touchBack, -1],
+  [touchForward, 1],
+] as const) {
+  const held = new Set<string>();
+  buttonEl.addEventListener('keydown', (event) => {
+    if (event.key !== 'Enter' && event.key !== ' ') return;
+    if (event.isComposing || event.keyCode === 229) {
+      event.preventDefault();
+      return;
+    }
+    if (admitTouchKey({ repeat: event.repeat, accepted: held.has(event.key) }) === 'drop') {
+      event.preventDefault();
+    } else {
+      held.add(event.key);
+    }
+  });
+  buttonEl.addEventListener('keyup', (event) => {
+    held.delete(event.key);
+  });
+  buttonEl.addEventListener('blur', () => {
+    held.clear();
+  });
+  buttonEl.addEventListener('click', () => {
+    hintTravel(); // §9: dropped intents record travel too — hint BEFORE admission
+    if (!touchAvailable(direction)) return;
+    performRailStep(direction);
+    syncTouchRail();
+  });
+}
 document.addEventListener('keydown', (event) => {
   if (event.target === scrub) return; // the scrub owns its keys
   if (indexDialog.open) return; // §6.4: the index dialog owns the arrows while open
@@ -1456,13 +1757,7 @@ document.addEventListener('keydown', (event) => {
   hintTravel(); // §9: an arrow step (incl. a boundary step that fires an airlock) is travel
   if (!railInputReady()) return;
   event.preventDefault();
-  const result = stepStop(rail, railState, direction, reducedMotion);
-  railState = result.state;
-  if (result.boundary === null) return;
-  const at = RAIL_CHAIN.indexOf(railNode);
-  const next = result.boundary === 'forward' ? RAIL_CHAIN[at + 1] : RAIL_CHAIN[at - 1];
-  framePush = result.boundary; // §2: an arrow boundary step is a push too (the same law)
-  if (next !== undefined) beginTransitTo(next);
+  performRailStep(direction); // the SAME step + chain resolution the buttons run
 });
 
 // --- The room index (design-gallery §6.2–6.4; §10 R5) -----------------------------------------
@@ -1471,6 +1766,7 @@ document.addEventListener('keydown', (event) => {
 // the deep-link hop precedent) and the committed hashchange path does everything else:
 // one code path for URL entry and index entry (§6.4).
 const jumpToRoute = (route: string): void => {
+  if (sceneUnavailable) return; // §7: travel is dead on the recovery face (no restoration)
   indexJumpPending = true;
   const hash = location.hash.startsWith('#') ? location.hash.slice(1) : location.hash;
   const mark = hash.indexOf('?');
@@ -1649,7 +1945,12 @@ document.addEventListener('visibilitychange', () => {
   if (timeState.mode === 'live') applyEpoch(Date.now()); // one sample, no catch-up replay (§9)
 });
 
+// Mobile-B §5/D3: hiding the WINDOW releases the same surface set (the F10 listener above
+// covers hide-document; blur is the separate law — no duplication, both call cancelGesture).
+window.addEventListener('blur', cancelGesture);
+
 const tick = (timeMs: number): void => {
+  if (sceneUnavailable) return; // Mobile-B §7: the renderer-dependent frame work is over
   if (document.hidden) return; // suspend all render/update work (§11)
   const deltaMs = lastFrameTime === undefined ? 0 : timeMs - lastFrameTime;
   lastFrameTime = timeMs;
@@ -1736,6 +2037,7 @@ const tick = (timeMs: number): void => {
       beatTangent = null;
       finishTransit(advanced.state);
       transit = null;
+      syncTouchRail(); // the airlock released the camera — the buttons re-sync (the discrete point)
       // The URL is the state (architecture.md): the room change lands in the hash at the
       // transit's completion — a human-entered transit (prompt/arrow/wheel) shares the
       // room from the address bar the moment it arrives. replaceState: no history spam
@@ -1850,6 +2152,18 @@ const tick = (timeMs: number): void => {
         );
       }
     }
+  }
+
+  // Mobile-B §5: the rail's aria/data rows ride a ≤500 ms state-write cadence, read only —
+  // NOT gated by hudOpen (a session without ?hud=1 must still flip availability). The clock
+  // is the rail's OWN: sharing hudBoundAtMs made the HUD's binding (hudOpen boots) eat the
+  // cadence — it resets the shared variable the rows' later branch then reads back as fresh,
+  // and syncTouchRail() never ran (the r26 diagnosis: every ?hud=1 boot held both buttons
+  // at the static aria-disabled="true" with data-u never written).
+  // The discrete owner/gesture/transit points above sync it off-cadence; no layout reads.
+  if (railRowBoundAtMs === -1 || timeMs - railRowBoundAtMs >= 500) {
+    railRowBoundAtMs = timeMs;
+    syncTouchRail();
   }
 
   // Caption overlay (§6.1/§8.4): one pure presentation call per frame, DOM writes only on
