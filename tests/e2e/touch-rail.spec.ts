@@ -64,9 +64,14 @@ async function roomReady(p: Page): Promise<void> {
   const h = p.locator('#hud[data-room]');
   await expect(h).toBeAttached({ timeout: 45_000 });
   await expect(h).toHaveAttribute('data-hold-ms', '0', { timeout: 45_000 });
+  // The chrome's own reveal IS the settle signature (the fixtures' gate): hold-0 reads
+  // transit-free, not settled — a press racing the last arrival beats is LAWFULLY dropped
+  // (the CI's first-Enter failure was exactly that race).
+  await expect(p.locator('#scrub')).toBeVisible({ timeout: 45_000 });
   await expect
     .poll(() => p.locator('#touch-rail button[aria-disabled="false"]').count(), { timeout: 45_000 })
     .toBeGreaterThan(0);
+  await p.waitForTimeout(300);
 }
 
 async function frames(p: Page): Promise<void> {
